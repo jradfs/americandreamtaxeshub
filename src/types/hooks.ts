@@ -1,15 +1,22 @@
 import { Database } from './database.types'
 
 // Main table types
-export type Client = Tables['clients']['Row']
+export type Client = Database['public']['Tables']['clients']['Row']
 export type ClientInsert = Tables['clients']['Insert']
 export type ClientUpdate = Tables['clients']['Update']
 
-export type Project = Tables['projects']['Row']
+export type Project = Database['public']['Tables']['projects']['Row']
 export type ProjectInsert = Tables['projects']['Insert']
 export type ProjectUpdate = Tables['projects']['Update']
 
-export type Task = Tables['tasks']['Row']
+export type Task = Database['public']['Tables']['tasks']['Row'] & {
+  estimated_minutes?: number | null
+  actual_minutes?: number | null
+  dependencies?: string[] | null
+  template_id?: string | null
+  category?: string | null
+  tags?: string[] | null
+}
 export type TaskInsert = Tables['tasks']['Insert']
 export type TaskUpdate = Tables['tasks']['Update']
 
@@ -48,5 +55,13 @@ export type PayrollService = Tables['payroll_services']['Row']
 
 // Tax return type
 export type TaxReturn = Tables['tax_returns']['Row']
+
+export type TemplateTask = Database['public']['Tables']['template_tasks']['Row'] & {
+  dependencies?: string[]
+}
+
+export type ProjectTemplate = Database['public']['Tables']['project_templates']['Row'] & {
+  tasks?: TemplateTask[]
+}
 
 export type Tables = Database['public']['Tables']

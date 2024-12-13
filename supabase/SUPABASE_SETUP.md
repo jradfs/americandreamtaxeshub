@@ -36,9 +36,7 @@ This command:
 - Establishes the link for future operations
 
 ### 4. Generate Types
-```powershell
-$env:SUPABASE_ACCESS_TOKEN='sbp_829505ecb6492198977d14392b9272cf9723c08f'
-npx supabase gen types typescript --project-id fnjkkmwmpxqvezqextxg > src/types/database.types.ts
+```powershell -Command $env:SUPABASE_ACCESS_TOKEN='sbp_829505ecb6492198977d14392b9272cf9723c08f'; npx supabase gen types typescript --project-id fnjkkmwmpxqvezqextxg | Out-File -Encoding UTF8 src/types/database.types.ts
 ```
 
 ## Important Notes
@@ -66,3 +64,4 @@ To access Supabase in a new environment:
 2. Initialize Supabase if needed
 3. Link your project
 4. Generate types
+

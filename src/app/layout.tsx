@@ -3,6 +3,8 @@ import { Inter as FontSans } from "next/font/google"
 import './globals.css'
 import { ThemeProvider } from "@/components/theme-provider"
 import { AuthProvider } from "@/components/providers/auth-provider"
+import { SidebarProvider } from "@/components/providers/sidebar-provider"
+import SupabaseProvider from "@/lib/supabase/supabase-provider"
 import { Navbar } from "@/components/navbar"
 import { cn } from "@/lib/utils"
 import { Toaster } from "@/components/ui/toaster"
@@ -13,44 +15,43 @@ const fontSans = FontSans({
 })
 
 export const metadata: Metadata = {
-  title: 'American Dream Taxes Hub',
-  description: 'Accounting Practice Management Tool'
+  title: "American Dream Taxes Hub",
+  description: "Tax preparation and filing made easy",
 }
 
-export default function RootLayout({
-  children,
-}: {
+interface RootLayoutProps {
   children: React.ReactNode
-}) {
+}
+
+export default function RootLayout({ children }: RootLayoutProps) {
   return (
     <html lang="en" suppressHydrationWarning>
       <head />
-      <body 
+      <body
         className={cn(
           "min-h-screen bg-background font-sans antialiased",
           fontSans.variable
         )}
         suppressHydrationWarning
       >
-        <ThemeProvider>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
           <AuthProvider>
-            <div className="relative flex min-h-screen flex-col">
-              <Navbar />
-              <main className="flex-1">
-                {children}
-              </main>
-              <footer className="border-t py-6 md:py-0">
-                <div className="container flex flex-col items-center justify-between gap-4 md:h-16 md:flex-row">
-                  <p className="text-sm text-muted-foreground">
-                    Built with ❤️ by American Dream Taxes
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    {new Date().getFullYear()} American Dream Taxes. All rights reserved.
-                  </p>
+            <SupabaseProvider>
+              <SidebarProvider>
+                <div className="relative flex min-h-screen">
+                  <Navbar />
+                  <main className="flex-1 transition-all duration-300 ease-in-out">
+                    {children}
+                  </main>
+                  <Toaster />
                 </div>
-              </footer>
-            </div>
-            <Toaster />
+              </SidebarProvider>
+            </SupabaseProvider>
           </AuthProvider>
         </ThemeProvider>
       </body>

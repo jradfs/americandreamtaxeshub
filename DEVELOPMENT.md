@@ -1,17 +1,53 @@
 # American Dream Taxes Hub - Development Guide
 
 ## System Overview
-The American Dream Taxes Hub is a comprehensive practice management tool designed to streamline tax practice workflows and improve team efficiency. The system focuses on helping tax professionals and accountants manage various services including bookkeeping, tax returns, payroll processing, and business services.
+The American Dream Taxes Hub is a comprehensive practice management tool designed to streamline tax practice workflows and improve team efficiency. The system focuses on helping tax professionals and accountants manage various services including bookkeeping, tax returns, payroll processing, and business services through a unified, Motion-inspired interface.
 
 ## Core Features (Phase 1)
 
-### 1. Smart Task Management System
-- **Focus Now Dashboard**
-  - Priority-based task display
-  - Upcoming deadlines
-  - Time-sensitive alerts
-  - Quick action capabilities
-  - Team workload overview
+### 1. Unified Task & Project Management
+- **Main View Structure**
+  ```typescript
+  interface UnifiedViewConfig {
+    grouping: {
+      type: "Stage" | "Status" | "Task";
+      sections: {
+        strategy: TaskSection;
+        design: TaskSection;
+        implementation: TaskSection;
+      };
+      filters: {
+        showScheduledOnly: boolean;
+        showCompleted: boolean;
+        priority: Priority[];
+        assignee: string[];
+      };
+    };
+    workspaces: Workspace[];
+  }
+
+  interface TaskSection {
+    todo: Task[];
+    complete: Task[];
+    metadata: {
+      totalDuration: number;
+      completionRate: number;
+      assignees: string[];
+    };
+  }
+
+  interface Workspace {
+    id: string;
+    name: string;
+    projects: Project[];
+    tasks: Task[];
+    clientId?: string;
+    settings: {
+      defaultView: "list" | "kanban" | "gantt";
+      defaultGrouping: "Stage" | "Status" | "Task";
+    };
+  }
+  ```
 
 - **Smart Queue System**
   ```typescript
@@ -23,6 +59,29 @@ The American Dream Taxes Hub is a comprehensive practice management tool designe
       timeEstimate: number;     // Weight: 0.1
       dependencies: number;     // Weight: 0.1
     };
+    queueSettings: {
+      refreshInterval: number;  // How often to recalculate priorities
+      maxItems: number;        // Maximum items in smart queue
+      autoSchedule: boolean;   // Automatically schedule tasks based on priority
+    };
+  }
+  ```
+
+### 2. Enhanced Task Management
+- **Task Structure**
+  ```typescript
+  interface Task {
+    id: string;
+    name: string;
+    section: "strategy" | "design" | "implementation";
+    status: "todo" | "complete";
+    priority: "high" | "medium" | "low";
+    duration: number;
+    assignee: string[];
+    dependencies: string[];
+    deadline?: Date;
+    labels: string[];
+    clientId?: string;
   }
   ```
 
@@ -32,13 +91,21 @@ The American Dream Taxes Hub is a comprehensive practice management tool designe
 1. **Regular Monthly Bookkeeping**
    ```typescript
    interface MonthlyBookkeepingTemplate {
-     tasks: [
-       { name: "Download Bank Statements", estimatedTime: 30, priority: "High" },
-       { name: "Process QB Transactions", estimatedTime: 180, priority: "High" },
-       { name: "Reconcile Accounts", estimatedTime: 60, priority: "High" },
-       { name: "Generate Reports", estimatedTime: 30, priority: "Medium" },
-       { name: "Quality Review", estimatedTime: 30, priority: "High" }
-     ];
+     sections: {
+       strategy: [
+         { name: "Review Previous Month", estimatedTime: 30, priority: "High" },
+         { name: "Plan Adjustments", estimatedTime: 30, priority: "High" }
+       ],
+       implementation: [
+         { name: "Download Bank Statements", estimatedTime: 30, priority: "High" },
+         { name: "Process QB Transactions", estimatedTime: 180, priority: "High" },
+         { name: "Reconcile Accounts", estimatedTime: 60, priority: "High" },
+         { name: "Generate Reports", estimatedTime: 30, priority: "Medium" }
+       ],
+       review: [
+         { name: "Quality Review", estimatedTime: 30, priority: "High" }
+       ]
+     };
      totalEstimatedTime: 330; // minutes
      defaultPriority: "High";
      recurringSchedule: "Monthly";
@@ -48,14 +115,20 @@ The American Dream Taxes Hub is a comprehensive practice management tool designe
 2. **Cleanup Bookkeeping**
    ```typescript
    interface CleanupBookkeepingTemplate {
-     tasks: [
-       { name: "Initial Assessment", estimatedTime: 120 },
-       { name: "Data Collection", estimatedTime: 240 },
-       { name: "QB Setup/Review", estimatedTime: 180 },
-       { name: "Historical Entry", estimatedTime: 480 },
-       { name: "Reconciliation", estimatedTime: 240 },
-       { name: "Final Review", estimatedTime: 120 }
-     ];
+     sections: {
+       strategy: [
+         { name: "Initial Assessment", estimatedTime: 120 },
+         { name: "Data Collection", estimatedTime: 240 }
+       ],
+       implementation: [
+         { name: "QB Setup/Review", estimatedTime: 180 },
+         { name: "Historical Entry", estimatedTime: 480 },
+         { name: "Reconciliation", estimatedTime: 240 }
+       ],
+       review: [
+         { name: "Final Review", estimatedTime: 120 }
+       ]
+     };
      totalEstimatedTime: 1380; // minutes
      defaultPriority: "Medium";
    }
@@ -65,13 +138,19 @@ The American Dream Taxes Hub is a comprehensive practice management tool designe
 1. **Individual Tax Return**
    ```typescript
    interface IndividualTaxTemplate {
-     tasks: [
-       { name: "Document Collection", estimatedTime: 60 },
-       { name: "Initial Review", estimatedTime: 30 },
-       { name: "Tax Return Preparation", estimatedTime: 120 },
-       { name: "Quality Review", estimatedTime: 45 },
-       { name: "Client Review", estimatedTime: 30 }
-     ];
+     sections: {
+       strategy: [
+         { name: "Document Collection", estimatedTime: 60 },
+         { name: "Initial Review", estimatedTime: 30 }
+       ],
+       implementation: [
+         { name: "Tax Return Preparation", estimatedTime: 120 }
+       ],
+       review: [
+         { name: "Quality Review", estimatedTime: 45 },
+         { name: "Client Review", estimatedTime: 30 }
+       ]
+     };
      totalEstimatedTime: 285; // minutes
      seasonalPriority: {
        "Q1": "Critical",
@@ -85,13 +164,19 @@ The American Dream Taxes Hub is a comprehensive practice management tool designe
 2. **Business Tax Return**
    ```typescript
    interface BusinessTaxTemplate {
-     tasks: [
-       { name: "Document Collection", estimatedTime: 120 },
-       { name: "Financial Review", estimatedTime: 180 },
-       { name: "Tax Return Preparation", estimatedTime: 240 },
-       { name: "Quality Review", estimatedTime: 90 },
-       { name: "Client Review", estimatedTime: 60 }
-     ];
+     sections: {
+       strategy: [
+         { name: "Document Collection", estimatedTime: 120 },
+         { name: "Financial Review", estimatedTime: 180 }
+       ],
+       implementation: [
+         { name: "Tax Return Preparation", estimatedTime: 240 }
+       ],
+       review: [
+         { name: "Quality Review", estimatedTime: 90 },
+         { name: "Client Review", estimatedTime: 60 }
+       ]
+     };
      totalEstimatedTime: 690; // minutes
      variations: ["LLC", "S-Corp", "C-Corp", "Partnership"];
    }
@@ -100,23 +185,25 @@ The American Dream Taxes Hub is a comprehensive practice management tool designe
 #### C. Payroll Services
 ```typescript
 interface PayrollTemplate {
-  weeklyTasks: [
-    { name: "Collect Time Data", deadline: "Monday 12PM" },
-    { name: "Process Payroll", deadline: "Tuesday 12PM" },
-    { name: "Generate Checks", deadline: "Wednesday 12PM" },
-    { name: "Mail Checks", deadline: "Wednesday 3PM" }
-  ];
-  monthlyTasks: [
-    { name: "Monthly Tax Deposits", deadline: "15th" },
-    { name: "Monthly Reports", deadline: "Last Day" }
-  ];
-  quarterlyTasks: [
-    { name: "Quarterly Returns", deadline: "Quarter End" }
-  ];
-  yearEndTasks: [
-    { name: "W2 Preparation", deadline: "January 15th" },
-    { name: "Annual Filings", deadline: "January 31st" }
-  ];
+  sections: {
+    weekly: [
+      { name: "Collect Time Data", deadline: "Monday 12PM" },
+      { name: "Process Payroll", deadline: "Tuesday 12PM" },
+      { name: "Generate Checks", deadline: "Wednesday 12PM" },
+      { name: "Mail Checks", deadline: "Wednesday 3PM" }
+    ],
+    monthly: [
+      { name: "Monthly Tax Deposits", deadline: "15th" },
+      { name: "Monthly Reports", deadline: "Last Day" }
+    ],
+    quarterly: [
+      { name: "Quarterly Returns", deadline: "Quarter End" }
+    ],
+    yearEnd: [
+      { name: "W2 Preparation", deadline: "January 15th" },
+      { name: "Annual Filings", deadline: "January 31st" }
+    ]
+  }
 }
 ```
 
@@ -148,6 +235,13 @@ create type task_status as enum (
   'complete'
 );
 
+create type section_type as enum (
+  'strategy',
+  'design',
+  'implementation',
+  'review'
+);
+
 -- Base Templates
 create table project_templates (
   id uuid default uuid_generate_v4() primary key,
@@ -165,6 +259,7 @@ create table project_templates (
 create table template_tasks (
   id uuid default uuid_generate_v4() primary key,
   template_id uuid references project_templates(id) on delete cascade,
+  section section_type not null,
   title text not null,
   description text,
   estimated_minutes integer not null,
@@ -172,7 +267,7 @@ create table template_tasks (
   required_docs text[],
   created_at timestamptz default now(),
   updated_at timestamptz default now(),
-  unique(template_id, sequence_number)
+  unique(template_id, section, sequence_number)
 );
 
 -- Active Projects
@@ -180,6 +275,7 @@ create table projects (
   id uuid default uuid_generate_v4() primary key,
   template_id uuid references project_templates(id),
   client_id uuid references clients(id),
+  workspace_id uuid references workspaces(id),
   name text not null,
   status task_status default 'not_started',
   priority priority_level,
@@ -195,6 +291,7 @@ create table project_tasks (
   id uuid default uuid_generate_v4() primary key,
   project_id uuid references projects(id) on delete cascade,
   template_task_id uuid references template_tasks(id),
+  section section_type not null,
   title text not null,
   description text,
   status task_status default 'not_started',
@@ -209,9 +306,19 @@ create table project_tasks (
   updated_at timestamptz default now()
 );
 
+-- Workspaces
+create table workspaces (
+  id uuid default uuid_generate_v4() primary key,
+  name text not null,
+  description text,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+
 -- Indexes for Performance
 create index idx_projects_client_id on projects(client_id);
 create index idx_projects_template_id on projects(template_id);
+create index idx_projects_workspace_id on projects(workspace_id);
 create index idx_project_tasks_project_id on project_tasks(project_id);
 create index idx_project_tasks_assigned_to on project_tasks(assigned_to);
 create index idx_template_tasks_template_id on template_tasks(template_id);
@@ -220,27 +327,39 @@ create index idx_template_tasks_template_id on template_tasks(template_id);
 ### 4. Implementation Phases
 
 #### Phase 1A: Foundation (Week 1-2)
-1. **Database Setup**
+1. **Unified View Setup**
+   - Implement workspace structure
+   - Create section-based task organization
+   - Set up grouping and filtering system
+
+2. **Database Setup**
    - Execute schema migrations
    - Set up database triggers for updated_at
    - Create initial template data
 
-2. **Type Definitions**
+3. **Type Definitions**
    ```typescript
    // src/types/supabase.ts
    export interface Template {
      id: string;
      name: string;
      type: TemplateType;
+     sections: Section[];
      estimatedDuration: number;
      defaultPriority: PriorityLevel;
      isRecurring: boolean;
      recurringPeriod?: string;
    }
 
+   export interface Section {
+     type: SectionType;
+     tasks: TemplateTask[];
+   }
+
    export interface TemplateTask {
      id: string;
      templateId: string;
+     section: SectionType;
      title: string;
      description?: string;
      estimatedMinutes: number;
@@ -249,26 +368,23 @@ create index idx_template_tasks_template_id on template_tasks(template_id);
    }
    ```
 
-3. **Base Components**
-   - Template selection interface
-   - Project creation flow
-   - Task assignment component
-
 #### Phase 1B: Smart Features (Week 3-4)
-1. **Enhanced Dashboard**
+1. **Enhanced View Features**
    - Priority calculation system
    - Time block suggestions
    - Deadline tracking
+   - Task dependencies visualization
 
 2. **Task Management**
-   - Drag-and-drop task board
+   - Drag-and-drop between sections
    - Quick actions
    - Time tracking
+   - Status transitions
 
 #### Phase 1C: Integration & Polish (Week 5-6)
 1. **Template Management**
    - Template CRUD operations
-   - Template task ordering
+   - Section management
    - Template duplication
 
 2. **Workflow Automation**
@@ -281,34 +397,29 @@ create index idx_template_tasks_template_id on template_tasks(template_id);
 ```
 src/
 ├── components/
-│   ├── dashboard/
-│   │   ├── FocusNowSection/
+│   ├── unified/
+│   │   ├── MainView/
 │   │   │   ├── index.tsx
-│   │   │   ├── PriorityTasks.tsx
-│   │   │   └── TimeBlockSuggestions.tsx
-│   │   ├── SmartQueue/
-│   │   │   ├── index.tsx
-│   │   │   └── TaskPrioritization.tsx
-│   │   └── TimeBlock/
-│   │       ├── index.tsx
-│   │       └── Schedule.tsx
-│   ├── projects/
-│   │   ├── templates/
-│   │   │   ├── TemplateList.tsx
-│   │   │   ├── TemplateForm.tsx
-│   │   │   └── TemplateTask.tsx
-│   │   └── active/
-│   │       ├── ProjectBoard.tsx
-│   │       ├── ProjectDetails.tsx
-│   │       └── ProjectTimeline.tsx
-│   └── tasks/
-│       ├── TaskBoard/
-│       │   ├── index.tsx
-│       │   ├── Column.tsx
-│       │   └── Card.tsx
-│       └── TaskDetails/
-│           ├── index.tsx
-│           └── TimeTracking.tsx
+│   │   │   ├── GroupingOptions.tsx
+│   │   │   └── FilterControls.tsx
+│   │   ├── Sections/
+│   │   │   ├── Strategy.tsx
+│   │   │   ├── Design.tsx
+│   │   │   └── Implementation.tsx
+│   │   └── Tasks/
+│   │       ├── TaskCard.tsx
+│   │       └── TaskDetails.tsx
+│   ├── sidebar/
+│   │   ├── WorkspaceList.tsx
+│   │   ├── ViewOptions.tsx
+│   │   └── Navigation.tsx
+│   └── templates/
+│       ├── TemplateBuilder/
+│       │   ├── SectionManager.tsx
+│       │   └── TaskDefaults.tsx
+│       └── ProjectCreator/
+│           ├── Timeline.tsx
+│           └── Progress.tsx
 ```
 
 ### 6. Testing Strategy
@@ -325,169 +436,75 @@ src/
        // Test implementation
      });
    });
+
+   // Section management tests
+   describe('Section Organization', () => {
+     it('should maintain task order within sections', () => {
+       // Test implementation
+     });
+
+     it('should calculate section completion status', () => {
+       // Test implementation
+     });
+   });
    ```
 
 2. **Integration Tests**
    - Template creation flow
    - Project lifecycle
    - Task state management
+   - Section transitions
 
 3. **E2E Tests**
    - Critical user journeys
    - Data persistence
    - Real-time updates
+   - Workspace management
 
 ### 7. Development Progress
 
 ### Completed Features
-
-#### 1. Project Templates System
-- Created database schema for project templates and tasks
-- Implemented initial templates for:
-  - Regular Monthly Bookkeeping
-  - Cleanup Bookkeeping
-  - Individual Tax Return
-  - Business Tax Return
-  - Payroll Setup
-- Added template task management with:
-  - Task dependencies
-  - Time estimates
-  - Priority levels
-  - Task ordering
-  - Task descriptions
-
-#### 2. Database Schema
-- Created tables:
-  - `project_templates`: Stores template definitions with metadata
-  - `template_tasks`: Stores tasks associated with templates
-- Added fields for:
-  - Time estimates
-  - Dependencies
-  - Categories
-  - Priorities
-  - Seasonal adjustments
-- Implemented RLS policies for data security
+- Database schema design
+- Initial template system
+- Basic task management
 
 ### In Progress
-1. **Smart Task Management**
-   - Focus Now Dashboard implementation
-   - Smart Queue system development
-   - Task priority calculator
+1. **Unified View Implementation**
+   - Workspace structure
+   - Section-based organization
+   - Task grouping system
 
 2. **UI Components**
-   - Template management interface
-   - Task dependency visualization
-   - Time tracking integration
+   - Main view layout
+   - Section management
+   - Task cards
 
 ### Next Steps
-1. **Template System Enhancements**
-   - Template cloning functionality
-   - Template versioning
-   - Template export/import
+1. **View Enhancements**
+   - Implement grouping options
+   - Add filtering system
+   - Create section transitions
 
-2. **Task Management Features**
-   - Real-time updates
-   - Team assignment
-   - Progress tracking
+2. **Task Features**
+   - Add time tracking
+   - Implement dependencies
+   - Add status management
 
-3. **Integration Points**
-   - Calendar integration
-   - Document management
-   - Client portal
-
-### 8. Next Steps
-
-1. **Immediate Actions**
-   - [ ] Review and approve database schema
-   - [ ] Set up development environment
-   - [ ] Create initial project templates
-
-2. **Development Kickoff**
-   - [ ] Execute database migrations
-   - [ ] Implement base components
-   - [ ] Set up testing framework
-
-3. **Team Coordination**
-   - [ ] Daily standups
-   - [ ] Code review process
-   - [ ] Documentation updates
-
-## Development Roadmap (Updated: December 2023)
-
-Based on QA findings and core requirements, here is the prioritized development plan:
-
-### Phase 1: Critical Infrastructure (Week 1)
-
-#### Authentication & Core Database
-- [ ] Set up complete database schema
-  - Implement all tables defined in schema section
-  - Add necessary indexes and constraints
-- [ ] Implement proper session management
-  - Add session persistence
-  - Fix direct page access handling
-- [ ] Authentication improvements
-  - Add "Remember me" functionality
-  - Implement password reset feature
-- [ ] Fix user identification display
-  - Replace user IDs with names throughout the application
-  - Add proper user context management
-
-### Phase 2: Template System (Week 2)
-
-#### Project Templates Implementation
-- [ ] Create template management interface
-- [ ] Implement core templates:
-  - Monthly Bookkeeping
-  - Cleanup Bookkeeping
-  - Individual Tax Return
-  - Business Tax Return
-  - Payroll Services
-- [ ] Add template instantiation system
-- [ ] Implement template task inheritance
-
-### Phase 3: Task Management (Week 3)
-
-#### Smart Queue and Task Features
-- [ ] Implement Smart Queue System
-  - Add priority-based task sorting
-  - Implement workload balancing
-  - Add deadline management
-- [ ] Enhanced task management
-  - Add time tracking
-  - Implement task dependencies
-  - Add task comments and discussions
-- [ ] Task workflow improvements
-  - Add status transitions
-  - Implement approval flows
-  - Add task history tracking
-
-### Phase 4: Search & Organization (Week 4)
-
-#### Global Search and Data Organization
-- [ ] Implement global search functionality
-  - Add client search
-  - Add project search
-  - Add task search
-- [ ] Add advanced filtering
-  - Status-based filtering
-  - Date-based filtering
-  - Priority-based filtering
-- [ ] Implement data organization
-  - Add pagination for all list views
-  - Implement sorting capabilities
-  - Add bulk actions for tasks and clients
+3. **Template Updates**
+   - Modify for section support
+   - Add workspace integration
+   - Update task inheritance
 
 ### Success Criteria
-- All critical QA findings addressed
-- Core features implemented and tested
-- Improved user experience with proper session management
-- Complete template system operational
-- Smart Queue System managing task prioritization effectively
-- Comprehensive search and filter capabilities across all sections
+- Unified view successfully managing all tasks and projects
+- Section-based organization working efficiently
+- Template system supporting new structure
+- Smooth task and project management
+- Effective time tracking and priority management
 
 ### Next Steps
-After completing these phases, we will:
-1. Conduct comprehensive testing
-2. Gather user feedback
-3. Plan Phase 2 features based on user needs
-4. Consider additional automation opportunities
+1. Begin unified view implementation
+2. Update template system
+3. Enhance task management
+4. Add workspace support
+5. Implement filtering and grouping

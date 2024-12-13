@@ -10,7 +10,7 @@ export default function Home() {
 
   const handleGetStarted = () => {
     if (user) {
-      router.push('/clients')
+      router.push('/dashboard')
     } else {
       router.push('/login')
     }
