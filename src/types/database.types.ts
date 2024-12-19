@@ -1,4 +1,4 @@
-﻿export type Json =
+export type Json =
   | string
   | number
   | boolean
@@ -67,10 +67,12 @@ export type Database = {
         Row: {
           company_name: string | null
           contact_email: string
+          contact_info: Json
           created_at: string | null
           full_name: string | null
           id: string
           status: string
+          tax_info: Json
           type: string | null
           updated_at: string | null
           user_id: string | null
@@ -78,10 +80,12 @@ export type Database = {
         Insert: {
           company_name?: string | null
           contact_email: string
+          contact_info?: Json
           created_at?: string | null
           full_name?: string | null
           id: string
           status: string
+          tax_info?: Json
           type?: string | null
           updated_at?: string | null
           user_id?: string | null
@@ -89,10 +93,12 @@ export type Database = {
         Update: {
           company_name?: string | null
           contact_email?: string
+          contact_info?: Json
           created_at?: string | null
           full_name?: string | null
           id?: string
           status?: string
+          tax_info?: Json
           type?: string | null
           updated_at?: string | null
           user_id?: string | null
@@ -343,75 +349,197 @@ export type Database = {
       }
       projects: {
         Row: {
+          actual_hours: number | null
+          client_id: string | null
           created_at: string | null
           description: string | null
+          due_date: string | null
+          end_date: string | null
+          estimated_hours: number | null
           id: string
           name: string
+          parent_project_id: string | null
           priority: string | null
+          stage: string | null
+          start_date: string | null
           status: string
+          template_id: string | null
           updated_at: string | null
         }
         Insert: {
+          actual_hours?: number | null
+          client_id?: string | null
           created_at?: string | null
           description?: string | null
+          due_date?: string | null
+          end_date?: string | null
+          estimated_hours?: number | null
           id?: string
           name: string
+          parent_project_id?: string | null
           priority?: string | null
+          stage?: string | null
+          start_date?: string | null
           status?: string
+          template_id?: string | null
           updated_at?: string | null
         }
         Update: {
+          actual_hours?: number | null
+          client_id?: string | null
           created_at?: string | null
           description?: string | null
+          due_date?: string | null
+          end_date?: string | null
+          estimated_hours?: number | null
+          id?: string
+          name?: string
+          parent_project_id?: string | null
+          priority?: string | null
+          stage?: string | null
+          start_date?: string | null
+          status?: string
+          template_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "projects_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "projects_parent_project_id_fkey"
+            columns: ["parent_project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "projects_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "project_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      task_templates: {
+        Row: {
+          checklist: Json | null
+          created_at: string | null
+          description: string | null
+          estimated_hours: number | null
+          id: string
+          name: string
+          priority: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          checklist?: Json | null
+          created_at?: string | null
+          description?: string | null
+          estimated_hours?: number | null
+          id?: string
+          name: string
+          priority?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          checklist?: Json | null
+          created_at?: string | null
+          description?: string | null
+          estimated_hours?: number | null
           id?: string
           name?: string
           priority?: string | null
-          status?: string
           updated_at?: string | null
         }
         Relationships: []
       }
       tasks: {
         Row: {
+          activity_log: Json | null
+          actual_hours: number | null
           assignee_id: string | null
+          checklist: Json | null
           created_at: string | null
           description: string | null
           due_date: string | null
+          estimated_hours: number | null
           id: string
+          parent_task_id: string | null
           priority: string | null
           progress: number | null
           project_id: string | null
+          recurring_config: Json | null
+          start_date: string | null
           status: string
+          tax_form_type: string | null
+          tax_return_id: string | null
+          template_id: string | null
+          time_tracked: number | null
           title: string
           updated_at: string | null
         }
         Insert: {
+          activity_log?: Json | null
+          actual_hours?: number | null
           assignee_id?: string | null
+          checklist?: Json | null
           created_at?: string | null
           description?: string | null
           due_date?: string | null
+          estimated_hours?: number | null
           id?: string
+          parent_task_id?: string | null
           priority?: string | null
           progress?: number | null
           project_id?: string | null
+          recurring_config?: Json | null
+          start_date?: string | null
           status?: string
+          tax_form_type?: string | null
+          tax_return_id?: string | null
+          template_id?: string | null
+          time_tracked?: number | null
           title: string
           updated_at?: string | null
         }
         Update: {
+          activity_log?: Json | null
+          actual_hours?: number | null
           assignee_id?: string | null
+          checklist?: Json | null
           created_at?: string | null
           description?: string | null
           due_date?: string | null
+          estimated_hours?: number | null
           id?: string
+          parent_task_id?: string | null
           priority?: string | null
           progress?: number | null
           project_id?: string | null
+          recurring_config?: Json | null
+          start_date?: string | null
           status?: string
+          tax_form_type?: string | null
+          tax_return_id?: string | null
+          template_id?: string | null
+          time_tracked?: number | null
           title?: string
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "tasks_parent_task_id_fkey"
+            columns: ["parent_task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "tasks_project_id_fkey"
             columns: ["project_id"]

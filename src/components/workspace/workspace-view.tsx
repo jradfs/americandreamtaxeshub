@@ -42,6 +42,7 @@ type TaskFilter = 'all' | 'unplanned' | 'upcoming' | 'recurring';
 interface WorkspaceViewProps {
   initialTasks?: Task[];
   workspace?: Workspace;
+  projects?: any[];
 }
 
 const defaultWorkspace: Workspace = {
@@ -59,7 +60,8 @@ const defaultWorkspace: Workspace = {
 
 const WorkspaceView = ({ 
   initialTasks = [], 
-  workspace = defaultWorkspace 
+  workspace = defaultWorkspace,
+  projects = []
 }: WorkspaceViewProps) => {
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
   const [view, setView] = useState<ViewType>(workspace.settings.default_view);

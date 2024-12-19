@@ -12,12 +12,16 @@ export interface Task {
   updated_at: string; // ISO date string
   is_recurring: boolean;
   project_id?: string;
+  tax_return_id?: string;
+  tax_form_type?: string;
 }
 
 export type TaskUpdate = Partial<Task>;
 
 export interface TaskFormData extends Omit<Task, 'id' | 'created_at' | 'updated_at'> {
   id?: string;
+  tax_return_id?: string;
+  tax_form_type?: string;
 }
 
 export interface Workspace {

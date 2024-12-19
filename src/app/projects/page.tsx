@@ -1,7 +1,7 @@
 'use client'
 
-import { ProjectList } from "@/components/projects/project-list"
-import { Toaster } from "@/components/ui/toaster"
+import ProjectList from "../../components/projects/project-list"
+import { Toaster } from "../../components/ui/toaster"
 
 export default function ProjectsPage() {
   return (
@@ -19,40 +19,7 @@ export default function ProjectsPage() {
         </div>
 
         {/* Project Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {[1, 2, 3, 4, 5, 6].map((i) => (
-            <div 
-              key={i}
-              className="p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors cursor-pointer space-y-4"
-            >
-              <div className="flex items-center justify-between">
-                <div className="font-medium">2023 Tax Return</div>
-                <div className="text-xs px-2 py-1 rounded-full bg-primary/10 text-primary">In Progress</div>
-              </div>
-              
-              <div className="space-y-2">
-                <div className="text-sm text-muted-foreground">Client: John Doe</div>
-                <div className="text-sm text-muted-foreground">Due: Dec 31, 2023</div>
-              </div>
-
-              <div className="flex items-center justify-between text-sm">
-                <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs">
-                    JD
-                  </div>
-                  <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs">
-                    +2
-                  </div>
-                </div>
-                <div className="text-muted-foreground">8/12 tasks</div>
-              </div>
-
-              <div className="w-full bg-accent/50 rounded-full h-2">
-                <div className="bg-primary h-full rounded-full" style={{ width: '60%' }}></div>
-              </div>
-            </div>
-          ))}
-        </div>
+        <ProjectList />
 
         {/* Load More */}
         <div className="flex justify-center">
@@ -61,6 +28,7 @@ export default function ProjectsPage() {
           </button>
         </div>
       </div>
+      <Toaster />
     </div>
   )
 }

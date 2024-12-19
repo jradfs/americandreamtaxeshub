@@ -1,6 +1,6 @@
-import { useTasks } from "@/hooks/useTasks"
-import { Task } from "@/types/hooks"
-import { Button } from "@/components/ui/button"
+import { useTasks } from 'src/hooks/useTasks'
+import { Task, TaskFormData } from 'src/types/task'
+import { Button } from 'src/components/ui/button'
 import {
   Dialog,
   DialogContent,
@@ -8,18 +8,18 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+} from 'src/components/ui/dialog'
+import { Input } from 'src/components/ui/input'
+import { Label } from 'src/components/ui/label'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
-import { Textarea } from "@/components/ui/textarea"
-import { useToast } from "@/hooks/use-toast"
+} from 'src/components/ui/select'
+import { Textarea } from 'src/components/ui/textarea'
+import { useToast } from 'src/hooks/use-toast'
 import { useState } from "react"
 
 interface TaskDialogProps {
@@ -40,15 +40,16 @@ export function TaskDialog({
   const { addTask, updateTask } = useTasks()
   const { toast } = useToast()
   const [loading, setLoading] = useState(false)
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<TaskFormData>({
     title: task?.title || "",
     description: task?.description || "",
-    status: task?.status || "pending",
+    status: task?.status || "todo" as "todo" | "in_progress" | "completed" | "blocked",
     priority: task?.priority || "medium",
-    project_id: projectId || task?.project_id || null,
+    project_id: projectId ? String(projectId) : task?.project_id || undefined,
     due_date: task?.due_date ? new Date(task.due_date).toISOString().split('T')[0] : "",
-    assigned_user_id: task?.assigned_user_id || null,
+    assignee_id: task?.assignee_id || null,
     is_recurring: task?.is_recurring || false,
+    progress: task?.progress || 0,
   })
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -133,14 +134,14 @@ export function TaskDialog({
               <Select
                 value={formData.status}
                 onValueChange={(value) =>
-                  setFormData((prev) => ({ ...prev, status: value }))
+                  setFormData((prev) => ({ ...prev, status: value as "todo" | "in_progress" | "completed" | "blocked" }))
                 }
               >
                 <SelectTrigger className="col-span-3">
                   <SelectValue placeholder="Select status" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="todo">Todo</SelectItem>
                   <SelectItem value="in_progress">In Progress</SelectItem>
                   <SelectItem value="completed">Completed</SelectItem>
                   <SelectItem value="blocked">Blocked</SelectItem>
@@ -154,7 +155,7 @@ export function TaskDialog({
               <Select
                 value={formData.priority}
                 onValueChange={(value) =>
-                  setFormData((prev) => ({ ...prev, priority: value }))
+                  setFormData((prev) => ({ ...prev, priority: value as "low" | "medium" | "high" }))
                 }
               >
                 <SelectTrigger className="col-span-3">

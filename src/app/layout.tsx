@@ -1,13 +1,13 @@
 import type { Metadata } from 'next'
 import { Inter as FontSans } from "next/font/google"
 import './globals.css'
-import { ThemeProvider } from "@/components/theme-provider"
-import { AuthProvider } from "@/components/providers/auth-provider"
-import { SidebarProvider } from "@/components/providers/sidebar-provider"
-import SupabaseProvider from "@/lib/supabase/supabase-provider"
-import { Navbar } from "@/components/navbar"
-import { cn } from "@/lib/utils"
-import { Toaster } from "@/components/ui/toaster"
+import { ThemeProvider } from "src/components/theme-provider"
+import { AuthProvider } from "src/components/providers/auth-provider"
+import { SidebarProvider } from "src/components/providers/sidebar-provider"
+import SupabaseProvider from "src/lib/supabase/supabase-provider"
+import { Navbar } from "src/components/navbar"
+import { cn } from "src/lib/utils"
+import { Toaster } from "src/components/ui/toaster"
 
 const fontSans = FontSans({
   subsets: ["latin"],
@@ -34,14 +34,9 @@ export default function RootLayout({ children }: RootLayoutProps) {
         )}
         suppressHydrationWarning
       >
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        >
-          <AuthProvider>
-            <SupabaseProvider>
+        <ThemeProvider>
+          <SupabaseProvider>
+            <AuthProvider>
               <SidebarProvider>
                 <div className="relative flex min-h-screen">
                   <Navbar />
@@ -51,8 +46,8 @@ export default function RootLayout({ children }: RootLayoutProps) {
                   <Toaster />
                 </div>
               </SidebarProvider>
-            </SupabaseProvider>
-          </AuthProvider>
+            </AuthProvider>
+          </SupabaseProvider>
         </ThemeProvider>
       </body>
     </html>

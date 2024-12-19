@@ -58,7 +58,7 @@ export async function updateTask(taskId: string, updates: Partial<Task>) {
   }
 
   // Convert camelCase to snake_case for database fields
-  const updateData = {
+  const updateData: any = {
     ...updates,
     updated_at: new Date().toISOString(),
     workspace_id: currentTask.workspace_id,
@@ -69,10 +69,10 @@ export async function updateTask(taskId: string, updates: Partial<Task>) {
   };
 
   // Remove any camelCase keys to prevent conflicts
-  delete updateData.dueDate;
-  delete updateData.assignedUserId;
-  delete updateData.workspaceId;
-  delete updateData.updatedAt;
+  if ('dueDate' in updateData) delete updateData.dueDate;
+  if ('assignedUserId' in updateData) delete updateData.assignedUserId;
+  if ('workspaceId' in updateData) delete updateData.workspaceId;
+  if ('updatedAt' in updateData) delete updateData.updatedAt;
 
   const { data, error } = await supabase
     .from('tasks')

@@ -1,10 +1,10 @@
 'use client'
 
 import { createContext, useContext, useEffect, useState } from 'react'
-import { supabase } from '@/lib/supabase'
+import { createClient } from 'src/lib/supabase/client'
 import { User, Session } from '@supabase/supabase-js'
 import { useRouter } from 'next/navigation'
-import { useToast } from '@/hooks/use-toast'
+import { useToast } from 'src/hooks/use-toast'
 
 type AuthContextType = {
   user: User | null
@@ -23,59 +23,90 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true)
   const router = useRouter()
   const { toast } = useToast()
-
-  useEffect(() => {
-    const initializeAuth = async () => {
-      try {
-        // Get initial session
-        const { data: { session: initialSession } } = await supabase.auth.getSession()
+  const [supabaseClient] = useState(() => createClient())
+useEffect(() => {
+  const initializeAuth = async () => {
+    try {
+      // Get initial session
+      const { data: { session: initialSession } } = await supabaseClient.auth.getSession()
+      
+      if (initialSession) {
         setSession(initialSession)
-        setUser(initialSession?.user ?? null)
-
-        // Set up auth state listener
-        const { data: { subscription } } = supabase.auth.onAuthStateChange(
-          async (_event, session) => {
-            setSession(session)
-            setUser(session?.user ?? null)
-            router.refresh()
-          }
-        )
-
-        setLoading(false)
-        return () => {
-          subscription.unsubscribe()
+        setUser(initialSession.user)
+        if (window.location.pathname === '/login') {
+          router.push('/dashboard')
         }
-      } catch (error) {
-        console.error('Error initializing auth:', error)
-        setLoading(false)
       }
-    }
 
-    initializeAuth()
+      // Set up auth state listener
+      const { data: { subscription } } = supabaseClient.auth.onAuthStateChange(
+        async (event, currentSession) => {
+          setSession(currentSession)
+          setUser(currentSession?.user ?? null)
+
+          if (event === 'SIGNED_IN') {
+            if (window.location.pathname === '/login') {
+              router.push('/dashboard')
+            }
+          } else if (event === 'SIGNED_OUT') {
+            router.push('/login')
+          }
+        }
+      )
+
+      setLoading(false)
+      return () => {
+        subscription.unsubscribe()
+      }
+    } catch (error) {
+      console.error('Error initializing auth:', error)
+      setLoading(false)
+    }
+  }
+
+  initializeAuth()
+}, [router])
+
+// Prevent flash of unauthenticated content
+if (loading) {
+  return null
+}
   }, [router])
 
   const signIn = async (email: string, password: string) => {
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabaseClient.auth.signInWithPassword({
         email,
         password,
       })
+      
       if (error) throw error
+
+      if (data?.session) {
+        setSession(data.session)
+        setUser(data.session.user)
+        await router.push('/dashboard')
+      }
     } catch (error) {
       console.error('Error signing in:', error)
+      toast({
+        title: "Error",
+        description: "Failed to sign in. Please check your credentials.",
+      })
       throw error
     }
   }
 
   const signUp = async (email: string, password: string) => {
     try {
-      const { error } = await supabase.auth.signUp({
+      const { error } = await supabaseClient.auth.signUp({
         email,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback`
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
         }
       })
+      
       if (error) throw error
       
       toast({
@@ -84,17 +115,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       })
     } catch (error) {
       console.error('Error signing up:', error)
+      toast({
+        title: "Error",
+        description: "Failed to sign up. Please try again.",
+      })
       throw error
     }
   }
 
   const signOut = async () => {
     try {
-      const { error } = await supabase.auth.signOut()
+      const { error } = await supabaseClient.auth.signOut()
       if (error) throw error
-      router.push('/login')
+      
+      setSession(null)
+      setUser(null)
+      await router.push('/login')
     } catch (error) {
       console.error('Error signing out:', error)
+      toast({
+        title: "Error",
+        description: "Failed to sign out. Please try again.",
+      })
       throw error
     }
   }

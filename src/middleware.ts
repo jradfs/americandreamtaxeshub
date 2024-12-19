@@ -9,29 +9,48 @@ const publicRoutes = ['/', '/login', '/auth/callback']
 const protectedRoutes = ['/dashboard', '/clients', '/projects', '/tasks', '/templates']
 
 export async function middleware(req: NextRequest) {
-  const res = NextResponse.next()
-  const supabase = createMiddlewareClient({ req, res })
+  try {
+    const res = NextResponse.next()
+    const supabase = createMiddlewareClient({ req, res })
 
-  // Refresh session if expired
-  const { data: { session }, error } = await supabase.auth.getSession()
+    // Get the session - this will set the required cookies
+    const { data: { session }, error } = await supabase.auth.getSession()
 
-  // Check if the route is public
-  const isPublicRoute = publicRoutes.some(route => req.nextUrl.pathname === route)
-  
-  // Check if the route requires authentication
-  const requiresAuth = protectedRoutes.some(route => req.nextUrl.pathname.startsWith(route))
+    // Check if the route is public
+    const isPublicRoute = publicRoutes.some(route => req.nextUrl.pathname === route)
+    
+    // Check if the route requires authentication
+    const requiresAuth = protectedRoutes.some(route => req.nextUrl.pathname.startsWith(route))
 
-  if (isPublicRoute) {
+    // Handle authentication errors
+    if (error) {
+      console.error('Auth error:', error)
+      if (requiresAuth) {
+        const redirectUrl = new URL('/login', req.url)
+        return NextResponse.redirect(redirectUrl)
+      }
+      return res
+    }
+
+    // Allow access to public routes
+    if (isPublicRoute) {
+      return res
+    }
+
+    // Redirect to login if accessing protected route without session
+    if (!session && requiresAuth) {
+      const redirectUrl = new URL('/login', req.url)
+      return NextResponse.redirect(redirectUrl)
+    }
+
+    // Allow access to protected routes with valid session
     return res
-  }
-
-  // If there's no session and the route requires auth, redirect to login
-  if (!session && requiresAuth) {
+  } catch (error) {
+    console.error('Middleware error:', error)
+    // If there's an error, redirect to login
     const redirectUrl = new URL('/login', req.url)
     return NextResponse.redirect(redirectUrl)
   }
-
-  return res
 }
 
 // Configure which routes to run middleware on

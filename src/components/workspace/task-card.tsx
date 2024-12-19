@@ -1,6 +1,6 @@
 'use client';
 
-import { Task } from '@/types/task';
+import { Task } from '@/types/task-management';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -16,7 +16,7 @@ export function TaskCard({ task, onUpdate }: TaskCardProps) {
   const handleStatusChange = () => {
     onUpdate({
       ...task,
-      status: task.status === 'completed' ? 'todo' : 'completed',
+      status: task.status === 'done' ? 'todo' : 'done',
       updated_at: new Date().toISOString(),
     });
   };
@@ -27,17 +27,17 @@ export function TaskCard({ task, onUpdate }: TaskCardProps) {
     <div className="group px-4 py-2 hover:bg-accent rounded-lg transition-colors">
       <div className="flex items-center gap-3">
         <Checkbox
-          checked={task.status === 'completed'}
+          checked={task.status === 'done'}
           onCheckedChange={handleStatusChange}
           className="mt-0.5"
         />
         
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <span className={`truncate ${task.status === 'completed' ? 'line-through text-muted-foreground' : ''}`}>
+            <span className={`truncate ${task.status === 'done' ? 'line-through text-muted-foreground' : ''}`}>
               {task.title}
             </span>
-            {isTaskOverdue && task.status !== 'completed' && (
+            {isTaskOverdue && task.status !== 'done' && (
               <AlertCircle className="w-3 h-3 text-red-500 shrink-0" />
             )}
           </div>
@@ -62,10 +62,10 @@ export function TaskCard({ task, onUpdate }: TaskCardProps) {
           )}
         </div>
 
-        {task.assignee_id && (
+        {task.assigned_user_id && (
           <Avatar className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity">
             <AvatarFallback className="text-xs">
-              {task.assignee_id.substring(0, 2).toUpperCase()}
+              {task.assigned_user_id.substring(0, 2).toUpperCase()}
             </AvatarFallback>
           </Avatar>
         )}

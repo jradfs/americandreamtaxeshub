@@ -8,33 +8,34 @@ import { Clock, AlertTriangle, Timer, Tag } from 'lucide-react'
 import { useProjects } from '@/hooks/useProjects'
 import { useTasks } from '@/hooks/useTasks'
 import { calculatePriority } from '@/lib/priority-calculator'
-import { Task } from '@/types/hooks'
+import { Task as TaskType } from '@/types/hooks'
 
-export interface Task {
+interface FocusTask {
   id: string
   title: string
   description?: string
-  due_date: string
-  priority: 'high' | 'medium' | 'low'
-  status: 'todo' | 'in-progress' | 'completed'
+  status: 'todo' | 'in-progress' | 'done' | 'cancelled'
+  priority: 'low' | 'medium' | 'high'
+  due_date?: string
+  time_estimate?: number
+  time_spent?: number
+  progress?: number
   project_id?: string
-  assigned_to?: string
-  estimated_minutes?: number
-  category?: string
-  tags?: string[]
-  dependencies?: string[]
+  assignee_id?: string
+  created_at: string
+  updated_at: string
 }
 
 export function FocusNowDashboard() {
   const { projects } = useProjects()
   const { tasks } = useTasks()
-  const [priorityTasks, setPriorityTasks] = useState<Task[]>([])
+  const [priorityTasks, setPriorityTasks] = useState<FocusTask[]>([])
   const [alerts, setAlerts] = useState<{ title: string; description: string }[]>([])
 
   useEffect(() => {
     if (tasks) {
       // Sort tasks based on priority calculation
-      const sortedTasks = [...tasks].sort((a, b) => {
+      const sortedTasks = [...tasks].sort((a: any, b: any) => {
         const priorityA = calculatePriority(a, projects)
         const priorityB = calculatePriority(b, projects)
         return priorityB - priorityA
@@ -46,7 +47,7 @@ export function FocusNowDashboard() {
       const newAlerts = []
       const today = new Date()
       
-      tasks.forEach(task => {
+      tasks.forEach((task: FocusTask) => {
         if (task.due_date) {
           const dueDate = new Date(task.due_date)
           const daysDiff = Math.ceil((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
@@ -61,7 +62,7 @@ export function FocusNowDashboard() {
 
         // Check for blocked tasks (tasks with incomplete dependencies)
         if (task.dependencies && task.dependencies.length > 0) {
-          const blockedBy = tasks.filter(t => 
+          const blockedBy = tasks.filter((t: FocusTask) => 
             task.dependencies?.includes(t.id) && t.status !== 'completed'
           )
           if (blockedBy.length > 0) {
@@ -88,7 +89,7 @@ export function FocusNowDashboard() {
           <div>
             <h3 className="font-semibold mb-2">Priority Tasks</h3>
             <div className="space-y-2">
-              {priorityTasks.map(task => (
+              {priorityTasks.map((task: FocusTask) => (
                 <div
                   key={task.id}
                   className="flex items-center justify-between p-2 border rounded-lg"
