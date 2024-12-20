@@ -39,7 +39,6 @@ export default function RootLayout({ children }: RootLayoutProps) {
             <AuthProvider>
               <SidebarProvider>
                 <div className="relative flex min-h-screen">
-                  <Navbar />
                   <main className="flex-1 transition-all duration-300 ease-in-out">
                     {children}
                   </main>

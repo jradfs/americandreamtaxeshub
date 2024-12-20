@@ -1,15 +1,15 @@
 'use client'
 
 import { useState } from 'react'
-import { useAuth } from '@/components/providers/auth-provider'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { useToast } from '@/hooks/use-toast'
-import { useRouter } from 'next/navigation'
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Toaster } from '@/components/ui/toaster'
+import { useAuth } from 'src/components/providers/auth-provider';
+import { Button } from 'src/components/ui/button';
+import { Input } from 'src/components/ui/input';
+import { Label } from 'src/components/ui/label';
+import { useToast } from 'src/hooks/use-toast';
+import { useRouter } from 'next/navigation';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from 'src/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from 'src/components/ui/tabs';
+import { Toaster } from 'src/components/ui/toaster';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -25,11 +25,7 @@ export default function LoginPage() {
 
     try {
       await signIn(email, password)
-      toast({
-        title: "Success",
-        description: "You have been logged in successfully.",
-      })
-      router.push('/clients')
+      // Navigation is handled by the auth provider
     } catch (error) {
       toast({
         title: "Error",

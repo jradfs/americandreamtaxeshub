@@ -1,6 +1,6 @@
-import { useClients } from "@/hooks/useClients"
-import { Client } from "@/types/hooks"
-import { Button } from "@/components/ui/button"
+import { useClients } from 'src/hooks/useClients';
+import { Client } from 'src/types/hooks';
+import { Button } from 'src/components/ui/button';
 import {
   Dialog,
   DialogContent,
@@ -8,19 +8,19 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+} from 'src/components/ui/dialog';
+import { Input } from 'src/components/ui/input';
+import { Label } from 'src/components/ui/label';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
-import { useToast } from "@/components/ui/use-toast"
+} from 'src/components/ui/select';
+import { useToast } from 'src/components/ui/use-toast';
 import { useState } from "react"
-import { v4 as uuidv4 } from 'uuid'
+import { v4 as uuidv4 } from 'uuid';
 
 interface ClientDialogProps {
   client?: Client | null

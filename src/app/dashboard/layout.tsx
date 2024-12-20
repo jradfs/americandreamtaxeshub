@@ -1,8 +1,8 @@
 'use client'
 
-import { useAuth } from "@/components/providers/auth-provider"
+import { useAuth } from 'src/components/providers/auth-provider.tsx';
 import { redirect } from "next/navigation"
-import { Button } from "@/components/ui/button"
+import { Button } from 'src/components/ui/button.tsx';
 import Link from "next/link"
 import { Briefcase } from "lucide-react"
 

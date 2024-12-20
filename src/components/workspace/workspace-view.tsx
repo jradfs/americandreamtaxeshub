@@ -1,13 +1,14 @@
 'use client';
 
 import { useState } from 'react';
-import { Task, Status, Priority, Workspace, ViewType, GroupingType } from '@/types/task-management';
-import { createTask, updateTask, deleteTask } from '@/app/actions/workspace';
+import { Task, Status, Priority, Workspace, ViewType, GroupingType } from 'src/types/task-management';
+import { createTask, updateTask, deleteTask } from 'src/app/actions/workspace';
+import { useClients } from 'src/hooks/useClients';
 import TaskBoard from './task-board';
 import TaskCalendar from './task-calendar';
 import KanbanBoard from './kanban-board';
 import { CalendarView } from './calendar-view';
-import { Button } from '@/components/ui/button';
+import { Button } from 'src/components/ui/button';
 import { Plus, MoreHorizontal, AlertCircle } from 'lucide-react';
 import {
   Table,
@@ -16,33 +17,35 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Badge } from '@/components/ui/badge';
+} from 'src/components/ui/table';
+import { TaskRow } from './task-row';
+import { useProjects } from 'src/hooks/useProjects';
+import { Checkbox } from 'src/components/ui/checkbox';
+import { Badge } from 'src/components/ui/badge';
 import { WorkspaceHeader } from './workspace-header';
-import { Progress } from '@/components/ui/progress';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Progress } from 'src/components/ui/progress';
+import { Avatar, AvatarFallback, AvatarImage } from 'src/components/ui/avatar';
 import { TaskDialog } from './task-dialog';
 import {
   HoverCard,
   HoverCardContent,
   HoverCardTrigger,
-} from '@/components/ui/hover-card';
+} from 'src/components/ui/hover-card';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { cn } from '@/lib/utils';
-import { formatDate, isOverdue, DATE_FORMATS } from '@/lib/date-utils';
+} from 'src/components/ui/dropdown-menu';
+import { cn } from 'src/lib/utils';
+import { formatDate, isOverdue, DATE_FORMATS } from 'src/lib/date-utils';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from 'src/components/ui/tabs';
 
 type TaskFilter = 'all' | 'unplanned' | 'upcoming' | 'recurring';
 
 interface WorkspaceViewProps {
   initialTasks?: Task[];
   workspace?: Workspace;
-  projects?: any[];
 }
 
 const defaultWorkspace: Workspace = {
@@ -58,16 +61,86 @@ const defaultWorkspace: Workspace = {
   updated_at: new Date().toISOString()
 };
 
-const WorkspaceView = ({ 
-  initialTasks = [], 
+const WorkspaceView = ({
+  initialTasks = [],
   workspace = defaultWorkspace,
-  projects = []
 }: WorkspaceViewProps) => {
+  const { projects, loading: projectsLoading, error: projectsError } = useProjects();
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
   const [view, setView] = useState<ViewType>(workspace.settings.default_view);
   const [filter, setFilter] = useState<TaskFilter>('all');
+  const [grouping, setGrouping] = useState<GroupingType>(workspace.settings.default_grouping);
   const [taskDialogOpen, setTaskDialogOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const { clients, loading: clientsLoading, error: clientsError } = useClients();
+  const formattedClients = clients?.map(client => ({
+    id: client.id,
+    name: client.full_name || client.company_name,
+  })) || [];
+  const [tagFilter, setTagFilter] = useState<string[]>([]);
+  const [assigneeFilter, setAssigneeFilter] = useState<string[]>([]);
+  const [clientFilter, setClientFilter] = useState<string[]>([]);
+
+  const getFilteredTasks = () => {
+    let filteredTasks = [...tasks];
+
+    if (filter === 'unplanned') {
+      filteredTasks = filteredTasks.filter(task => !task.due_date);
+    } else if (filter === 'upcoming') {
+      filteredTasks = filteredTasks.filter(task => task.due_date);
+    }
+    
+    if (tagFilter.length > 0) {
+      filteredTasks = filteredTasks.filter(task => task.tags?.some(tag => tagFilter.includes(tag)));
+    }
+
+    if (assigneeFilter.length > 0) {
+      filteredTasks = filteredTasks.filter(task => assigneeFilter.includes(task.assignee_id));
+    }
+
+    if (clientFilter.length > 0) {
+        filteredTasks = filteredTasks.filter(task => clientFilter.includes(task.client_id));
+    }
+
+    return filteredTasks;
+  };
+
+  const getGroupedTasks = () => {
+    const filteredTasks = getFilteredTasks();
+    if (grouping === 'Status') {
+      return filteredTasks.reduce((acc, task) => {
+        acc[task.status] = acc[task.status] || [];
+        acc[task.status].push(task);
+        return acc;
+      }, {} as Record<Status, Task[]>);
+    } else if (grouping === 'Priority') {
+        return filteredTasks.reduce((acc, task) => {
+          acc[task.priority] = acc[task.priority] || [];
+          acc[task.priority].push(task);
+          return acc;
+        }, {} as Record<Priority, Task[]>);
+    } else if (grouping === 'Task') {
+      return filteredTasks.reduce((acc, task) => {
+        acc[task.id] = [task];
+        return acc;
+      }, {} as Record<string, Task[]>);
+    } else if (grouping === 'Stage') {
+      return filteredTasks.reduce((acc, task) => {
+        acc[task.stage] = acc[task.stage] || [];
+        acc[task.stage].push(task);
+        return acc;
+      }, {} as Record<string, Task[]>);
+    } else if (grouping === 'Priority') {
+      return filteredTasks.reduce((acc, task) => {
+        acc[task.priority] = acc[task.priority] || [];
+        acc[task.priority].push(task);
+        return acc;
+      }, {} as Record<Priority, Task[]>);
+    }
+     else {
+      return { 'all': filteredTasks };
+    }
+  };
 
   const handleCreateTask = async (taskData: Partial<Task>) => {
     try {
@@ -90,17 +163,7 @@ const WorkspaceView = ({
 
   const handleUpdateTask = async (taskId: string, updates: Partial<Task>) => {
     try {
-      // Optimistically update the UI
-      setTasks(tasks.map(task => 
-        task.id === taskId 
-          ? { ...task, ...updates }
-          : task
-      ));
-
-      // Make the API call
       const updatedTask = await updateTask(taskId, updates);
-      
-      // Update with the server response
       setTasks(tasks.map(task => 
         task.id === taskId 
           ? updatedTask 
@@ -130,19 +193,32 @@ const WorkspaceView = ({
     const nextWeek = new Date(thisWeek);
     nextWeek.setDate(thisWeek.getDate() + 7);
 
+    let dueToday = 0;
+    let dueThisWeek = 0;
+    let dueNextWeek = 0;
+    let overdue = 0;
+
+    tasks.forEach(task => {
+      if (task.due_date) {
+        const dueDate = new Date(task.due_date);
+        if (formatDate(task.due_date, DATE_FORMATS.ISO) === formatDate(today.toISOString(), DATE_FORMATS.ISO)) {
+          dueToday++;
+        } else if (dueDate > today && dueDate <= thisWeek) {
+          dueThisWeek++;
+        } else if (dueDate > thisWeek && dueDate <= nextWeek) {
+          dueNextWeek++;
+        }
+        if (isOverdue(task.due_date)) {
+          overdue++;
+        }
+      }
+    });
+
     return {
-      dueToday: tasks.filter(task => task.due_date && formatDate(task.due_date, DATE_FORMATS.ISO) === formatDate(today.toISOString(), DATE_FORMATS.ISO)).length,
-      dueThisWeek: tasks.filter(task => {
-        if (!task.due_date) return false;
-        const dueDate = new Date(task.due_date);
-        return dueDate > today && dueDate <= thisWeek;
-      }).length,
-      dueNextWeek: tasks.filter(task => {
-        if (!task.due_date) return false;
-        const dueDate = new Date(task.due_date);
-        return dueDate > thisWeek && dueDate <= nextWeek;
-      }).length,
-      overdue: tasks.filter(task => task.due_date && isOverdue(task.due_date)).length,
+      dueToday,
+      dueThisWeek,
+      dueNextWeek,
+      overdue,
     };
   };
 
@@ -161,129 +237,14 @@ const WorkspaceView = ({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {tasks.map((task) => (
-            <TableRow key={task.id} className="group">
-              <TableCell>
-                <Checkbox 
-                  checked={task.status === 'done'}
-                  onCheckedChange={(checked) => {
-                    handleUpdateTask(task.id, { status: checked ? 'done' : 'in_progress' })
-                  }}
-                />
-              </TableCell>
-              <TableCell>{task.client || 'Unassigned'}</TableCell>
-              <TableCell>
-                <HoverCard>
-                  <HoverCardTrigger>
-                    <div className="space-y-1">
-                      <div className="font-medium">{task.title}</div>
-                      <Badge variant={getStatusVariant(task.status)}>
-                        {task.status}
-                      </Badge>
-                    </div>
-                  </HoverCardTrigger>
-                  <HoverCardContent className="w-80">
-                    <div className="space-y-2">
-                      <h4 className="text-sm font-semibold">{task.title}</h4>
-                      {task.description && (
-                        <p className="text-sm text-muted-foreground">
-                          {task.description}
-                        </p>
-                      )}
-                      <div className="flex items-center pt-2">
-                        <span className="text-xs text-muted-foreground">
-                          Created {formatDate(task.created_at, DATE_FORMATS.FULL)}
-                        </span>
-                      </div>
-                    </div>
-                  </HoverCardContent>
-                </HoverCard>
-              </TableCell>
-              <TableCell>
-                <div className="space-y-2">
-                  <Progress 
-                    value={task.progress || 0} 
-                    className={cn(
-                      "h-2",
-                      task.status === 'done' ? "bg-green-100" : "",
-                      isOverdue(task.due_date) ? "bg-red-100" : ""
-                    )}
-                  />
-                  <div className="text-xs text-muted-foreground">
-                    {task.progress || 0}% Complete
-                  </div>
-                </div>
-              </TableCell>
-              <TableCell>
-                <div className="flex items-center space-x-2">
-                  <div className={cn(
-                    isOverdue(task.due_date) ? 'text-red-500' : '',
-                    'whitespace-nowrap'
-                  )}>
-                    {formatDate(task.due_date, DATE_FORMATS.FULL)}
-                  </div>
-                  {isOverdue(task.due_date) && (
-                    <HoverCard>
-                      <HoverCardTrigger>
-                        <AlertCircle className="h-4 w-4 text-red-500" />
-                      </HoverCardTrigger>
-                      <HoverCardContent>
-                        <span className="text-sm text-red-500">
-                          This task is overdue
-                        </span>
-                      </HoverCardContent>
-                    </HoverCard>
-                  )}
-                </div>
-              </TableCell>
-              <TableCell>
-                {task.assigned_user_id ? (
-                  <HoverCard>
-                    <HoverCardTrigger>
-                      <Avatar className="h-8 w-8">
-                        <AvatarFallback>{task.assigned_user_id.substring(0, 2).toUpperCase()}</AvatarFallback>
-                      </Avatar>
-                    </HoverCardTrigger>
-                    <HoverCardContent className="w-60">
-                      <div className="flex justify-between space-x-4">
-                        <Avatar className="h-12 w-12">
-                          <AvatarFallback>{task.assigned_user_id.substring(0, 2).toUpperCase()}</AvatarFallback>
-                        </Avatar>
-                        <div className="space-y-1">
-                          <h4 className="text-sm font-semibold">Assigned User</h4>
-                          <p className="text-sm text-muted-foreground">
-                            Team Member
-                          </p>
-                        </div>
-                      </div>
-                    </HoverCardContent>
-                  </HoverCard>
-                ) : (
-                  <Badge variant="outline">Unassigned</Badge>
-                )}
-              </TableCell>
-              <TableCell>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="sm" className="opacity-0 group-hover:opacity-100">
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => handleEditTask(task)}>
-                      Edit
-                    </DropdownMenuItem>
-                    <DropdownMenuItem>Assign</DropdownMenuItem>
-                    <DropdownMenuItem 
-                      className="text-red-600"
-                      onClick={() => handleDeleteTask(task.id)}
-                    >
-                      Delete
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </TableCell>
-            </TableRow>
+          {Object.values(getGroupedTasks()).flat().map((task) => (
+            <TaskRow
+              key={task.id}
+              task={task}
+              onUpdateTask={handleUpdateTask}
+              onEditTask={handleEditTask}
+              onDeleteTask={handleDeleteTask}
+            />
           ))}
         </TableBody>
       </Table>
@@ -306,7 +267,6 @@ const WorkspaceView = ({
       <WorkspaceHeader
         workspace={workspace}
         currentView={view}
-        grouping={workspace.settings.default_grouping}
         onViewChange={setView}
         onGroupingChange={() => {}}
         taskStats={getTaskStats()}
@@ -316,14 +276,14 @@ const WorkspaceView = ({
         {view === 'list' && renderListView()}
         {view === 'kanban' && (
           <KanbanBoard
-            tasks={tasks}
+            tasks={getGroupedTasks()}
             onUpdateTask={handleUpdateTask}
             onEditTask={handleEditTask}
           />
         )}
         {view === 'calendar' && (
           <CalendarView
-            tasks={tasks}
+            tasks={getGroupedTasks()}
             onSelectTask={handleEditTask}
             onCreateTask={handleCreateTask}
             onUpdateTask={handleUpdateTask}
@@ -339,10 +299,7 @@ const WorkspaceView = ({
           handleCreateTask
         }
         initialData={selectedTask || undefined}
-        clients={[
-          { id: '1', name: 'Client A' },
-          { id: '2', name: 'Client B' },
-        ]}
+        clients={formattedClients}
         workspaceId={workspace.id}
       />
     </div>

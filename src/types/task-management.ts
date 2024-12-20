@@ -2,7 +2,7 @@ export type Priority = 'high' | 'medium' | 'low';
 export type Status = 'todo' | 'in_progress' | 'done';
 export type Section = 'strategy' | 'design' | 'implementation';
 export type ViewType = 'list' | 'kanban' | 'calendar';
-export type GroupingType = 'Stage' | 'Status' | 'Task';
+export type GroupingType = 'Stage' | 'Status' | 'Task' | 'Priority';
 
 export interface Task {
   id: string;

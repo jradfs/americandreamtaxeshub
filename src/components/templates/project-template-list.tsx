@@ -1,14 +1,14 @@
 'use client'
 
 import { useState } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from 'src/components/ui/card';
+import { Badge } from 'src/components/ui/badge';
+import { Button } from 'src/components/ui/button';
 import { Plus, Clock, CalendarClock, ChevronDown, ChevronUp } from 'lucide-react'
-import { useProjectTemplates } from '@/hooks/useProjectTemplates'
-import { ProjectTemplate } from '@/types/hooks'
-import { CreateTemplateDialog } from './create-template-dialog'
-import { TemplateTasks } from './template-tasks'
+import { useProjectTemplates } from 'src/hooks/useProjectTemplates';
+import { ProjectTemplate } from 'src/types/hooks';
+import { CreateTemplateDialog } from './create-template-dialog';
+import { TemplateTasks } from './template-tasks';
 
 export function ProjectTemplateList() {
   const { templates } = useProjectTemplates()

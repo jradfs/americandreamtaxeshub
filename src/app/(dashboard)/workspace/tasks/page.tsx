@@ -1,7 +1,7 @@
 import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
-import WorkspaceView from '@/components/workspace/workspace-view';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import WorkspaceView from 'src/components/workspace/workspace-view';
+import { Alert, AlertDescription, AlertTitle } from 'src/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';

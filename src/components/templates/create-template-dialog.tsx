@@ -10,7 +10,7 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog'
+} from 'src/components/ui/dialog';
 import {
   Form,
   FormControl,
@@ -19,18 +19,18 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/components/ui/form'
-import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
+} from 'src/components/ui/form';
+import { Input } from 'src/components/ui/input';
+import { Button } from 'src/components/ui/button';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
-import { Textarea } from '@/components/ui/textarea'
-import { useProjectTemplates } from '@/hooks/useProjectTemplates'
+} from 'src/components/ui/select';
+import { Textarea } from 'src/components/ui/textarea';
+import { useProjectTemplates } from 'src/hooks/useProjectTemplates';
 
 const templateSchema = z.object({
   title: z.string().min(1, 'Title is required'),

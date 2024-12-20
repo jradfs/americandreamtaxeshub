@@ -10,7 +10,7 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog'
+} from 'src/components/ui/dialog.tsx';
 import {
   Form,
   FormControl,
@@ -19,19 +19,19 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/components/ui/form'
-import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
+} from 'src/components/ui/form.tsx';
+import { Input } from 'src/components/ui/input.tsx';
+import { Button } from 'src/components/ui/button.tsx';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
-import { Textarea } from '@/components/ui/textarea'
-import { useTemplateTasks } from '@/hooks/useTemplateTasks'
-import { TemplateTask } from '@/types/hooks'
+} from 'src/components/ui/select.tsx';
+import { Textarea } from 'src/components/ui/textarea.tsx';
+import { useTemplateTasks } from 'src/hooks/useTemplateTasks.ts';
+import { TemplateTask } from 'src/types/hooks.ts';
 
 const taskSchema = z.object({
   title: z.string().min(1, 'Title is required'),

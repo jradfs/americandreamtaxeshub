@@ -1,8 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { Task, Status, Priority } from '@/types/task-management';
-import { Button } from '@/components/ui/button';
+import { Task, Status, Priority } from 'src/types/task-management';
+import { Button } from 'src/components/ui/button';
 import {
   Dialog,
   DialogContent,
@@ -10,25 +10,25 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
+} from 'src/components/ui/dialog';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+} from 'src/components/ui/select';
+import { Input } from 'src/components/ui/input';
+import { Label } from 'src/components/ui/label';
+import { Textarea } from 'src/components/ui/textarea';
+import { Calendar } from 'src/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from 'src/components/ui/popover';
 import { CalendarIcon } from 'lucide-react';
-import { formatDate, DATE_FORMATS } from '@/lib/date-utils';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { formatDate, DATE_FORMATS } from 'src/lib/date-utils';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from 'src/components/ui/tabs';
 import { TaskActivity } from './task-activity';
 import { TimeTracker } from './time-tracker';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { ScrollArea } from 'src/components/ui/scroll-area';
 
 interface TaskDialogProps {
   open: boolean;
@@ -245,10 +245,7 @@ export function TaskDialog({
             </TabsContent>
 
             <TabsContent value="time" className="mt-4">
-              <TimeTracker
-                taskId={initialData?.id || ''}
-                onTimeEntry={handleTimeEntry}
-              />
+              <TimeTracker />
             </TabsContent>
           </ScrollArea>
         </Tabs>

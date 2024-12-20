@@ -1,172 +1,76 @@
-# Implementation Plan for American Dream Taxes Hub
+# Project and Task Management Implementation Plan
 
 ## Overview
-Based on the Financial Cents review, we need to enhance our application with better project and task management features. The focus will be on improving workflow organization and client management.
+This plan outlines the steps to implement project and task management functionality for the application, excluding automated testing. Manual testing will be conducted post-implementation.
 
-## Key Features to Implement
+## Steps
 
-### 1. Project Management Enhancements
-- [ ] Add project templates for common tax services
-- [ ] Implement project stages/milestones
-- [ ] Add project status tracking
-- [ ] Create project timeline views
-- [ ] Add project dependencies
-- [ ] Implement project templates
+### 1. Database Updates
+- Ensure all required schema updates have been made.
+- Any future SQL commands, schema changes, or database operations are performed exclusively via the Supabase server MCP tool.
 
-### 2. Task Management Improvements
-- [ ] Add task dependencies
-- [ ] Implement task templates
-- [ ] Add task checklists
-- [ ] Create task priority levels
-- [ ] Add time tracking for tasks
-- [ ] Implement task recurrence
-- [ ] Add task comments and activity feed
+### 2. API Development
+- Resolve module resolution and import issues. **(Skipped for now - unable to resolve)**
+- Correctly integrate Supabase client imports.
+- Confirm API functions return expected data without automated tests; use console logs or a simple Node.js script to validate. **(Skipped for now)**
 
-### 3. Client Management Updates
-- [x] Enhanced client details view
-- [ ] Client document organization
-- [ ] Client communication history
-- [ ] Client portal access
-- [ ] Client onboarding workflow
-- [ ] Client status tracking
+### 3. Frontend Integration
+- Integrate the API with UI components.
+- Ensure that UI elements display data accurately.
 
-### 4. Workflow Improvements
-- [ ] Create workflow templates
-- [ ] Add workflow automation rules
-- [ ] Implement workflow stages
-- [ ] Add workflow assignments
-- [ ] Create workflow reports
-- [ ] Add workflow notifications
+### 4. Manual Testing
+- No `npx`, Playwright, or automated tests will be used.
+- Manually run `npm run dev` to verify:
+  - API calls return correct data.
+  - UI displays expected projects and tasks.
+- Validate that changes align with the intended workflow and design reference. **(Skipped for now)**
 
-## Database Schema Updates Needed
+### 5. Deployment
+- After verifying locally, build and deploy.
+- Perform another round of manual testing in the deployed environment. **(Skipped for now)**
 
-### Projects Table
-```sql
-ALTER TABLE projects ADD COLUMN IF NOT EXISTS
-    template_id UUID REFERENCES project_templates(id),
-    stage TEXT DEFAULT 'planning',
-    start_date TIMESTAMPTZ,
-    end_date TIMESTAMPTZ,
-    estimated_hours INTEGER,
-    actual_hours INTEGER,
-    parent_project_id UUID REFERENCES projects(id);
-```
-
-### Tasks Table
-```sql
-ALTER TABLE tasks ADD COLUMN IF NOT EXISTS
-    checklist JSONB DEFAULT '[]',
-    time_tracked INTEGER DEFAULT 0,
-    parent_task_id UUID REFERENCES tasks(id),
-    template_id UUID REFERENCES task_templates(id),
-    recurring_config JSONB,
-    activity_log JSONB DEFAULT '[]';
-```
-
-### New Tables Needed
-```sql
--- Project Templates
-CREATE TABLE project_templates (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    name TEXT NOT NULL,
-    description TEXT,
-    stages JSONB,
-    default_tasks JSONB,
-    created_at TIMESTAMPTZ DEFAULT now(),
-    updated_at TIMESTAMPTZ DEFAULT now()
-);
-
--- Task Templates
-CREATE TABLE task_templates (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    name TEXT NOT NULL,
-    description TEXT,
-    checklist JSONB,
-    estimated_hours INTEGER,
-    priority TEXT,
-    created_at TIMESTAMPTZ DEFAULT now(),
-    updated_at TIMESTAMPTZ DEFAULT now()
-);
-
--- Workflow Templates
-CREATE TABLE workflow_templates (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    name TEXT NOT NULL,
-    description TEXT,
-    stages JSONB,
-    automation_rules JSONB,
-    created_at TIMESTAMPTZ DEFAULT now(),
-    updated_at TIMESTAMPTZ DEFAULT now()
-);
-```
-
-## Implementation Phases
-
-### Phase 1: Foundation
-1. Update database schema
-2. Create basic templates system
-3. Enhance project and task models
-4. Update UI components
-
-### Phase 2: Core Features
-1. Implement template functionality
-2. Add task dependencies
-3. Create workflow stages
-4. Enhance client management
-
-### Phase 3: Advanced Features
-1. Add automation rules
-2. Implement recurring tasks
-3. Create reporting system
-4. Add time tracking
-
-### Phase 4: Polish & Integration
-1. Enhance UI/UX
-2. Add notifications
-3. Create client portal
-4. Implement document management
-
-## UI Components Needed
-
-### Project Management
-- ProjectTemplateSelector
-- ProjectStageTimeline
-- ProjectDependencyGraph
-- ProjectMilestoneTracker
-
-### Task Management
-- TaskTemplateForm
-- TaskDependencyView
-- TaskTimeTracker
-- TaskActivityFeed
-
-### Workflow Management
-- WorkflowDesigner
-- WorkflowStageEditor
-- WorkflowAutomationRules
-- WorkflowReports
-
-### Client Management
-- ClientOnboardingWizard
-- ClientDocumentManager
-- ClientCommunicationLog
-- ClientStatusDashboard
-
-## Next Steps
-1. Begin with database schema updates
-2. Create template management system
-3. Enhance project and task components
-4. Implement workflow stages
-5. Add client management features
-
-### Projects Page Implementation
-- Implement the project list view using the `ProjectList` component
-- Connect the project list to the database
-
-### Next Steps
-1. Begin with database schema updates
-2. Create template management system
-3. Create the `ProjectList` component
-4. Enhance project and task models
-5. Implement workflow stages
-6. Add client management features
+### 6. Fix Module Resolution Issues
+    *   Module Configuration
+        *   Ensure package.json includes "type": "module" for ES module syntax.
+        *   All file imports should explicitly include extensions like .js or .mjs for Node.js to resolve paths correctly. **(Skipped for now - unable to resolve)**
+    *   File Extensions
+        *   Verify that all import paths explicitly define file extensions. **(Skipped for now - unable to resolve)**
+    *   Ensure node_modules is Up-to-Date
+        *   Run `npm install` to ensure dependencies are installed correctly. **(Skipped for now - unable to resolve)**
+### 7. Resolve API Module Issues
+    *   Update API Functions
+        *   Use correct imports from supabase client.
+        *   Replace any incorrect imports with: `import { getSupabase } from './supabase/client.js';` **(Skipped for now - unable to resolve)**
+    *   Fix Absolute Paths
+        *   Add paths in tsconfig.json:
+            ```json
+            {
+              "compilerOptions": {
+                "baseUrl": ".",
+                "paths": {
+                  "*": ["src/*"]
+                }
+              }
+            }
+            ```
+        *   Update API imports to: `import { fetchProjectsWithTasks } from 'lib/api';` **(Skipped for now - unable to resolve)**
+### 8. Manual Testing for API
+    *   Skip Test Automation
+        *   Testing with tools like Playwright or npx will not be used.
+        *   Manual testing will be conducted post-implementation.
+    *   Validate API Integration
+        *   Use a basic Node.js script or console logs to ensure API functions are working. **(Skipped for now)**
+### 9. Frontend Component Integration
+    *   Implement Component Logic
+        *   Use the API functions in components like ProjectList and TaskList.
+    *   Start the Application
+        *   Run the development server to see the changes in the UI: `npm run dev` **(Skipped for now)**
+    *   Manual Validation
+        *   Verify the following manually:
+            *   Projects are displayed correctly.
+            *   Tasks are linked to projects.
+            *   Templates are applied correctly. **(Skipped for now)**
+### 10. Deployment
+    *   Prepare the application for production.
+    *   Deploy to a hosting platform.
+    *   Perform manual end-to-end testing on the live application. **(Skipped for now)**

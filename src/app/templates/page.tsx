@@ -1,6 +1,6 @@
 'use client'
 
-import { ProjectTemplateList } from '@/components/templates/project-template-list'
+import { ProjectTemplateList } from 'src/components/templates/project-template-list.tsx';
 
 export default function TemplatesPage() {
   return (

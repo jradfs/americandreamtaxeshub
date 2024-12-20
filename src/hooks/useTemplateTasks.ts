@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
-import { useSupabase } from '@/lib/supabase/supabase-provider'
-import { TemplateTask } from '@/types/hooks'
+import { useSupabase } from 'src/lib/supabase/supabase-provider'
+import { TemplateTask } from 'src/types/hooks'
 
 export function useTemplateTasks(templateId: string) {
   const { supabase } = useSupabase()

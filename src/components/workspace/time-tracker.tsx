@@ -1,8 +1,8 @@
 import { useState } from "react"
 import { Play, Pause, Clock } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
-import { Progress } from "@/components/ui/progress"
+import { Button } from "src/components/ui/button"
+import { Card } from "src/components/ui/card"
+import { Progress } from "src/components/ui/progress"
 
 export function TimeTracker() {
   const [isTracking, setIsTracking] = useState(false)

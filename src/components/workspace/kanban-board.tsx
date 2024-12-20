@@ -1,12 +1,12 @@
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
-import { Task, Status } from '@/types/task-management';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { Task, Status } from 'src/types/task-management';
+import { Card, CardContent } from 'src/components/ui/card';
+import { Badge } from 'src/components/ui/badge';
 import { format } from 'date-fns';
-import { cn } from '@/lib/utils';
+import { cn } from 'src/lib/utils';
 
 interface KanbanBoardProps {
-  tasks: Task[];
+  tasks: Record<string, Task[]>;
   onUpdateTask: (taskId: string, updates: Partial<Task>) => void;
   onEditTask?: (task: Task) => void;
 }
@@ -37,7 +37,8 @@ export default function KanbanBoard({ tasks, onUpdateTask, onEditTask }: KanbanB
   };
 
   const getTasksByStatus = (status: Status): Task[] => {
-    return tasks.filter(task => task.status === status);
+    if (!tasks) return [];
+    return Object.values(tasks).flat().filter(task => task.status === status);
   };
 
   const getPriorityColor = (priority: string): string => {

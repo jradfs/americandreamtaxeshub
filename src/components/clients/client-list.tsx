@@ -1,4 +1,4 @@
-import { useClients } from "@/hooks/useClients"
+import { useClients } from 'src/hooks/useClients';
 import {
   Table,
   TableBody,
@@ -6,13 +6,13 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
+} from 'src/components/ui/table';
+import { Badge } from 'src/components/ui/badge';
+import { Button } from 'src/components/ui/button';
 import { PlusCircle } from "lucide-react"
 import { ClientDialog } from "./client-dialog"
 import { useState } from "react"
-import { Client } from "@/types/hooks"
+import { Client } from 'src/types/hooks';
 
 export function ClientList() {
   const { clients, loading, error } = useClients()

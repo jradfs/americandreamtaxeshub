@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react'
-import { toast } from '@/components/ui/use-toast'
-import { useAuth } from '@/components/providers/auth-provider'
-import { Client, ClientInsert, ClientUpdate } from '@/types/hooks'
-import { supabase } from '@/lib/supabase'
+import { toast } from 'src/components/ui/use-toast'
+import { useAuth } from 'src/components/providers/auth-provider'
+import { Client, ClientInsert, ClientUpdate } from 'src/types/hooks'
+import { supabase } from 'src/lib/supabase'
 
 export function useClients() {
   const [clients, setClients] = useState<Client[]>([])
@@ -31,7 +31,10 @@ export function useClients() {
 
       if (error) throw error
 
-      setClients(data || [])
+      setClients(data?.map(client => ({
+        id: client.id,
+        name: client.full_name || client.company_name || 'Unnamed Client',
+      })) || []);
     } catch (error: any) {
       console.error('Error fetching clients:', error)
       setError(error.message)

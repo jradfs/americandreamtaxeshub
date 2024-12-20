@@ -21,59 +21,52 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
+  const [supabaseClient] = useState(() => createClient())
   const router = useRouter()
   const { toast } = useToast()
-  const [supabaseClient] = useState(() => createClient())
-useEffect(() => {
-  const initializeAuth = async () => {
-    try {
-      // Get initial session
-      const { data: { session: initialSession } } = await supabaseClient.auth.getSession()
-      
-      if (initialSession) {
-        setSession(initialSession)
-        setUser(initialSession.user)
-        if (window.location.pathname === '/login') {
-          router.push('/dashboard')
-        }
-      }
 
-      // Set up auth state listener
-      const { data: { subscription } } = supabaseClient.auth.onAuthStateChange(
-        async (event, currentSession) => {
-          setSession(currentSession)
-          setUser(currentSession?.user ?? null)
-
-          if (event === 'SIGNED_IN') {
-            if (window.location.pathname === '/login') {
-              router.push('/dashboard')
-            }
-          } else if (event === 'SIGNED_OUT') {
-            router.push('/login')
+  useEffect(() => {
+    const initializeAuth = async () => {
+      try {
+        const { data: { session: initialSession } } = await supabaseClient.auth.getSession()
+        
+        if (initialSession) {
+          setSession(initialSession)
+          setUser(initialSession.user)
+          if (window.location.pathname === '/login') {
+            await router.replace('/dashboard')
           }
         }
-      )
 
-      setLoading(false)
-      return () => {
-        subscription.unsubscribe()
+        const { data: { subscription } } = await supabaseClient.auth.onAuthStateChange(
+          async (event, currentSession) => {
+            setSession(currentSession)
+            setUser(currentSession?.user ?? null)
+
+            if (event === 'SIGNED_IN') {
+              if (window.location.pathname === '/login') {
+                await router.replace('/dashboard')
+              }
+            } else if (event === 'SIGNED_OUT') {
+              await router.replace('/login')
+            }
+          }
+        )
+
+        setLoading(false)
+        return () => {
+          subscription.unsubscribe()
+        }
+      } catch (error) {
+        console.error('Error initializing auth:', error)
+        setLoading(false)
       }
-    } catch (error) {
-      console.error('Error initializing auth:', error)
-      setLoading(false)
     }
-  }
 
-  initializeAuth()
-}, [router])
+    initializeAuth()
+  }, [router, supabaseClient])
 
-// Prevent flash of unauthenticated content
-if (loading) {
-  return null
-}
-  }, [router])
-
-  const signIn = async (email: string, password: string) => {
+  const handleSignIn = async (email: string, password: string) => {
     try {
       const { data, error } = await supabaseClient.auth.signInWithPassword({
         email,
@@ -85,7 +78,7 @@ if (loading) {
       if (data?.session) {
         setSession(data.session)
         setUser(data.session.user)
-        await router.push('/dashboard')
+        await router.replace('/dashboard')
       }
     } catch (error) {
       console.error('Error signing in:', error)
@@ -97,7 +90,7 @@ if (loading) {
     }
   }
 
-  const signUp = async (email: string, password: string) => {
+  const handleSignUp = async (email: string, password: string) => {
     try {
       const { error } = await supabaseClient.auth.signUp({
         email,
@@ -123,14 +116,14 @@ if (loading) {
     }
   }
 
-  const signOut = async () => {
+  const handleSignOut = async () => {
     try {
       const { error } = await supabaseClient.auth.signOut()
       if (error) throw error
       
       setSession(null)
       setUser(null)
-      await router.push('/login')
+      await router.replace('/login')
     } catch (error) {
       console.error('Error signing out:', error)
       toast({
@@ -141,8 +134,22 @@ if (loading) {
     }
   }
 
+  // Prevent flash of unauthenticated content
+  if (loading) {
+    return null
+  }
+
   return (
-    <AuthContext.Provider value={{ user, session, loading, signIn, signUp, signOut }}>
+    <AuthContext.Provider 
+      value={{ 
+        user, 
+        session, 
+        loading, 
+        signIn: handleSignIn, 
+        signUp: handleSignUp, 
+        signOut: handleSignOut 
+      }}
+    >
       {children}
     </AuthContext.Provider>
   )

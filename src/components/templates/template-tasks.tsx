@@ -1,13 +1,13 @@
 'use client'
 
 import { useState } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
+import { Card, CardContent, CardHeader, CardTitle } from 'src/components/ui/card';
+import { Button } from 'src/components/ui/button';
+import { Badge } from 'src/components/ui/badge';
 import { Timer, ArrowUpDown, Trash2, Plus } from 'lucide-react'
-import { useTemplateTasks } from '@/hooks/useTemplateTasks'
-import { ProjectTemplate } from '@/types/hooks'
-import { CreateTemplateTaskDialog } from './create-template-task-dialog'
+import { useTemplateTasks } from 'src/hooks/useTemplateTasks';
+import { ProjectTemplate } from 'src/types/hooks';
+import { CreateTemplateTaskDialog } from './create-template-task-dialog';
 
 interface TemplateTasksProps {
   template: ProjectTemplate

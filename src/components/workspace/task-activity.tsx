@@ -1,10 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { Button } from 'src/components/ui/button';
+import { Textarea } from 'src/components/ui/textarea';
+import { Avatar, AvatarFallback, AvatarImage } from 'src/components/ui/avatar';
+import { ScrollArea } from 'src/components/ui/scroll-area';
 import { formatDistanceToNow } from 'date-fns';
 
 interface ActivityItem {

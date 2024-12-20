@@ -1,9 +1,9 @@
 'use client';
 
-import { Workspace, GroupingType, ViewType } from '@/types/task-management';
+import { Workspace, GroupingType, ViewType } from 'src/types/task-management';
 import { Search, Calendar, ListFilter, Users, LayoutGrid, CalendarDays, List } from 'lucide-react';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Button } from '@/components/ui/button';
+import { Tabs, TabsList, TabsTrigger } from 'src/components/ui/tabs';
+import { Button } from 'src/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,14 +11,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuCheckboxItem,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { Input } from '@/components/ui/input';
-import { Card } from '@/components/ui/card';
+} from 'src/components/ui/dropdown-menu';
+import { Input } from 'src/components/ui/input';
+import { Card } from 'src/components/ui/card';
 
 interface WorkspaceHeaderProps {
   workspace: Workspace;
   currentView: ViewType;
-  grouping: GroupingType;
   onViewChange: (view: ViewType) => void;
   onGroupingChange: (grouping: GroupingType) => void;
   taskStats?: {

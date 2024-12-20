@@ -1,7 +1,7 @@
 'use client'
 
-import { TaskList } from "@/components/tasks/task-list"
-import { Toaster } from "@/components/ui/toaster"
+import { TaskList } from 'src/components/tasks/task-list.tsx';
+import { Toaster } from 'src/components/ui/toaster.tsx';
 
 export default function TasksPage() {
   return (

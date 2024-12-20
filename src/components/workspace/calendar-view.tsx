@@ -1,8 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { Task } from '@/types/task-management';
-import { Button } from '@/components/ui/button';
+import { Task } from 'src/types/task-management';
+import { Button } from 'src/components/ui/button';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import {
   Select,
@@ -10,12 +10,12 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { cn } from '@/lib/utils';
+} from 'src/components/ui/select';
+import { cn } from 'src/lib/utils';
 import { format, addDays, startOfWeek, isSameDay } from 'date-fns';
 
 interface CalendarViewProps {
-  tasks: Task[];
+  tasks: Record<string, Task[]>;
   onUpdateTask: (taskId: string, updates: Partial<Task>) => void;
   onSelectTask: (task: Task) => void;
   onCreateTask: (date: Date) => void;
@@ -55,10 +55,25 @@ export function CalendarView({ tasks, onUpdateTask, onSelectTask, onCreateTask }
     setDraggingTask(null);
   };
 
-  const getTasksForDateAndHour = (date: Date, hour: number) => {
-    return tasks.filter(task => {
-      const taskDate = new Date(task.dueDate);
-      return isSameDay(taskDate, date) && taskDate.getHours() === hour;
+ const getTasksForDateAndHour = (date: Date, hour: number) => {
+    if (!tasks) return [];
+    if (!tasks) return [];
+    if (!tasks) return [];
+    let allTasks: Task[] = [];
+    for (const key in tasks) {
+      if (tasks.hasOwnProperty(key) && tasks[key]) {
+        allTasks = allTasks.concat(tasks[key]);
+      }
+    }
+    return allTasks.filter(task => {
+      if (!task || !task.dueDate) return false;
+      try {
+        const taskDate = new Date(task.dueDate);
+        return isSameDay(taskDate, date) && taskDate.getHours() === hour;
+      } catch (error) {
+        console.error("Error parsing date", error)
+        return false;
+      }
     });
   };
 
