@@ -11,7 +11,7 @@ const nextConfig = {
     // Add path alias for src directory
     config.resolve.alias = {
       ...config.resolve.alias,
-      'src': './src'
+      '@': './src'
     };
     
     return config;

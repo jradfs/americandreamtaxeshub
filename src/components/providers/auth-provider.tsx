@@ -1,10 +1,10 @@
 'use client'
 
 import { createContext, useContext, useEffect, useState } from 'react'
-import { createClient } from 'src/lib/supabase/client'
+import { createClient } from '@/lib/supabase/client'
 import { User, Session } from '@supabase/supabase-js'
 import { useRouter } from 'next/navigation'
-import { useToast } from 'src/hooks/use-toast'
+import { useToast } from '@/hooks/use-toast'
 
 type AuthContextType = {
   user: User | null

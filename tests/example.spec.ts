@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 
 test('login and navigate to dashboard', async ({ page }) => {
   // Navigate to the login page
-  await page.goto('http://localhost:3001/login');
+  await page.goto('http://localhost:3000/login');
 
   // Fill in the email and password fields
   console.log('Filling email field');
@@ -17,10 +17,10 @@ test('login and navigate to dashboard', async ({ page }) => {
   // Wait for navigation to the dashboard
   console.log('Waiting for navigation to dashboard');
   await page.waitForTimeout(1000);
-  await page.waitForURL('http://localhost:3001/dashboard');
+  await page.waitForURL('http://localhost:3000/dashboard');
 
   // Assert that the dashboard is loaded
   console.log('Asserting dashboard URL and title');
-  await expect(page).toHaveURL('http://localhost:3001/dashboard');
+  await expect(page).toHaveURL('http://localhost:3000/dashboard');
   await expect(page).toHaveTitle(/Dashboard/);
 });

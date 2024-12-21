@@ -1,7 +1,7 @@
 'use client'
 
-import { useAuth } from "src/components/providers/auth-provider"
-import { Button } from "src/components/ui/button"
+import { useAuth } from "@/components/providers/auth-provider"
+import { Button } from "@/components/ui/button"
 import { useRouter } from "next/navigation"
 
 export default function Home() {
