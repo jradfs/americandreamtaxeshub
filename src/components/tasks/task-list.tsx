@@ -1,8 +1,9 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
 import { Plus, Search } from 'lucide-react'
+import { Checkbox } from '@/components/ui/checkbox'
 import {
   Table,
   TableBody,
@@ -21,20 +22,21 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { format } from 'date-fns'
-import { TaskDialog } from './task-dialog'
 import { TaskWithRelations, taskStatusOptions, taskPriorityOptions } from '@/types/tasks'
 import { useToast } from '@/components/ui/use-toast'
+import { TaskSidePanel } from './task-side-panel'
+import { updateTask } from '@/lib/supabase/tasks'
 
 interface TaskListProps {
   projectId?: string
+  clientId?: string
 }
 
-export default function TaskList({ projectId }: TaskListProps) {
+export default function TaskList({ projectId, clientId }: TaskListProps) {
   const [tasks, setTasks] = useState<TaskWithRelations[]>([])
   const [loading, setLoading] = useState(true)
-  const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [isSidePanelOpen, setIsSidePanelOpen] = useState(false)
   const [selectedTask, setSelectedTask] = useState<TaskWithRelations | null>(null)
   const [statusFilter, setStatusFilter] = useState<string | null>(null)
   const [priorityFilter, setPriorityFilter] = useState<string | null>(null)
@@ -43,7 +45,7 @@ export default function TaskList({ projectId }: TaskListProps) {
   const supabase = createClientComponentClient()
   const { toast } = useToast()
 
-  async function fetchTasks() {
+  const fetchTasks = useCallback(async () => {
     if (!projectId) return
     
     try {
@@ -65,12 +67,11 @@ export default function TaskList({ projectId }: TaskListProps) {
     } finally {
       setLoading(false)
     }
-  }
+  }, [projectId, supabase, toast])
 
   useEffect(() => {
     fetchTasks()
 
-    // Set up real-time subscription
     const channel = supabase
       .channel('table-db-changes')
       .on(
@@ -93,11 +94,66 @@ export default function TaskList({ projectId }: TaskListProps) {
         }
       })
 
-    // Cleanup subscription
     return () => {
       channel.unsubscribe()
     }
-  }, [projectId, supabase, toast])
+  }, [projectId, supabase, toast, fetchTasks])
+
+  const handleOpenSidePanel = (task?: TaskWithRelations) => {
+    setSelectedTask(task || null)
+    setIsSidePanelOpen(true)
+  }
+
+  const handleCloseSidePanel = () => {
+    setIsSidePanelOpen(false)
+    setSelectedTask(null)
+  }
+
+  const handleTaskUpdate = useCallback((updatedTask: TaskWithRelations) => {
+    setTasks(prevTasks => {
+      const updatedTasks = prevTasks.map(task => 
+        task.id === updatedTask.id ? updatedTask : task
+      )
+      
+      if (!prevTasks.some(task => task.id === updatedTask.id)) {
+        updatedTasks.unshift(updatedTask)
+      }
+
+      return updatedTasks
+    })
+  }, [])
+
+  const handleQuickTaskComplete = async (task: TaskWithRelations) => {
+    try {
+      const newStatus = task.status === 'completed' ? 'todo' : 'completed'
+      const updatedTask = await updateTask(task.id, { 
+        status: newStatus,
+        progress: newStatus === 'completed' ? 100 : 0
+      })
+
+      // Optimistically update local state
+      setTasks(prevTasks => 
+        prevTasks.map(t => 
+          t.id === task.id 
+            ? { ...t, status: newStatus, progress: newStatus === 'completed' ? 100 : 0 }
+            : t
+        )
+      )
+
+      toast({
+        title: "Task Updated",
+        description: `Task marked as ${newStatus}`,
+        duration: 2000
+      })
+    } catch (error) {
+      console.error('Error updating task:', error)
+      toast({
+        title: "Error",
+        description: "Could not update task status",
+        variant: "destructive"
+      })
+    }
+  }
 
   if (loading) {
     return <div className="flex items-center justify-center h-32">Loading tasks...</div>
@@ -159,10 +215,7 @@ export default function TaskList({ projectId }: TaskListProps) {
             </SelectContent>
           </Select>
 
-          <Button onClick={() => {
-            setSelectedTask(null)
-            setIsDialogOpen(true)
-          }}>
+          <Button onClick={() => handleOpenSidePanel()}>
             <Plus className="mr-2 h-4 w-4" />
             Add Task
           </Button>
@@ -173,6 +226,7 @@ export default function TaskList({ projectId }: TaskListProps) {
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead>Complete</TableHead>
               <TableHead>Task</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Priority</TableHead>
@@ -184,13 +238,19 @@ export default function TaskList({ projectId }: TaskListProps) {
           <TableBody>
             {filteredTasks.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="h-24 text-center">
+                <TableCell colSpan={7} className="h-24 text-center">
                   No tasks found
                 </TableCell>
               </TableRow>
             ) : (
               filteredTasks.map((task) => (
                 <TableRow key={task.id}>
+                  <TableCell>
+                    <Checkbox 
+                      checked={task.status === 'completed'}
+                      onCheckedChange={() => handleQuickTaskComplete(task)}
+                    />
+                  </TableCell>
                   <TableCell>
                     <div>
                       <div className="font-medium">{task.title}</div>
@@ -239,10 +299,7 @@ export default function TaskList({ projectId }: TaskListProps) {
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => {
-                        setSelectedTask(task)
-                        setIsDialogOpen(true)
-                      }}
+                      onClick={() => handleOpenSidePanel(task)}
                     >
                       Edit
                     </Button>
@@ -254,11 +311,13 @@ export default function TaskList({ projectId }: TaskListProps) {
         </Table>
       </div>
 
-      <TaskDialog
-        open={isDialogOpen}
-        onOpenChange={setIsDialogOpen}
+      <TaskSidePanel
+        isOpen={isSidePanelOpen}
+        onClose={handleCloseSidePanel}
         task={selectedTask}
         projectId={projectId}
+        clientId={clientId}
+        onTaskUpdate={handleTaskUpdate}
       />
     </div>
   )

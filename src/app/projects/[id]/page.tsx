@@ -6,7 +6,8 @@ import { ProjectHeader } from "@/components/projects/project-header";
 import { ProjectTasks } from "@/components/projects/project-tasks";
 import { ProjectDetails } from "@/components/projects/project-details";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { ExclamationTriangleIcon } from "@radix-ui/react-icons";
 
 export const dynamic = "force-dynamic";
 
@@ -34,7 +35,7 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
   const supabase = createServerComponentClient({ cookies });
   
   try {
-    // First fetch the project data with client info
+    // Fetch project with comprehensive details
     const { data: project, error: projectError } = await supabase
       .from("projects")
       .select(`
@@ -49,16 +50,30 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
       .eq("id", params.id)
       .single();
 
+    // Detailed error handling for project fetch
     if (projectError) {
-      console.error("Error fetching project:", projectError);
-      throw projectError;
+      console.error("Project fetch error:", projectError);
+      return (
+        <div className="container py-6">
+          <Alert variant="destructive" className="max-w-xl mx-auto">
+            <ExclamationTriangleIcon className="h-5 w-5" />
+            <AlertTitle>Project Load Error</AlertTitle>
+            <AlertDescription>
+              {projectError.code === 'PGRST116' 
+                ? "The project you're looking for does not exist." 
+                : "Unable to load project details. Please check your connection or permissions."}
+            </AlertDescription>
+          </Alert>
+        </div>
+      );
     }
 
+    // Handle case where no project is found
     if (!project) {
-      notFound();
+      return notFound();
     }
 
-    // Fetch tasks for this project without trying to join profiles yet
+    // Fetch tasks for this project
     const { data: tasks, error: tasksError } = await supabase
       .from("tasks")
       .select(`
@@ -73,39 +88,40 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
         estimated_hours,
         actual_hours,
         assignee_id,
-        tax_return_id,
-        parent_task_id,
-        tax_form_type,
-        activity_log,
-        checklist,
-        recurring_config,
+        project_id,
         created_at,
         updated_at
       `)
       .eq("project_id", project.id)
       .order('created_at', { ascending: false });
 
+    // Detailed error handling for tasks fetch
     if (tasksError) {
-      console.error("Error fetching tasks:", tasksError);
-      throw tasksError;
+      console.error("Tasks fetch error:", tasksError);
+      // Continue with empty tasks array instead of breaking the entire page
+      tasks = [];
     }
 
-    // Process and combine the data
+    // Compute project completion percentage
+    const completionPercentage = tasks && tasks.length > 0 
+      ? (tasks.filter(t => t.status === 'completed').length / tasks.length) * 100 
+      : 0;
+
     const processedProject = {
       ...project,
       tasks: tasks || [],
-      completion_percentage: tasks && tasks.length > 0 ? 
-        (tasks.filter(t => t.status === 'completed').length / tasks.length) * 100 : 0
+      completion_percentage: completionPercentage
     };
 
     return (
       <div className="container py-6">
-        <ProjectHeader project={processedProject} />
+        {/* Project Header with safety check */}
+        {processedProject && <ProjectHeader project={processedProject} />}
         
         <Tabs defaultValue="tasks" className="mt-6">
           <TabsList>
             <TabsTrigger value="tasks">Tasks</TabsTrigger>
-            <TabsTrigger value="details">Details</TabsTrigger>
+            <TabsTrigger value="details">Project Details</TabsTrigger>
           </TabsList>
           
           <TabsContent value="tasks" className="mt-4">
@@ -119,12 +135,15 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
       </div>
     );
   } catch (error) {
-    console.error("Error in ProjectPage:", error);
+    console.error("Unexpected error in ProjectPage:", error);
     return (
       <div className="container py-6">
-        <Alert variant="destructive">
+        <Alert variant="destructive" className="max-w-xl mx-auto">
+          <ExclamationTriangleIcon className="h-5 w-5" />
+          <AlertTitle>Unexpected Error</AlertTitle>
           <AlertDescription>
-            There was a problem loading the project. Please try again later.
+            An unexpected error occurred while loading the project. 
+            Please try again later or contact support if the issue persists.
           </AlertDescription>
         </Alert>
       </div>
