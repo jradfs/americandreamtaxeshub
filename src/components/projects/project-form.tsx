@@ -25,6 +25,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useToast } from "@/components/ui/use-toast";
 import { ClientCombobox } from "@/components/clients/client-combobox";
+import { TemplateCombobox } from "@/components/templates/template-combobox";
+import { useProjectTemplates } from "@/hooks/useProjectTemplates";
 
 const projectSchema = z.object({
   name: z.string().min(1, "Project name is required"),
@@ -36,6 +38,7 @@ const projectSchema = z.object({
   start_date: z.string().optional(),
   estimated_hours: z.coerce.number().positive().optional(),
   stage: z.string().optional(),
+  template_id: z.string().optional(),
 });
 
 type ProjectFormValues = z.infer<typeof projectSchema>;
@@ -50,6 +53,7 @@ export function ProjectForm({ project, onSuccess, mode = 'create' }: ProjectForm
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
   const supabase = createClientComponentClient();
+  const { templates } = useProjectTemplates();
   
   const form = useForm<ProjectFormValues>({
     resolver: zodResolver(projectSchema),
@@ -60,40 +64,87 @@ export function ProjectForm({ project, onSuccess, mode = 'create' }: ProjectForm
     },
   });
 
-  // Reset form when project changes
-  useEffect(() => {
-    if (project) {
-      form.reset(project);
+  // Handle template selection
+  const handleTemplateSelect = async (templateId: string) => {
+    const template = templates?.find(t => t.id === templateId);
+    if (template) {
+      form.setValue('name', template.title);
+      form.setValue('description', template.description || '');
+      form.setValue('estimated_hours', 
+        template.estimated_total_minutes 
+          ? Math.ceil(template.estimated_total_minutes / 60) 
+          : undefined
+      );
+      form.setValue('priority', template.default_priority as "low" | "medium" | "high" || 'medium');
+      form.setValue('template_id', template.id);
     }
-  }, [project, form]);
+  };
 
   async function onSubmit(data: ProjectFormValues) {
     setLoading(true);
     try {
+      let projectId: string;
+      
       if (mode === 'edit' && project?.id) {
         const { error } = await supabase
           .from("projects")
           .update(data)
           .eq('id', project.id);
-          
         if (error) throw error;
-
-        toast({
-          title: "Success",
-          description: "Project updated successfully",
-        });
+        projectId = project.id;
       } else {
-        const { error } = await supabase
+        const { data: newProject, error } = await supabase
           .from("projects")
-          .insert([data]);
-          
+          .insert([data])
+          .select()
+          .single();
         if (error) throw error;
+        projectId = newProject.id;
 
-        toast({
-          title: "Success",
-          description: "Project created successfully",
-        });
-        
+        // If template is selected, create template tasks
+        if (data.template_id) {
+          const { data: templateTasks, error: tasksError } = await supabase
+            .from('template_tasks')
+            .select('*')
+            .eq('template_id', data.template_id)
+            .order('order_index');
+
+          if (tasksError) throw tasksError;
+
+          if (templateTasks?.length) {
+            const projectTasks = templateTasks.map(task => ({
+              project_id: projectId,
+              title: task.title,
+              description: task.description,
+              // Convert task's estimated minutes to hours
+              estimated_hours: task.estimated_minutes 
+                ? Math.round(task.estimated_minutes / 60 * 100) / 100 // Convert minutes to hours with 2 decimal places
+                : null,
+              priority: task.priority || 'medium',
+              status: 'todo',
+              // Convert any time-tracked minutes to hours if they exist
+              time_tracked: task.estimated_minutes 
+                ? Math.round(task.estimated_minutes / 60 * 100) / 100 
+                : null
+            }));
+
+            const { error: insertError } = await supabase
+              .from('tasks')
+              .insert(projectTasks);
+
+            if (insertError) throw insertError;
+          }
+        }
+      }
+
+      toast({
+        title: "Success",
+        description: mode === 'edit' 
+          ? "Project updated successfully" 
+          : "Project created successfully",
+      });
+      
+      if (mode === 'create') {
         form.reset();
       }
       
@@ -113,6 +164,28 @@ export function ProjectForm({ project, onSuccess, mode = 'create' }: ProjectForm
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        {mode === 'create' && (
+          <FormField
+            control={form.control}
+            name="template_id"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Project Template (Optional)</FormLabel>
+                <FormControl>
+                  <TemplateCombobox
+                    value={field.value}
+                    onChange={(value) => {
+                      field.onChange(value);
+                      handleTemplateSelect(value);
+                    }}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        )}
+
         <FormField
           control={form.control}
           name="name"
@@ -257,8 +330,9 @@ export function ProjectForm({ project, onSuccess, mode = 'create' }: ProjectForm
               <FormControl>
                 <Input 
                   type="number" 
+                  step="0.1"
                   {...field} 
-                  onChange={e => field.onChange(e.target.valueAsNumber)}
+                  onChange={e => field.onChange(parseFloat(e.target.value))}
                   value={field.value || ''}
                 />
               </FormControl>
@@ -298,7 +372,11 @@ export function ProjectForm({ project, onSuccess, mode = 'create' }: ProjectForm
           <Button type="button" variant="outline" onClick={() => onSuccess?.()}>
             Cancel
           </Button>
-          <Button type="submit" disabled={loading}>
+          <Button 
+            type="submit" 
+            className="bg-red-500 hover:bg-red-600 text-white"
+            disabled={loading}
+          >
             {loading ? (mode === 'edit' ? "Updating..." : "Creating...") : (mode === 'edit' ? "Update Project" : "Create Project")}
           </Button>
         </div>
