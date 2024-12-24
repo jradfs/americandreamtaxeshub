@@ -2,6 +2,14 @@
 
 import { useEffect } from 'react'
 import { Button } from "@/components/ui/button"
+import { 
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+  CardFooter
+} from "@/components/ui/card"
 
 export default function Error({
   error,
@@ -11,19 +19,31 @@ export default function Error({
   reset: () => void
 }) {
   useEffect(() => {
-    // Log the error to an error reporting service
     console.error(error)
   }, [error])
 
   return (
-    <div className="flex h-screen flex-col items-center justify-center gap-4">
-      <h2 className="text-2xl font-bold">Something went wrong!</h2>
-      <Button
-        onClick={reset}
-        variant="default"
-      >
-        Try again
-      </Button>
+    <div className="flex h-[calc(100vh-4rem)] items-center justify-center p-4">
+      <Card className="w-full max-w-md">
+        <CardHeader>
+          <CardTitle>Something went wrong!</CardTitle>
+          <CardDescription>
+            An error occurred while loading this page.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {process.env.NODE_ENV === 'development' && (
+            <pre className="mt-4 rounded-lg bg-slate-950 p-4 text-sm text-white">
+              {error.message}
+            </pre>
+          )}
+        </CardContent>
+        <CardFooter>
+          <Button onClick={reset} className="w-full">
+            Try again
+          </Button>
+        </CardFooter>
+      </Card>
     </div>
   )
 }

@@ -10,6 +10,7 @@ import {
   CheckSquare,
   FileText,
   Settings,
+  FolderKanban,
 } from "lucide-react";
 
 const sidebarNavItems = [
@@ -17,6 +18,11 @@ const sidebarNavItems = [
     title: "Dashboard",
     href: "/dashboard",
     icon: LayoutDashboard,
+  },
+  {
+    title: "Projects",
+    href: "/projects",
+    icon: FolderKanban,
   },
   {
     title: "Clients",
