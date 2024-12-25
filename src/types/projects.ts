@@ -33,6 +33,5 @@ export interface ProjectFormValues {
   template_id: string | null;
   due_date: string | null;
   start_date: string | null;
-  estimated_hours: number | null;
   stage: string | null;
 }

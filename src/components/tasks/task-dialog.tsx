@@ -56,8 +56,6 @@ export function TaskDialog({
     project_id: projectId || task?.project_id || undefined,
     due_date: task?.due_date ? new Date(task.due_date).toISOString().split('T')[0] : "",
     assignee_id: task?.assignee_id || "",
-    estimated_hours: task?.estimated_hours || 0,
-    actual_hours: task?.actual_hours || 0,
     progress: task?.progress || 0,
   })
 
@@ -94,9 +92,7 @@ export function TaskDialog({
         project_id: formData.project_id,
         due_date: formData.due_date ? new Date(formData.due_date).toISOString() : null,
         assignee_id: formData.assignee_id || null,
-        progress: Number(formData.progress),
-        estimated_hours: Number(formData.estimated_hours),
-        actual_hours: Number(formData.actual_hours)
+        progress: Number(formData.progress)
       }
 
       let error
@@ -255,30 +251,6 @@ export function TaskDialog({
                 max="100"
                 value={formData.progress}
                 onChange={(e) => setFormData((prev) => ({ ...prev, progress: Number(e.target.value) }))}
-                className="col-span-3"
-              />
-            </div>
-
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="estimated_hours" className="text-right">Est. Hours</Label>
-              <Input
-                id="estimated_hours"
-                type="number"
-                min="0"
-                value={formData.estimated_hours}
-                onChange={(e) => setFormData((prev) => ({ ...prev, estimated_hours: Number(e.target.value) }))}
-                className="col-span-3"
-              />
-            </div>
-
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="actual_hours" className="text-right">Actual Hours</Label>
-              <Input
-                id="actual_hours"
-                type="number"
-                min="0"
-                value={formData.actual_hours}
-                onChange={(e) => setFormData((prev) => ({ ...prev, actual_hours: Number(e.target.value) }))}
                 className="col-span-3"
               />
             </div>
