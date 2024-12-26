@@ -62,11 +62,43 @@ export function ProjectForm({ onSuccess }: { onSuccess: () => void }) {
     const selectedTemplate = form.watch('template_id');
     const selectedClient = form.watch('client_id');
 
+    // Client type field mapping configuration
+    const clientTypeFieldMapping = {
+        'LLC': {
+            priority: 'medium',
+            duration_days: 30
+        },
+        'C-corporation': {
+            priority: 'low',
+            duration_days: 60
+        },
+        'S-corporation': {
+            priority: 'medium',
+            duration_days: 45
+        },
+        'Partnership': {
+            priority: 'medium',
+            duration_days: 30
+        },
+        'Sole Proprietorship': {
+            priority: 'high',
+            duration_days: 14
+        },
+        default: {
+            priority: 'medium',
+            duration_days: 30
+        }
+    };
+
+    const getClientTypeDefaults = (type) => {
+        return clientTypeFieldMapping[type] || clientTypeFieldMapping.default;
+    };
+
     useEffect(() => {
         const fetchData = async () => {
             const { data: clients } = await supabase
                 .from('clients')
-                .select('id, full_name, company_name');
+                .select('id, full_name, company_name, type');
             setClients(clients || []);
 
             const { data: templates } = await supabase
@@ -77,6 +109,32 @@ export function ProjectForm({ onSuccess }: { onSuccess: () => void }) {
 
         fetchData();
     }, [supabase]);
+
+    // Apply client type specific defaults
+    useEffect(() => {
+        if (selectedClient) {
+            const client = clients.find(c => c.id === selectedClient);
+            if (!client) return;
+
+            const typeDefaults = getClientTypeDefaults(client.type);
+
+            // Apply client type specific defaults
+            form.setValue('priority', typeDefaults.priority);
+            
+            // Update duration if template is selected
+            if (selectedTemplate) {
+                const template = templates.find(t => t.id === selectedTemplate);
+                if (template) {
+                    const startDate = new Date();
+                    const dueDate = new Date();
+                    dueDate.setDate(startDate.getDate() + typeDefaults.duration_days);
+                    
+                    form.setValue('start_date', startDate);
+                    form.setValue('due_date', dueDate);
+                }
+            }
+        }
+    }, [selectedClient, clients, form, selectedTemplate, templates]);
 
     useEffect(() => {
         if (selectedTemplate && selectedClient) {
