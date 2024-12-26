@@ -105,6 +105,41 @@ export type Database = {
         }
         Relationships: []
       }
+      document_tracking: {
+        Row: {
+          document_name: string | null
+          due_date: string | null
+          id: string
+          project_id: string | null
+          reminder_sent: boolean | null
+          status: string | null
+        }
+        Insert: {
+          document_name?: string | null
+          due_date?: string | null
+          id: string
+          project_id?: string | null
+          reminder_sent?: boolean | null
+          status?: string | null
+        }
+        Update: {
+          document_name?: string | null
+          due_date?: string | null
+          id?: string
+          project_id?: string | null
+          reminder_sent?: boolean | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_tracking_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       documents: {
         Row: {
           client_id: string | null
@@ -316,6 +351,7 @@ export type Database = {
           default_priority: string | null
           description: string | null
           id: string
+          project_defaults: Json | null
           recurring_schedule: string | null
           seasonal_priority: Json | null
           title: string
@@ -328,6 +364,7 @@ export type Database = {
           default_priority?: string | null
           description?: string | null
           id?: string
+          project_defaults?: Json | null
           recurring_schedule?: string | null
           seasonal_priority?: Json | null
           title: string
@@ -340,6 +377,7 @@ export type Database = {
           default_priority?: string | null
           description?: string | null
           id?: string
+          project_defaults?: Json | null
           recurring_schedule?: string | null
           seasonal_priority?: Json | null
           title?: string
@@ -591,6 +629,8 @@ export type Database = {
           description: string | null
           id: string
           name: string
+          parent_id: string | null
+          position: number | null
           updated_at: string | null
         }
         Insert: {
@@ -598,6 +638,8 @@ export type Database = {
           description?: string | null
           id?: string
           name: string
+          parent_id?: string | null
+          position?: number | null
           updated_at?: string | null
         }
         Update: {
@@ -605,6 +647,8 @@ export type Database = {
           description?: string | null
           id?: string
           name?: string
+          parent_id?: string | null
+          position?: number | null
           updated_at?: string | null
         }
         Relationships: []
@@ -741,6 +785,13 @@ export type Database = {
             }
             Returns: unknown
           }
+      create_project_tasks: {
+        Args: {
+          p_project_id: string
+          p_template_id: string
+        }
+        Returns: undefined
+      }
       create_template_category: {
         Args: {
           p_name: string
@@ -754,6 +805,12 @@ export type Database = {
           condition: string
         }
         Returns: string
+      }
+      delete_template_category: {
+        Args: {
+          p_id: string
+        }
+        Returns: boolean
       }
       exec_sql: {
         Args: {
