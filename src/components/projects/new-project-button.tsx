@@ -1,12 +1,14 @@
 'use client';
 
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
+import { Button } from '@/components/ui/button';
 import { PlusCircle } from "lucide-react";
 import { ProjectDialog } from "./project-dialog";
+import { useProjects } from '@/hooks/useProjects';
 
 export function NewProjectButton() {
   const [open, setOpen] = useState(false);
+  const { refreshProjects } = useProjects();
 
   return (
     <>
@@ -21,6 +23,10 @@ export function NewProjectButton() {
       <ProjectDialog 
         open={open}
         onOpenChange={setOpen}
+        onSuccess={async () => {
+          setOpen(false);
+          await refreshProjects();
+        }}
       />
     </>
   );

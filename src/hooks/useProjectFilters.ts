@@ -100,9 +100,6 @@ export function useProjectFilters() {
         case 'priority':
           query = query.order('priority', { ascending }).order('created_at', { ascending: false });
           break;
-        case 'estimatedHours':
-          query = query.order('estimated_hours', { ascending, nullsLast: true }).order('created_at', { ascending: false });
-          break;
         default:
           query = query.order('created_at', { ascending: false });
       }

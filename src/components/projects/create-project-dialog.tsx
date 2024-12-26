@@ -35,7 +35,6 @@ export function CreateProjectDialog({ open, onOpenChange }: CreateProjectDialogP
     client_id: '',
     start_date: '',
     due_date: '',
-    estimated_hours: '',
     stage: '',
     template_id: ''
   });
@@ -51,9 +50,6 @@ export function CreateProjectDialog({ open, onOpenChange }: CreateProjectDialogP
         ...prev,
         name: template.title,
         description: template.description || '',
-        estimated_hours: template.estimated_total_minutes 
-          ? Math.ceil(template.estimated_total_minutes / 60).toString() 
-          : '',
         priority: template.default_priority || 'medium',
         template_id: template.id
       }));
@@ -68,10 +64,17 @@ export function CreateProjectDialog({ open, onOpenChange }: CreateProjectDialogP
       const { data: project, error } = await supabase
         .from('projects')
         .insert([{
-          ...formData,
-          estimated_hours: formData.estimated_hours ? parseFloat(formData.estimated_hours) : null
+          name: formData.name,
+          description: formData.description,
+          status: formData.status,
+          priority: formData.priority,
+          client_id: formData.client_id || null,
+          start_date: formData.start_date || null,
+          due_date: formData.due_date || null,
+          stage: formData.stage || null,
+          template_id: formData.template_id || null
         }])
-        .select()
+        .select('id, name, description, status, priority, client_id, start_date, due_date, stage, template_id')
         .single();
 
       if (error) throw error;
@@ -91,7 +94,6 @@ export function CreateProjectDialog({ open, onOpenChange }: CreateProjectDialogP
             project_id: project.id,
             title: task.title,
             description: task.description,
-            estimated_hours: task.estimated_minutes ? task.estimated_minutes / 60 : null,
             priority: task.priority,
             status: 'todo'
           }));
@@ -236,15 +238,6 @@ export function CreateProjectDialog({ open, onOpenChange }: CreateProjectDialogP
               <ClientCombobox
                 value={formData.client_id}
                 onChange={value => setFormData(prev => ({ ...prev, client_id: value }))}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label>Estimated Hours</Label>
-              <Input
-                type="number"
-                value={formData.estimated_hours}
-                onChange={e => setFormData(prev => ({ ...prev, estimated_hours: e.target.value }))}
               />
             </div>
 

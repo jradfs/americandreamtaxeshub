@@ -17,8 +17,6 @@ export interface Task {
   due_date?: string;
   client?: string;
   progress?: number;
-  time_estimate?: number;
-  time_spent?: number;
   [key: string]: any;
 }
 
@@ -27,7 +25,6 @@ export interface TaskSection {
   in_progress: Task[];
   done: Task[];
   metadata: {
-    totalDuration: number;
     completionRate: number;
     assignees: string[];
   };

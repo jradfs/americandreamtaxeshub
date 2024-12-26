@@ -9,8 +9,6 @@ export type Task = {
   progress?: number
   due_date?: string
   start_date?: string
-  estimated_hours?: number
-  actual_hours?: number
   template_id?: string
   project_id?: string
   assignee_id?: string

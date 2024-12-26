@@ -70,8 +70,6 @@ type TaskRow = Database['public']['Tables']['tasks']['Row']
           updated_at: task.updated_at,
           project_id: task.project_id,
           is_recurring: false,
-          actual_hours: 0,
-          estimated_hours: 0,
           parent_task_id: '',
           tax_return_id: '',
           tax_form_type: ''

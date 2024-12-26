@@ -33,7 +33,7 @@ interface TaskListProps {
   clientId?: string
 }
 
-export default function TaskList({ projectId, clientId }: TaskListProps) {
+export function TaskList({ projectId, clientId }: TaskListProps) {
   const [tasks, setTasks] = useState<TaskWithRelations[]>([])
   const [loading, setLoading] = useState(true)
   const [isSidePanelOpen, setIsSidePanelOpen] = useState(false)

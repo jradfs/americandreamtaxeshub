@@ -1,25 +1,28 @@
 import { createServerComponentClient } from "@supabase/auth-helpers-nextjs";
 import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
-import { Metadata } from "next";
-import { ProjectHeader } from "@/components/projects/project-header";
-import { ProjectTasks } from "@/components/projects/project-tasks";
-import { ProjectDetails } from "@/components/projects/project-details";
+import { Metadata, ResolvingMetadata } from "next";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ExclamationTriangleIcon } from "@radix-ui/react-icons";
+import { ProjectHeader } from "@/components/projects/project-header";
+import { ProjectTasks } from "@/components/projects/project-tasks";
+import { ProjectDetails } from "@/components/projects/project-details";
 
 export const dynamic = "force-dynamic";
 
-interface ProjectPageProps {
-  params: {
-    id: string;
-  };
+type Props = {
+  params: Promise<{ id: string }>
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>
 }
 
-export async function generateMetadata({ params }: ProjectPageProps): Promise<Metadata> {
+export async function generateMetadata(
+  props: Props,
+  parent?: ResolvingMetadata
+): Promise<Metadata> {
   const supabase = createServerComponentClient({ cookies });
   
+  const params = await props.params;
   const { data: project } = await supabase
     .from("projects")
     .select("name")
@@ -31,10 +34,13 @@ export async function generateMetadata({ params }: ProjectPageProps): Promise<Me
   };
 }
 
-export default async function ProjectPage({ params }: ProjectPageProps) {
+export default async function ProjectPage(props: Props) {
   const supabase = createServerComponentClient({ cookies });
   
   try {
+    const params = await props.params;
+    const searchParams = await props.searchParams;
+
     // Fetch project with comprehensive details
     const { data: project, error: projectError } = await supabase
       .from("projects")
@@ -74,7 +80,8 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
     }
 
     // Fetch tasks for this project
-    const { data: tasks, error: tasksError } = await supabase
+    let tasks = [];
+    const { data: tasksData, error: tasksError } = await supabase
       .from("tasks")
       .select(`
         id,
@@ -85,8 +92,6 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
         due_date,
         start_date,
         progress,
-        estimated_hours,
-        actual_hours,
         assignee_id,
         project_id,
         created_at,
@@ -97,10 +102,15 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
 
     // Detailed error handling for tasks fetch
     if (tasksError) {
-      console.error("Tasks fetch error:", tasksError);
-      // Continue with empty tasks array instead of breaking the entire page
-      tasks = [];
+      console.error("Tasks fetch error:", {
+        message: tasksError.message,
+        code: tasksError.code,
+        details: tasksError.details,
+        hint: tasksError.hint
+      });
+      throw new Error(`Failed to fetch tasks: ${tasksError.message}`);
     }
+    tasks = tasksData || [];
 
     // Compute project completion percentage
     const completionPercentage = tasks && tasks.length > 0 

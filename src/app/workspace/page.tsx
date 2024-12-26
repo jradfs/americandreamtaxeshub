@@ -1,9 +1,11 @@
-{/* Move the content from src/app/page.tsx to here */}
+'use client';
+
+import { useState } from "react";
 import { createServerComponentClient } from "@supabase/auth-helpers-nextjs";
 import { cookies } from "next/headers";
 import { Metadata } from "next";
 import { ProjectCard } from "@/components/projects/project-card";
-import { ProjectFilters } from "@/components/projects/project-filters";
+import { ProjectFiltersWrapper } from "@/components/projects/project-filters-wrapper";
 import { NewProjectButton } from "@/components/projects/new-project-button";
 
 export const metadata: Metadata = {
@@ -29,6 +31,15 @@ export default async function WorkspacePage() {
     .from("projects")
     .select("id", { count: "exact" });
 
+  const { data: clients } = await supabase
+    .from("clients")
+    .select("id, name, company_name");
+
+  const clientOptions = clients?.map(client => ({
+    id: client.id,
+    label: client.company_name || client.name
+  })) || [];
+
   return (
     <div className="container py-6">
       <div className="flex items-center justify-between mb-8">
@@ -41,7 +52,7 @@ export default async function WorkspacePage() {
         <NewProjectButton />
       </div>
 
-      <ProjectFilters />
+      <ProjectFiltersWrapper clientOptions={clientOptions} />
 
       <div className="grid gap-6 mt-6">
         {projects?.map((project) => (

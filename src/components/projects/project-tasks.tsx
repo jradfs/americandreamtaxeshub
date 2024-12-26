@@ -1,7 +1,7 @@
 'use client'
 
 import { ProjectWithRelations } from "@/types/projects"
-import TaskList from "@/components/tasks/task-list"
+import { TaskList } from "@/components/tasks/task-list"
 
 interface ProjectTasksProps {
   project: ProjectWithRelations

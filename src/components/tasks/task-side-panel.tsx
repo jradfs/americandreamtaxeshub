@@ -43,8 +43,7 @@ const taskSchema = z.object({
   status: z.enum(['todo', 'in-progress', 'completed', 'blocked']),
   priority: z.enum(['low', 'medium', 'high', 'urgent']),
   progress: z.number().min(0).max(100).optional(),
-  due_date: z.date().optional(),
-  estimated_hours: z.number().optional().nullable()
+  due_date: z.date().optional()
 })
 
 interface TaskSidePanelProps {
@@ -75,8 +74,7 @@ export function TaskSidePanel({
       status: task?.status || 'todo',
       priority: task?.priority || 'medium',
       progress: task?.progress || 0,
-      due_date: task?.due_date ? new Date(task.due_date) : undefined,
-      estimated_hours: task?.estimated_hours || null
+      due_date: task?.due_date ? new Date(task.due_date) : undefined
     }
   })
 
@@ -88,8 +86,7 @@ export function TaskSidePanel({
         status: task.status || 'todo',
         priority: task.priority || 'medium',
         progress: task.progress || 0,
-        due_date: task.due_date ? new Date(task.due_date) : undefined,
-        estimated_hours: task.estimated_hours || null
+        due_date: task.due_date ? new Date(task.due_date) : undefined
       })
     } else {
       form.reset({
@@ -97,8 +94,7 @@ export function TaskSidePanel({
         description: '',
         status: 'todo',
         priority: 'medium',
-        progress: 0,
-        estimated_hours: null
+        progress: 0
       })
     }
   }, [task, form])
@@ -247,24 +243,6 @@ export function TaskSidePanel({
                 )}
               />
 
-              <FormField
-                control={form.control}
-                name="estimated_hours"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Estimated Hours</FormLabel>
-                    <FormControl>
-                      <Input 
-                        type="number" 
-                        placeholder="Estimated hours" 
-                        {...field} 
-                        onChange={(e) => field.onChange(e.target.value === '' ? null : Number(e.target.value))}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
             </div>
 
             <div className="flex justify-end space-x-2 mt-4">

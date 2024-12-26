@@ -100,14 +100,6 @@ export function ProjectHeader({ project }: ProjectHeaderProps) {
             {Math.round(project.completion_percentage || 0)}%
           </div>
         </div>
-        {project.estimated_hours && (
-          <div>
-            <div className="text-sm font-medium">Estimated Hours</div>
-            <div className="mt-1 text-2xl font-bold">
-              {project.estimated_hours}h
-            </div>
-          </div>
-        )}
       </div>
 
       <ProjectDialog

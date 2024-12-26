@@ -27,7 +27,7 @@ export function ProjectDetails({ project }: ProjectDetailsProps) {
               <div className="flex items-center gap-4">
                 <Avatar className="h-10 w-10">
                   <AvatarImage src={project.client.avatar_url} />
-                  <AvatarFallback>{project.client.full_name.charAt(0)}</AvatarFallback>
+                  <AvatarFallback>{project.client.full_name?.charAt(0) || 'C'}</AvatarFallback>
                 </Avatar>
                 <div>
                   <div className="font-medium">{project.client.full_name}</div>
@@ -181,45 +181,24 @@ export function ProjectDetails({ project }: ProjectDetailsProps) {
         </CardContent>
       </Card>
 
-      {/* Time Tracking */}
+      {/* Team Members */}
       <Card>
         <CardHeader>
-          <CardTitle>Time Tracking</CardTitle>
-          <CardDescription>Time spent on this project</CardDescription>
+          <CardTitle>Team Members</CardTitle>
+          <CardDescription>People working on this project</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <div className="text-2xl font-bold">
-                  {project.estimated_hours || 0}h
-                </div>
-                <div className="text-sm text-muted-foreground">Estimated Hours</div>
-              </div>
-              <div>
-                <div className="text-2xl font-bold">
-                  {project.tasks?.reduce((acc, task) => acc + (task.actual_hours || 0), 0)}h
-                </div>
-                <div className="text-sm text-muted-foreground">Actual Hours</div>
-              </div>
-            </div>
-
-            {/* Team Members */}
-            <div className="pt-4">
-              <div className="text-sm font-medium mb-2">Team Members</div>
-              <div className="flex -space-x-2">
-                {Array.from(new Set(project.tasks?.map(t => t.assignee_id))).map((assigneeId, i) => {
-                  const task = project.tasks?.find(t => t.assignee_id === assigneeId)
-                  if (!task?.assignee) return null
-                  return (
-                    <Avatar key={assigneeId} className="border-2 border-background">
-                      <AvatarImage src={task.assignee.avatar_url} />
-                      <AvatarFallback>{task.assignee.full_name.charAt(0)}</AvatarFallback>
-                    </Avatar>
-                  )
-                })}
-              </div>
-            </div>
+          <div className="flex -space-x-2">
+            {Array.from(new Set(project.tasks?.map(t => t.assignee_id))).map((assigneeId, i) => {
+              const task = project.tasks?.find(t => t.assignee_id === assigneeId)
+              if (!task?.assignee) return null
+              return (
+                <Avatar key={assigneeId} className="border-2 border-background">
+                  <AvatarImage src={task.assignee.avatar_url} />
+                  <AvatarFallback>{task.assignee.full_name.charAt(0)}</AvatarFallback>
+                </Avatar>
+              )
+            })}
           </div>
         </CardContent>
       </Card>
