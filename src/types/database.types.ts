@@ -469,6 +469,36 @@ export type Database = {
           },
         ]
       }
+      task_dependencies: {
+        Row: {
+          depends_on: string | null
+          task_id: string | null
+        }
+        Insert: {
+          depends_on?: string | null
+          task_id?: string | null
+        }
+        Update: {
+          depends_on?: string | null
+          task_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_dependencies_depends_on_fkey"
+            columns: ["depends_on"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_dependencies_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       task_templates: {
         Row: {
           checklist: Json | null
@@ -503,6 +533,7 @@ export type Database = {
         Row: {
           activity_log: Json | null
           assignee_id: string | null
+          category: string | null
           checklist: Json | null
           created_at: string | null
           description: string | null
@@ -524,6 +555,7 @@ export type Database = {
         Insert: {
           activity_log?: Json | null
           assignee_id?: string | null
+          category?: string | null
           checklist?: Json | null
           created_at?: string | null
           description?: string | null
@@ -545,6 +577,7 @@ export type Database = {
         Update: {
           activity_log?: Json | null
           assignee_id?: string | null
+          category?: string | null
           checklist?: Json | null
           created_at?: string | null
           description?: string | null
@@ -1186,7 +1219,13 @@ export type Database = {
       }
     }
     Enums: {
-      [_ in never]: never
+      project_status:
+        | "todo"
+        | "in_progress"
+        | "review"
+        | "blocked"
+        | "completed"
+        | "archived"
     }
     CompositeTypes: {
       [_ in never]: never

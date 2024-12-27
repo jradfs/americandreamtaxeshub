@@ -1,5 +1,11 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createClient } from 'src/lib/supabase/server';
+import { classifyTask } from 'src/lib/ai/tasks';
+
+interface TemplateTask {
+  title: string;
+  description: string;
+}
 
 export async function POST(request: Request) {
   const supabase = createClient();
@@ -25,12 +31,16 @@ export async function POST(request: Request) {
     );
   }
 
-  // Insert tasks for project
-  const tasksToInsert = templateTasks.map(task => ({
-    project_id,
-    name: task.name,
-    description: task.description,
-    status: 'not_started'
+  // Insert tasks for project with classification
+  const tasksToInsert = await Promise.all(templateTasks.map(async (task: TemplateTask) => {
+    const category = await classifyTask(task.title, task.description);
+    return {
+      project_id,
+      title: task.title,
+      description: task.description,
+      status: 'not_started',
+      category
+    };
   }));
 
   const { data: insertedTasks, error: insertError } = await supabase
@@ -39,8 +49,9 @@ export async function POST(request: Request) {
     .select();
 
   if (insertError) {
+    console.error('Failed to insert tasks:', insertError);
     return NextResponse.json(
-      { error: 'Failed to generate tasks' },
+      { error: 'Failed to generate tasks', details: insertError.message },
       { status: 500 }
     );
   }

@@ -2,7 +2,8 @@
 
 import { useState } from "react"
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
-import { Button } from '@/components/ui/button'
+import { Button } from 'src/components/ui/button'
+import { TASK_CATEGORIES } from 'src/lib/ai/tasks'
 import {
   Dialog,
   DialogContent,
@@ -10,25 +11,25 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
+} from 'src/components/ui/dialog'
+import { Input } from 'src/components/ui/input'
+import { Label } from 'src/components/ui/label'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
-import { Textarea } from '@/components/ui/textarea'
-import { useToast } from '@/components/ui/use-toast'
+} from 'src/components/ui/select'
+import { Textarea } from 'src/components/ui/textarea'
+import { useToast } from 'src/components/ui/use-toast'
 import {
   Avatar,
   AvatarFallback,
   AvatarImage,
-} from "@/components/ui/avatar"
-import { TaskWithRelations, taskStatusOptions, taskPriorityOptions } from '@/types/tasks'
-import { useUsers } from '@/hooks/use-users'
+} from 'src/components/ui/avatar'
+import { TaskWithRelations, taskStatusOptions, taskPriorityOptions } from 'src/types/tasks'
+import { useUsers } from 'src/hooks/use-users'
 
 interface TaskDialogProps {
   task?: TaskWithRelations | null
@@ -57,6 +58,7 @@ export function TaskDialog({
     due_date: task?.due_date ? new Date(task.due_date).toISOString().split('T')[0] : "",
     assignee_id: task?.assignee_id || "",
     progress: task?.progress || 0,
+    category: task?.category || ""
   })
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -92,7 +94,8 @@ export function TaskDialog({
         project_id: formData.project_id,
         due_date: formData.due_date ? new Date(formData.due_date).toISOString() : null,
         assignee_id: formData.assignee_id || null,
-        progress: Number(formData.progress)
+        progress: Number(formData.progress),
+        category: formData.category
       }
 
       let error
@@ -195,6 +198,25 @@ export function TaskDialog({
                   {taskPriorityOptions.map(option => (
                     <SelectItem key={option.value} value={option.value}>
                       {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="category" className="text-right">Category</Label>
+              <Select
+                value={formData.category}
+                onValueChange={(value) => setFormData((prev) => ({ ...prev, category: value }))}
+              >
+                <SelectTrigger className="col-span-3">
+                  <SelectValue placeholder="Select category" />
+                </SelectTrigger>
+                <SelectContent>
+                  {TASK_CATEGORIES.map(category => (
+                    <SelectItem key={category} value={category}>
+                      {category}
                     </SelectItem>
                   ))}
                 </SelectContent>

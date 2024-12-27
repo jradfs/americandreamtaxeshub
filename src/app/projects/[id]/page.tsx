@@ -20,7 +20,8 @@ export async function generateMetadata(
   props: Props,
   parent?: ResolvingMetadata
 ): Promise<Metadata> {
-  const supabase = createServerComponentClient({ cookies });
+  const cookieStore = cookies();
+  const supabase = createServerComponentClient({ cookies: () => cookieStore });
   
   const params = await props.params;
   const { data: project } = await supabase
@@ -35,7 +36,8 @@ export async function generateMetadata(
 }
 
 export default async function ProjectPage(props: Props) {
-  const supabase = createServerComponentClient({ cookies });
+  const cookieStore = cookies();
+  const supabase = createServerComponentClient({ cookies: () => cookieStore });
   
   try {
     const params = await props.params;

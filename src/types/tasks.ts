@@ -14,6 +14,7 @@ export type TaskWithRelations = Task & {
     id: string
     title: string
   }
+  category?: string
 }
 
 export type TaskStatus = 'todo' | 'in-progress' | 'review' | 'completed' | 'blocked'

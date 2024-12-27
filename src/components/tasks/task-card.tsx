@@ -1,4 +1,5 @@
-import { Tables } from '@/types/database.types';
+import { Tables } from 'src/types/database.types';
+import { Badge } from 'src/components/ui/badge';
 
 interface TaskCardProps {
   task: Tables<'tasks'>;
@@ -7,7 +8,14 @@ interface TaskCardProps {
 export default function TaskCard({ task }: TaskCardProps) {
   return (
     <div className="p-4 border rounded-lg shadow-sm bg-background">
-      <h3 className="font-medium">{task.title}</h3>
+      <div className="flex items-center justify-between">
+        <h3 className="font-medium">{task.title}</h3>
+        {task.category && (
+          <Badge variant="outline" className="text-sm">
+            {task.category}
+          </Badge>
+        )}
+      </div>
       {task.description && (
         <p className="text-sm text-muted-foreground mt-1">
           {task.description}
