@@ -243,6 +243,8 @@
       * Scheduled reports
 
 ### Implementation Strategy
+
+See [AI Integration Plan](docs/ai-integration.md) for detailed AI implementation strategy.
 1. Database Functions (Additional)
 ```sql
 -- Delete template category
