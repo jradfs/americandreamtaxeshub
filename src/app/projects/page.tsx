@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 
 export default async function ProjectsPage() {
   return (
-    <div className="container py-6">
+    <div className="container px-6 py-8">
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-3xl font-bold">Projects</h1>

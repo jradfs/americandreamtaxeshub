@@ -40,7 +40,7 @@ export default function RootLayout({ children }: RootLayoutProps) {
               <SidebarProvider>
                 <div className="relative flex min-h-screen">
                   <Sidebar />
-                  <main className="flex-1 pl-64">
+                  <main className="flex-1 pl-64 p-8">
                     {children}
                   </main>
                   <Toaster />

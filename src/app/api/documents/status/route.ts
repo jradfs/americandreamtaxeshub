@@ -1,37 +1,29 @@
-import { createServerClient } from '@supabase/ssr';
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
+import { createClient } from '@/lib/supabase/server';
 
 export async function GET(request: Request) {
+  const supabase = createClient();
   const { searchParams } = new URL(request.url);
-  const projectId = searchParams.get('project_id');
+  const project_id = searchParams.get('project_id');
 
-  if (!projectId) {
+  if (!project_id) {
     return NextResponse.json(
       { error: 'project_id is required' },
       { status: 400 }
     );
   }
 
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies
-    }
-  );
-
-  const { data, error } = await supabase
+  const { data: documents, error } = await supabase
     .from('document_tracking')
     .select('*')
-    .eq('project_id', projectId);
+    .eq('project_id', project_id);
 
   if (error) {
     return NextResponse.json(
-      { error: error.message },
+      { error: 'Failed to fetch document status' },
       { status: 500 }
     );
   }
 
-  return NextResponse.json(data);
+  return NextResponse.json(documents);
 }
