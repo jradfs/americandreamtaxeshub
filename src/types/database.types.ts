@@ -15,6 +15,7 @@ export type Database = {
           document_name: string
           document_type: string
           id: number
+          reminder_sent: boolean | null
           status: string
           uploaded_at: string | null
         }
@@ -23,6 +24,7 @@ export type Database = {
           document_name: string
           document_type: string
           id?: never
+          reminder_sent?: boolean | null
           status: string
           uploaded_at?: string | null
         }
@@ -31,6 +33,7 @@ export type Database = {
           document_name?: string
           document_type?: string
           id?: never
+          reminder_sent?: boolean | null
           status?: string
           uploaded_at?: string | null
         }
@@ -395,6 +398,7 @@ export type Database = {
       }
       projects: {
         Row: {
+          accounting_info: Json | null
           client_id: string | null
           completed_tasks: number | null
           created_at: string | null
@@ -404,14 +408,18 @@ export type Database = {
           id: string
           name: string
           parent_project_id: string | null
+          payroll_info: Json | null
           priority: string | null
+          service_type: string | null
           stage: string | null
           start_date: string | null
           status: string
+          tax_info: Json | null
           template_id: string | null
           updated_at: string | null
         }
         Insert: {
+          accounting_info?: Json | null
           client_id?: string | null
           completed_tasks?: number | null
           created_at?: string | null
@@ -421,14 +429,18 @@ export type Database = {
           id?: string
           name: string
           parent_project_id?: string | null
+          payroll_info?: Json | null
           priority?: string | null
+          service_type?: string | null
           stage?: string | null
           start_date?: string | null
           status?: string
+          tax_info?: Json | null
           template_id?: string | null
           updated_at?: string | null
         }
         Update: {
+          accounting_info?: Json | null
           client_id?: string | null
           completed_tasks?: number | null
           created_at?: string | null
@@ -438,10 +450,13 @@ export type Database = {
           id?: string
           name?: string
           parent_project_id?: string | null
+          payroll_info?: Json | null
           priority?: string | null
+          service_type?: string | null
           stage?: string | null
           start_date?: string | null
           status?: string
+          tax_info?: Json | null
           template_id?: string | null
           updated_at?: string | null
         }
@@ -1171,6 +1186,12 @@ export type Database = {
           p_id: string
           p_name: string
           p_description: string
+        }
+        Returns: boolean
+      }
+      validate_json_data: {
+        Args: {
+          data: Json
         }
         Returns: boolean
       }

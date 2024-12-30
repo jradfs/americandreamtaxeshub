@@ -185,6 +185,31 @@ export function useProjectFilters() {
     setFilters(defaultFilters);
   }, []);
 
+  // New bulk operation functions
+  const bulkUpdateProjects = useCallback(async (projectIds: string[], updates: Partial<ProjectWithRelations>) => {
+    try {
+      const { error: updateError } = await supabase
+        .from('projects')
+        .update(updates)
+        .in('id', projectIds);
+
+      if (updateError) throw updateError;
+      
+      // Let the real-time subscription handle the update
+      return true;
+    } catch (err) {
+      console.error('Error updating projects:', err);
+      throw new Error('Failed to update projects');
+    }
+  }, [supabase]);
+
+  const archiveProjects = useCallback(async (projectIds: string[]) => {
+    return bulkUpdateProjects(projectIds, { 
+      status: 'archived',
+      updated_at: new Date().toISOString()
+    });
+  }, [bulkUpdateProjects]);
+
   return {
     filters,
     updateFilters,
@@ -192,6 +217,8 @@ export function useProjectFilters() {
     projects,
     loading,
     error,
-    refresh: fetchProjects
+    refresh: fetchProjects,
+    bulkUpdateProjects,
+    archiveProjects
   };
 }

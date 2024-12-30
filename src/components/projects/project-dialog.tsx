@@ -8,14 +8,17 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { ProjectForm } from "./project-form";
+import { ProjectWithRelations } from "@/types/projects";
 
 interface ProjectDialogProps {
+  project?: ProjectWithRelations;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess?: () => void;
 }
 
 export function ProjectDialog({
+  project,
   open,
   onOpenChange,
   onSuccess,
@@ -24,12 +27,13 @@ export function ProjectDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[725px]">
         <DialogHeader>
-          <DialogTitle>New Project</DialogTitle>
+          <DialogTitle>{project ? 'Edit Project' : 'New Project'}</DialogTitle>
           <DialogDescription>
-            Create a new project with the form below.
+            {project ? 'Update project details below.' : 'Create a new project with the form below.'}
           </DialogDescription>
         </DialogHeader>
         <ProjectForm 
+          project={project}
           onSuccess={() => {
             onSuccess?.();
             onOpenChange(false);

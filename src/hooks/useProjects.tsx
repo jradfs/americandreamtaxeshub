@@ -1,51 +1,37 @@
-'use client';
-
-import { useState, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
-import type { Database, TablesInsert, TablesUpdate } from '../types/database.types';
-type Project = Database['public']['Tables']['projects']['Row'];
-type ProjectInsert = TablesInsert<'projects'>;
-type ProjectUpdate = TablesUpdate<'projects'>;
+import { Database } from '@/types/supabase';
+import { Project, ProjectWithRelations, ProjectInsert } from '@/types/projects';
 
-interface UseProjectsReturn {
-  projects: Project[];
+export function useProjects(clientId?: string): {
+  projects: ProjectWithRelations[];
   isLoading: boolean;
   error: string | null;
-  addProject: (project: ProjectInsert) => Promise<Project>;
-  updateProject: (id: string, updates: ProjectUpdate) => Promise<Project>;
+  addProject: (project: ProjectInsert) => Promise<ProjectWithRelations>;
+  updateProject: (id: string, updates: Partial<Project>) => Promise<ProjectWithRelations>;
   deleteProject: (id: string) => Promise<void>;
   refreshProjects: () => Promise<void>;
-}
-
-export function useProjects(clientId?: string): UseProjectsReturn {
-  const [projects, setProjects] = useState<Project[]>([]);
+} {
+  const [projects, setProjects] = useState<ProjectWithRelations[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const supabase = createClientComponentClient<Database>();
-  const cacheKey = `projects-${clientId || 'all'}`;
-
-  // Get cached projects if available
-  const getCachedProjects = () => {
-    const cached = sessionStorage.getItem(cacheKey);
-    return cached ? JSON.parse(cached) : null;
-  };
-
-  // Set projects in cache
-  const cacheProjects = (projects: Project[]) => {
-    sessionStorage.setItem(cacheKey, JSON.stringify(projects));
-  };
 
   const fetchProjects = async () => {
-    // Return cached projects if available and not stale
-    const cached = getCachedProjects();
-    if (cached) {
-      setProjects(cached);
-    }
     setIsLoading(true);
     try {
+      // First fetch projects with client info
       let query = supabase
         .from('projects')
-        .select('*')
+        .select(`
+          *,
+          client:clients (
+            id,
+            full_name,
+            company_name,
+            contact_info
+          )
+        `)
         .order('due_date', { ascending: true })
         .neq('status', 'archived');
 
@@ -53,10 +39,33 @@ export function useProjects(clientId?: string): UseProjectsReturn {
         query = query.eq('client_id', clientId);
       }
 
-      const { data, error } = await query;
+      const { data: projectsData, error: projectsError } = await query;
 
-      if (error) throw error;
-      setProjects(data || []);
+      if (projectsError) throw projectsError;
+
+      // Then fetch tasks for each project
+      const projectIds = projectsData?.map(p => p.id) || [];
+      const { data: tasksData, error: tasksError } = await supabase
+        .from('tasks')
+        .select('*')
+        .in('project_id', projectIds);
+
+      if (tasksError) throw tasksError;
+
+      // Combine the data
+      const projectsWithRelations = projectsData?.map(project => ({
+        ...project,
+        tasks: tasksData?.filter(task => task.project_id === project.id) || [],
+        category: project.category || { service: 'uncategorized' },
+        tax_info: project.tax_info || null,
+        accounting_info: project.accounting_info || null,
+        payroll_info: project.payroll_info || null,
+        business_services_info: project.business_services_info || null,
+        irs_notice_info: project.irs_notice_info || null,
+      })) || [];
+
+      setProjects(projectsWithRelations);
+      setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
       console.error('Error fetching projects:', err);
@@ -65,56 +74,71 @@ export function useProjects(clientId?: string): UseProjectsReturn {
     }
   };
 
-  const addProject = async (project: ProjectInsert) => {
-    try {
-      const { data, error } = await supabase
-        .from('projects')
-        .insert([project])
-        .select();
+  const addProject = async (project: ProjectInsert): Promise<ProjectWithRelations> => {
+    const { data, error } = await supabase
+      .from('projects')
+      .insert(project)
+      .select()
+      .single();
 
-      if (error) throw error;
-      setProjects(prev => [...prev, data[0]]);
-      return data[0];
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
-      throw err;
-    }
+    if (error) throw error;
+    if (!data) throw new Error('No data returned from insert');
+
+    const newProject: ProjectWithRelations = {
+      ...data,
+      client: null,
+      tasks: [],
+      category: data.category || { service: 'uncategorized' },
+      tax_info: null,
+      accounting_info: null,
+      payroll_info: null,
+      business_services_info: null,
+      irs_notice_info: null,
+    };
+
+    setProjects(current => [...current, newProject]);
+    return newProject;
   };
 
-  const updateProject = async (id: string, updates: ProjectUpdate) => {
-    try {
-      const { data, error } = await supabase
-        .from('projects')
-        .update(updates)
-        .eq('id', id)
-        .select();
+  const updateProject = async (id: string, updates: Partial<Project>): Promise<ProjectWithRelations> => {
+    const { data, error } = await supabase
+      .from('projects')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
 
-      if (error) throw error;
-      setProjects(prev => prev.map(project => project.id === id ? data[0] : project));
-      return data[0];
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
-      throw err;
-    }
+    if (error) throw error;
+    if (!data) throw new Error('No data returned from update');
+
+    const updatedProject = {
+      ...data,
+      client: projects.find(p => p.id === id)?.client || null,
+      tasks: projects.find(p => p.id === id)?.tasks || [],
+      category: data.category || { service: 'uncategorized' },
+      tax_info: data.tax_info || null,
+      accounting_info: data.accounting_info || null,
+      payroll_info: data.payroll_info || null,
+      business_services_info: data.business_services_info || null,
+      irs_notice_info: data.irs_notice_info || null,
+    };
+
+    setProjects(current =>
+      current.map(p => (p.id === id ? updatedProject : p))
+    );
+
+    return updatedProject;
   };
 
-  const deleteProject = async (id: string) => {
-    try {
-      const { error } = await supabase
-        .from('projects')
-        .delete()
-        .eq('id', id);
+  const deleteProject = async (id: string): Promise<void> => {
+    const { error } = await supabase
+      .from('projects')
+      .delete()
+      .eq('id', id);
 
-      if (error) throw error;
-      setProjects(prev => prev.filter(project => project.id !== id));
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
-      throw err;
-    }
-  };
+    if (error) throw error;
 
-  const refreshProjects = async () => {
-    await fetchProjects();
+    setProjects(current => current.filter(p => p.id !== id));
   };
 
   useEffect(() => {
@@ -128,6 +152,6 @@ export function useProjects(clientId?: string): UseProjectsReturn {
     addProject,
     updateProject,
     deleteProject,
-    refreshProjects,
+    refreshProjects: fetchProjects,
   };
 }
