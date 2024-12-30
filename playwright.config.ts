@@ -7,6 +7,7 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
   reporter: 'html',
+  globalSetup:  './tests/global-setup',
   use: {
     baseURL: 'http://localhost:3000',
     trace: 'on-first-retry',
@@ -14,22 +15,9 @@ export default defineConfig({
     video: 'retain-on-failure',
     // Capture screenshot of failed tests
     screenshot: 'only-on-failure',
+    storageState: 'playwright/.auth/user.json',
+    headless: true,
   },
-
-  projects: [
-    {
-      name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
-    },
-    {
-      name: 'firefox',
-      use: { ...devices['Desktop Firefox'] },
-    },
-    {
-      name: 'webkit',
-      use: { ...devices['Desktop Safari'] },
-    },
-  ],
 
   // Run your local dev server before starting the tests
   webServer: {

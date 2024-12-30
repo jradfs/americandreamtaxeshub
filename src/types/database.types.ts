@@ -17,6 +17,7 @@ export type Database = {
           id: number
           status: string
           uploaded_at: string | null
+          reminder_sent: boolean | null
         }
         Insert: {
           client_id?: string | null
@@ -25,6 +26,7 @@ export type Database = {
           id?: never
           status: string
           uploaded_at?: string | null
+          reminder_sent?: boolean | null
         }
         Update: {
           client_id?: string | null
@@ -33,6 +35,7 @@ export type Database = {
           id?: never
           status?: string
           uploaded_at?: string | null
+          reminder_sent?: boolean | null
         }
         Relationships: []
       }

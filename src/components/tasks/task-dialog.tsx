@@ -137,7 +137,7 @@ export function TaskDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[525px]">
+      <DialogContent className="sm:max-w-[525px]" data-testid={task ? "task-edit-form" : "task-create-form"}>
         <form onSubmit={handleSubmit}>
           <DialogHeader>
             <DialogTitle>{task ? "Edit Task" : "New Task"}</DialogTitle>
@@ -150,6 +150,7 @@ export function TaskDialog({
               <Label htmlFor="title" className="text-right">Title</Label>
               <Input
                 id="title"
+                data-testid="task-name-input"
                 value={formData.title}
                 onChange={(e) => setFormData((prev) => ({ ...prev, title: e.target.value }))}
                 className="col-span-3"
@@ -160,6 +161,7 @@ export function TaskDialog({
               <Label htmlFor="description" className="text-right">Description</Label>
               <Textarea
                 id="description"
+                data-testid="task-description-input"
                 value={formData.description}
                 onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))}
                 className="col-span-3"
@@ -172,7 +174,7 @@ export function TaskDialog({
                 value={formData.status}
                 onValueChange={(value) => setFormData((prev) => ({ ...prev, status: value }))}
               >
-                <SelectTrigger className="col-span-3">
+                <SelectTrigger className="col-span-3" data-testid="task-status-select">
                   <SelectValue placeholder="Select status" />
                 </SelectTrigger>
                 <SelectContent>
@@ -191,7 +193,7 @@ export function TaskDialog({
                 value={formData.priority}
                 onValueChange={(value) => setFormData((prev) => ({ ...prev, priority: value }))}
               >
-                <SelectTrigger className="col-span-3">
+                <SelectTrigger className="col-span-3" data-testid="task-priority-select">
                   <SelectValue placeholder="Select priority" />
                 </SelectTrigger>
                 <SelectContent>
@@ -228,6 +230,7 @@ export function TaskDialog({
               <Input
                 id="due_date"
                 type="date"
+                data-testid="task-due-date-input"
                 value={formData.due_date}
                 onChange={(e) => setFormData((prev) => ({ ...prev, due_date: e.target.value }))}
                 className="col-span-3"
@@ -278,7 +281,7 @@ export function TaskDialog({
             </div>
           </div>
           <DialogFooter>
-            <Button type="submit" disabled={loading}>
+            <Button type="submit" data-testid="save-task-button" disabled={loading}>
               {loading ? "Saving..." : task ? "Save Changes" : "Create Task"}
             </Button>
           </DialogFooter>

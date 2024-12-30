@@ -1,18 +1,62 @@
 'use client'
 
-import { ProjectWithRelations } from "@/types/projects"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { useState, useEffect } from 'react';
+import { Button } from "src/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "src/components/ui/card"
+import { Avatar, AvatarFallback, AvatarImage } from "src/components/ui/avatar"
 import { format } from "date-fns"
 import { Calendar, Clock, Mail, Phone, Building, FileText, Link as LinkIcon } from "lucide-react"
 import Link from "next/link"
+import { DocumentTracker } from "../workflows/DocumentTracker";
+import { useDocuments } from "src/hooks/useDocuments";
+import { ProjectWithRelations } from 'src/types/projects';
 
 interface ProjectDetailsProps {
-  project: ProjectWithRelations
+  projectId: string;
 }
 
-export function ProjectDetails({ project }: ProjectDetailsProps) {
+export function ProjectDetails({ projectId }: ProjectDetailsProps) {
+  const [project, setProject] = useState<ProjectWithRelations | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchProject = async () => {
+      setLoading(true);
+      try {
+        const response = await fetch(`/api/projects`);
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data = await response.json();
+        const foundProject = data.find((p: any) => p.id === projectId);
+        if (foundProject) {
+          setProject(foundProject);
+        } else {
+            setError('Project not found');
+        }
+      } catch (e: any) {
+        setError(e.message || 'Failed to fetch project');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProject();
+  }, [projectId]);
+
+  if (loading) {
+    return <div>Loading project details...</div>;
+  }
+
+  if (error) {
+    return <div>Error: {error}</div>;
+  }
+
+  if (!project) {
+    return <div>Project not found.</div>;
+  }
+
   return (
     <div className="grid gap-6 md:grid-cols-2">
       {/* Client Information */}
@@ -161,19 +205,19 @@ export function ProjectDetails({ project }: ProjectDetailsProps) {
               <div className="grid grid-cols-2 gap-2 text-sm">
                 <div className="flex justify-between">
                   <span>Completed</span>
-                  <span>{project.tasks?.filter(t => t.status === 'completed').length || 0}</span>
+                  <span>{project.tasks?.filter((t: any) => t.status === 'completed').length || 0}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>In Progress</span>
-                  <span>{project.tasks?.filter(t => t.status === 'in_progress').length || 0}</span>
+                  <span>{project.tasks?.filter((t: any) => t.status === 'in_progress').length || 0}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Todo</span>
-                  <span>{project.tasks?.filter(t => t.status === 'todo').length || 0}</span>
+                  <span>{project.tasks?.filter((t: any) => t.status === 'todo').length || 0}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Blocked</span>
-                  <span>{project.tasks?.filter(t => t.status === 'blocked').length || 0}</span>
+                  <span>{project.tasks?.filter((t: any) => t.status === 'blocked').length || 0}</span>
                 </div>
               </div>
             </div>
@@ -189,19 +233,89 @@ export function ProjectDetails({ project }: ProjectDetailsProps) {
         </CardHeader>
         <CardContent>
           <div className="flex -space-x-2">
-            {Array.from(new Set(project.tasks?.map(t => t.assignee_id))).map((assigneeId, i) => {
-              const task = project.tasks?.find(t => t.assignee_id === assigneeId)
-              if (!task?.assignee) return null
-              return (
-                <Avatar key={assigneeId} className="border-2 border-background">
+            {Array.from(new Set(project.tasks?.map((t: any) => t.assignee_id))).map((assigneeId, i) => {
+              const task = project.tasks?.find((t: any) => t.assignee_id === assigneeId);
+              if (!task?.assignee) return null;
+              
+              return task && task.assignee ? (
+                <Avatar key={`${assigneeId ?? 'no-assignee'}-${i}`} className="border-2 border-background">
                   <AvatarImage src={task.assignee.avatar_url} />
                   <AvatarFallback>{task.assignee.full_name.charAt(0)}</AvatarFallback>
                 </Avatar>
-              )
+              ) : null;
             })}
           </div>
         </CardContent>
       </Card>
+      
+      {/* Document Tracker */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Document Tracking</CardTitle>
+          <CardDescription>Track the status of project documents</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {project && (
+            <ProjectDocumentTracker project={project} />
+          )}
+        </CardContent>
+      </Card>
     </div>
-  )
+  );
+}
+
+interface ProjectDocumentTrackerProps {
+  project: ProjectWithRelations;
+}
+
+function ProjectDocumentTracker({ project }: ProjectDocumentTrackerProps) {
+  const { documents, loading, error, refreshDocuments } = useDocuments(undefined, Number(project.id));
+
+  const handleSendReminder = (documentId: string) => {
+    console.log('send reminder', documentId)
+    // try {
+    //   await supabase
+    //     .from('client_documents')
+    //     .update({ reminder_sent: true })
+    //     .eq('id', documentId);
+    //   refreshDocuments();
+    // } catch (error) {
+    //   console.error('Error sending reminder:', error);
+    // }
+  };
+
+  const handleStatusChange = (documentId: string, status: string) => {
+    console.log('status change', documentId, status)
+    // try {
+    //   await supabase
+    //     .from('client_documents')
+    //     .update({ status: status })
+    //     .eq('id', documentId);
+    //   refreshDocuments();
+    // } catch (error) {
+    //   console.error('Error updating document status:', error);
+    // }
+  };
+
+  if (loading) {
+    return <div>Loading documents...</div>;
+  }
+
+  if (error) {
+    return <div>Error loading documents: {error}</div>;
+  }
+
+  return (
+    <DocumentTracker
+      documents={documents?.map(doc => ({
+        id: String(doc.id),
+        name: doc.document_name,
+        status: doc.status as "received" | "pending" | "reviewed" || 'pending',
+        due_date: doc.uploaded_at || new Date().toISOString(),
+        reminder_sent: doc.reminder_sent || false
+      })) || []}
+      onSendReminder={handleSendReminder}
+      onStatusChange={handleStatusChange}
+    />
+  );
 }

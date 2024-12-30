@@ -31,7 +31,7 @@ const sidebarNavItems = [
   },
   {
     title: "Tasks",
-    href: "/tasks",
+    href: "/projects",
     icon: CheckSquare,
   },
   {
@@ -43,6 +43,11 @@ const sidebarNavItems = [
     title: "Settings",
     href: "/settings",
     icon: Settings,
+  },
+  {
+    title: "SQL Agent",
+    href: "/sql-agent",
+    icon: FileText,
   },
 ];
 
@@ -71,7 +76,7 @@ export function Sidebar() {
                     variant={pathname === item.href ? "secondary" : "ghost"}
                     className={cn(
                       "w-full justify-start gap-2",
-                      pathname === item.href && "bg-muted"
+                      pathname === item.href ? "bg-muted" : ""
                     )}
                   >
                     <Icon size={20} />

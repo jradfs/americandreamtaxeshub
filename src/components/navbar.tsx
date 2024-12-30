@@ -31,12 +31,17 @@ const mainNavItems = [
   },
   {
     title: "Tasks",
-    href: "/tasks",
+    href: "/projects",
     icon: ClipboardList,
   },
   {
     title: "Templates",
     href: "/templates",
+    icon: FileText,
+  },
+  {
+    title: "SQL Agent",
+    href: "/sql-agent",
     icon: FileText,
   },
 ]

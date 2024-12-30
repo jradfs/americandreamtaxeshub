@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { ConfirmationDialog } from 'src/components/ui/confirmation-dialog'
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
 import { Plus, Search } from 'lucide-react'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -38,6 +39,8 @@ export function TaskList({ projectId, clientId }: TaskListProps) {
   const [loading, setLoading] = useState(true)
   const [isSidePanelOpen, setIsSidePanelOpen] = useState(false)
   const [selectedTask, setSelectedTask] = useState<TaskWithRelations | null>(null)
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+  const [taskToDelete, setTaskToDelete] = useState<TaskWithRelations | null>(null)
   const [statusFilter, setStatusFilter] = useState<string | null>(null)
   const [priorityFilter, setPriorityFilter] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
@@ -46,16 +49,23 @@ export function TaskList({ projectId, clientId }: TaskListProps) {
   const { toast } = useToast()
 
   const fetchTasks = useCallback(async () => {
-    if (!projectId) return
-    
+    setLoading(true)
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('tasks')
         .select('*')
-        .eq('project_id', projectId)
         .order('created_at', { ascending: false })
 
+      // Only filter by project if projectId is provided
+      if (projectId) {
+        query = query.eq('project_id', projectId)
+      }
+
+      const { data, error } = await query
+
       if (error) throw error
+      
+      // Update tasks state with fetched data
       setTasks(data || [])
     } catch (error) {
       console.error('Error fetching tasks:', error)
@@ -64,6 +74,8 @@ export function TaskList({ projectId, clientId }: TaskListProps) {
         description: "Failed to fetch tasks",
         variant: "destructive",
       })
+      // Clear tasks on error
+      setTasks([])
     } finally {
       setLoading(false)
     }
@@ -123,6 +135,43 @@ export function TaskList({ projectId, clientId }: TaskListProps) {
     })
   }, [])
 
+  const handleDeleteTask = async (task: TaskWithRelations) => {
+    setTaskToDelete(task)
+    setIsDeleteDialogOpen(true)
+  }
+
+  const confirmDeleteTask = async () => {
+    if (!taskToDelete) return
+    
+    try {
+      const { error } = await supabase
+        .from('tasks')
+        .delete()
+        .eq('id', taskToDelete.id)
+
+      if (error) throw error
+
+      // Remove task from local state
+      setTasks(prevTasks => prevTasks.filter(t => t.id !== taskToDelete.id))
+
+      toast({
+        title: "Task Deleted",
+        description: "The task was successfully deleted.",
+        duration: 2000
+      })
+    } catch (error) {
+      console.error('Error deleting task:', error)
+      toast({
+        title: "Error",
+        description: "Could not delete task. Please try again.",
+        variant: "destructive"
+      })
+    } finally {
+      setTaskToDelete(null)
+      setIsDeleteDialogOpen(false)
+    }
+  }
+
   const handleQuickTaskComplete = async (task: TaskWithRelations) => {
     try {
       const newStatus = task.status === 'completed' ? 'todo' : 'completed'
@@ -168,7 +217,7 @@ export function TaskList({ projectId, clientId }: TaskListProps) {
   })
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" data-testid="tasks-section">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div className="flex-1 relative">
           <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -181,13 +230,13 @@ export function TaskList({ projectId, clientId }: TaskListProps) {
         </div>
         
         <div className="flex gap-2">
-          <Select
-            value={statusFilter || "all"}
-            onValueChange={(value) => setStatusFilter(value === "all" ? null : value)}
-          >
-            <SelectTrigger className="w-[150px]">
-              <SelectValue placeholder="Status" />
-            </SelectTrigger>
+            <Select
+              value={statusFilter || "all"}
+              onValueChange={(value) => setStatusFilter(value === "all" ? null : value)}
+            >
+              <SelectTrigger className="w-[150px]" data-testid="filter-complete">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Status</SelectItem>
               {taskStatusOptions.map((status) => (
@@ -198,13 +247,13 @@ export function TaskList({ projectId, clientId }: TaskListProps) {
             </SelectContent>
           </Select>
 
-          <Select
-            value={priorityFilter || "all"}
-            onValueChange={(value) => setPriorityFilter(value === "all" ? null : value)}
-          >
-            <SelectTrigger className="w-[150px]">
-              <SelectValue placeholder="Priority" />
-            </SelectTrigger>
+            <Select
+              value={priorityFilter || "all"}
+              onValueChange={(value) => setPriorityFilter(value === "all" ? null : value)}
+            >
+              <SelectTrigger className="w-[150px]" data-testid="sort-priority-asc">
+                <SelectValue placeholder="Priority" />
+              </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Priority</SelectItem>
               {taskPriorityOptions.map((priority) => (
@@ -215,7 +264,32 @@ export function TaskList({ projectId, clientId }: TaskListProps) {
             </SelectContent>
           </Select>
 
-          <Button onClick={() => handleOpenSidePanel()}>
+            <Select
+              value={""}
+              onValueChange={(value) => {
+                // Handle due date sorting
+                const sortedTasks = [...tasks].sort((a, b) => {
+                  const dateA = a.due_date ? new Date(a.due_date) : null;
+                  const dateB = b.due_date ? new Date(b.due_date) : null;
+                  if (value === "asc") {
+                    return (dateA?.getTime() || 0) - (dateB?.getTime() || 0);
+                  } else {
+                    return (dateB?.getTime() || 0) - (dateA?.getTime() || 0);
+                  }
+                });
+                setTasks(sortedTasks);
+              }}
+            >
+              <SelectTrigger className="w-[150px]" data-testid="sort-due-date-desc">
+                <SelectValue placeholder="Sort by Due Date" />
+              </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="asc">Due Date (Ascending)</SelectItem>
+              <SelectItem value="desc">Due Date (Descending)</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Button onClick={() => handleOpenSidePanel()} data-testid="create-task-button">
             <Plus className="mr-2 h-4 w-4" />
             Add Task
           </Button>
@@ -244,9 +318,10 @@ export function TaskList({ projectId, clientId }: TaskListProps) {
               </TableRow>
             ) : (
               filteredTasks.map((task) => (
-                <TableRow key={task.id}>
+                <TableRow key={task.id} data-testid="task-item">
                   <TableCell>
                     <Checkbox 
+                      data-testid="complete-task-button"
                       checked={task.status === 'completed'}
                       onCheckedChange={() => handleQuickTaskComplete(task)}
                     />
@@ -262,7 +337,7 @@ export function TaskList({ projectId, clientId }: TaskListProps) {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Badge variant={
+                    <Badge data-testid="task-status" variant={
                       task.status === 'completed' ? 'default' :
                       task.status === 'in-progress' ? 'secondary' :
                       task.status === 'blocked' ? 'destructive' :
@@ -272,7 +347,7 @@ export function TaskList({ projectId, clientId }: TaskListProps) {
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    <Badge variant={
+                    <Badge data-testid="task-priority" variant={
                       task.priority === 'urgent' ? 'destructive' :
                       task.priority === 'high' ? 'default' :
                       task.priority === 'medium' ? 'secondary' :
@@ -282,7 +357,9 @@ export function TaskList({ projectId, clientId }: TaskListProps) {
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    {task.due_date ? format(new Date(task.due_date), 'MMM d, yyyy') : '-'}
+                    <span data-testid="task-due-date">
+                      {task.due_date ? format(new Date(task.due_date), 'MMM d, yyyy') : '-'}
+                    </span>
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
@@ -296,13 +373,23 @@ export function TaskList({ projectId, clientId }: TaskListProps) {
                     </div>
                   </TableCell>
                   <TableCell className="text-right">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleOpenSidePanel(task)}
-                    >
-                      Edit
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleOpenSidePanel(task)}
+                      >
+                        Edit
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDeleteTask(task)}
+                        data-testid="delete-task-button"
+                      >
+                        Delete
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))
@@ -318,6 +405,14 @@ export function TaskList({ projectId, clientId }: TaskListProps) {
         projectId={projectId}
         clientId={clientId}
         onTaskUpdate={handleTaskUpdate}
+      />
+
+      <ConfirmationDialog
+        open={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+        title="Delete Task"
+        description="Are you sure you want to delete this task? This action cannot be undone."
+        onConfirm={confirmDeleteTask}
       />
     </div>
   )

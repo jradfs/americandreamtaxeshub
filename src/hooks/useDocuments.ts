@@ -1,9 +1,17 @@
 import { useState, useEffect } from 'react'
-import { supabase } from '@/lib/supabase'
-import { Document, DocumentInsert, DocumentUpdate } from '@/types/hooks'
+import { createClient } from '@supabase/supabase-js'
+import { Tables, TablesInsert, Database } from 'src/types/database.types'
+
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL as string;
+const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string;
+
+const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+type ClientDocument = Tables<'client_documents'>
+type DocumentInsert = TablesInsert<'documents'>
 
 export function useDocuments(clientId?: number, projectId?: number) {
-  const [documents, setDocuments] = useState<Document[]>([])
+  const [documents, setDocuments] = useState<ClientDocument[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -16,9 +24,9 @@ export function useDocuments(clientId?: number, projectId?: number) {
   async function fetchDocuments() {
     try {
       let query = supabase
-        .from('documents')
+        .from('client_documents')
         .select('*')
-        .order('uploaded_at', { ascending: false })
+        .order('id', { ascending: false })
 
       if (clientId) {
         query = query.eq('client_id', clientId)
@@ -57,13 +65,13 @@ export function useDocuments(clientId?: number, projectId?: number) {
 
       // Create document record in the database
       const { data, error: dbError } = await supabase
-        .from('documents')
+        .from('client_documents')
         .insert([{
-          ...documentInfo,
-          file_name: fileName,
-          file_type: fileExt,
-          storage_path: storagePath,
-          uploaded_at: new Date().toISOString()
+          document_name: fileName,
+          document_type: fileExt,
+          client_id: documentInfo.client_id,
+          uploaded_at: new Date().toISOString(),
+          status: 'pending'
         }])
         .select()
 
@@ -76,18 +84,12 @@ export function useDocuments(clientId?: number, projectId?: number) {
     }
   }
 
-  async function deleteDocument(id: number, storagePath: string) {
+  async function deleteDocument(id: number) {
     try {
-      // Delete file from storage
-      const { error: storageError } = await supabase.storage
-        .from('documents')
-        .remove([storagePath])
-
-      if (storageError) throw storageError
 
       // Delete document record
       const { error: dbError } = await supabase
-        .from('documents')
+        .from('client_documents')
         .delete()
         .eq('id', id)
 
