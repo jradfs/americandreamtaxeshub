@@ -76,7 +76,7 @@ export default function LoginPage() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="signin-email">Email</Label>
+                  <Label htmlFor="signin-email">Email address</Label>
                   <Input
                     id="signin-email"
                     type="email"
@@ -115,7 +115,7 @@ export default function LoginPage() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="signup-email">Email</Label>
+                  <Label htmlFor="signup-email">Email address</Label>
                   <Input
                     id="signup-email"
                     type="email"

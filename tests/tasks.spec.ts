@@ -1,169 +1,120 @@
 import { test, expect } from '@playwright/test';
 
-test.describe('Task Management', () => {
+test.describe('Tasks Management', () => {
   test.beforeEach(async ({ page }) => {
-    // Navigate to tasks page
-    await page.goto('/tasks');
+    await page.goto('http://localhost:3000/tasks');
   });
 
-  test('should display task list', async ({ page }) => {
-    // Verify tasks section is visible
-    await expect(page.getByTestId('tasks-section')).toBeVisible();
-    
-    // Verify at least one task is displayed
-    await expect(page.getByTestId('task-item').nth(0)).toBeVisible();
+  test('should display tasks dashboard', async ({ page }) => {
+    await expect(page.getByRole('heading', { name: 'All Tasks' })).toBeVisible();
+    await expect(page.getByRole('table')).toBeVisible();
   });
 
-  test('should allow creating a new task', async ({ page }) => {
-    // Click create task button
-    await page.getByTestId('create-task-button').click();
-    
-    // Verify create form is visible
-    await expect(page.getByTestId('task-create-form')).toBeVisible();
-    
+  test('should create new task with full details', async ({ page }) => {
+    // Click new task button
+    await page.getByRole('button', { name: 'New Task' }).click();
+
     // Fill in task details
-    await page.getByTestId('task-name-input').fill('New Task');
-    await page.getByTestId('task-description-input').fill('Task Description');
-    
-    // Save task
-    await page.getByTestId('save-task-button').click();
-    
-    // Verify new task is displayed
-    await expect(page.getByText('New Task')).toBeVisible();
+    await page.getByLabel('Title').fill('Test Task');
+    await page.getByLabel('Description').fill('Test Description');
+    await page.getByLabel('Due Date').fill('2024-12-31');
+    await page.getByLabel('Status').click();
+    await page.getByRole('option', { name: 'In Progress' }).click();
+    await page.getByLabel('Priority').click();
+    await page.getByRole('option', { name: 'High' }).click();
+
+    // Submit form
+    await page.getByRole('button', { name: 'Create' }).click();
+
+    // Verify task was created
+    await expect(page.getByRole('cell', { name: 'Test Task' })).toBeVisible();
   });
 
-  test('should allow marking task as complete', async ({ page }) => {
-    // Click complete button on first task
-    await page.getByTestId('complete-task-button').nth(0).click();
-    
-    // Verify task is marked as complete
-    await expect(page.getByTestId('task-status').nth(0)).toHaveText('Complete');
+  test('should filter tasks by multiple criteria', async ({ page }) => {
+    // Apply status filter
+    await page.getByLabel('Status').click();
+    await page.getByRole('option', { name: 'In Progress' }).click();
+
+    // Apply priority filter
+    await page.getByLabel('Priority').click();
+    await page.getByRole('option', { name: 'High' }).click();
+
+    // Apply search filter
+    await page.getByPlaceholder('Search tasks...').fill('test');
+
+    // Verify filtered results
+    await expect(page.getByRole('table')).toBeVisible();
   });
 
-  test('should allow editing a task', async ({ page }) => {
-    // Click edit button on first task
-    await page.getByTestId('edit-task-button').nth(0).click();
+  test('should update task status through drag and drop', async ({ page }) => {
+    // Get first task
+    const task = page.getByRole('row').nth(1);
+    const initialStatus = await task.getByRole('cell').nth(2).textContent();
+
+    // Click status dropdown
+    await task.getByRole('cell').nth(2).click();
     
-    // Verify edit form is visible
-    await expect(page.getByTestId('task-edit-form')).toBeVisible();
-    
-    // Update task details
-    await page.getByTestId('task-name-input').fill('Updated Task');
-    await page.getByTestId('task-description-input').fill('Updated Description');
-    
+    // Select new status
+    await page.getByRole('option', { name: 'In Progress' }).click();
+
+    // Verify status changed
+    await expect(task.getByRole('cell').nth(2)).not.toHaveText(initialStatus!);
+  });
+
+  test('should handle task dependencies', async ({ page }) => {
+    // Open first task details
+    await page.getByRole('row').nth(1).click();
+
+    // Add dependency
+    await page.getByRole('button', { name: 'Add Dependency' }).click();
+    await page.getByRole('option').first().click();
+
     // Save changes
-    await page.getByTestId('save-task-button').click();
-    
-    // Verify task is updated
-    await expect(page.getByText('Updated Task')).toBeVisible();
-    await expect(page.getByText('Updated Description')).toBeVisible();
+    await page.getByRole('button', { name: 'Save' }).click();
+
+    // Verify dependency added
+    await expect(page.getByText('Dependencies')).toBeVisible();
   });
 
-  test('should allow deleting a task', async ({ page }) => {
-    // Get initial task count
-    const initialTaskCount = await page.getByTestId('task-item').count();
-    
-    // Click delete button on first task
-    await page.getByTestId('delete-task-button').nth(0).click();
-    
-    // Confirm deletion
-    await page.getByTestId('confirm-delete-button').click();
-    
-    // Verify task is removed
-    await expect(page.getByTestId('task-item')).toHaveCount(initialTaskCount - 1);
+  test('should track time on task', async ({ page }) => {
+    // Start timer on first task
+    await page.getByRole('button', { name: 'Start Timer' }).first().click();
+
+    // Wait briefly
+    await page.waitForTimeout(2000);
+
+    // Stop timer
+    await page.getByRole('button', { name: 'Stop Timer' }).first().click();
+
+    // Verify time tracked
+    await expect(page.getByText(/Time Spent/)).toBeVisible();
   });
 
-  test('should filter tasks by status', async ({ page }) => {
-    // Filter by complete tasks
-    await page.getByTestId('filter-complete').click();
-    await expect(page.getByTestId('task-status').nth(0)).toHaveText('Complete');
-    
-    // Filter by incomplete tasks
-    await page.getByTestId('filter-incomplete').click();
-    await expect(page.getByTestId('task-status').nth(0)).toHaveText('Incomplete');
+  test('should handle bulk actions', async ({ page }) => {
+    // Select multiple tasks
+    await page.getByRole('checkbox').nth(1).check();
+    await page.getByRole('checkbox').nth(2).check();
+
+    // Open bulk actions menu
+    await page.getByRole('button', { name: 'Bulk Actions' }).click();
+
+    // Change status for selected tasks
+    await page.getByRole('menuitem', { name: 'Change Status' }).click();
+    await page.getByRole('option', { name: 'In Progress' }).click();
+
+    // Verify status updated
+    await expect(page.getByRole('cell', { name: 'In Progress' })).toHaveCount(2);
   });
 
-  test('should sort tasks by due date', async ({ page }) => {
-    // Sort by due date ascending
-    await page.getByTestId('sort-due-date-asc').click();
-    const firstDateText = await page.getByTestId('task-due-date').nth(0).textContent();
-    const secondDateText = await page.getByTestId('task-due-date').nth(1).textContent();
-    
-    if (firstDateText && secondDateText) {
-      const firstDate = new Date(firstDateText);
-      const secondDate = new Date(secondDateText);
-      expect(firstDate <= secondDate).toBeTruthy();
-    } else {
-      throw new Error('Task due dates not found');
-    }
-    
-    // Sort by due date descending
-    await page.getByTestId('sort-due-date-desc').click();
-    const firstDateDescText = await page.getByTestId('task-due-date').nth(0).textContent();
-    const secondDateDescText = await page.getByTestId('task-due-date').nth(1).textContent();
-    
-    if (firstDateDescText && secondDateDescText) {
-      const firstDateDesc = new Date(firstDateDescText);
-      const secondDateDesc = new Date(secondDateDescText);
-      expect(firstDateDesc >= secondDateDesc).toBeTruthy();
-    } else {
-      throw new Error('Task due dates not found');
-    }
-  });
+  test('should handle task comments', async ({ page }) => {
+    // Open first task details
+    await page.getByRole('row').nth(1).click();
 
-  test('should sort tasks by priority', async ({ page }) => {
-    // Sort by priority ascending
-    await page.getByTestId('sort-priority-asc').click();
-    const firstPriorityText = await page.getByTestId('task-priority').nth(0).textContent();
-    const secondPriorityText = await page.getByTestId('task-priority').nth(1).textContent();
-    
-    if (firstPriorityText && secondPriorityText) {
-      const firstPriority = Number(firstPriorityText);
-      const secondPriority = Number(secondPriorityText);
-      expect(firstPriority <= secondPriority).toBeTruthy();
-    } else {
-      throw new Error('Task priorities not found');
-    }
-    
-    // Sort by priority descending
-    await page.getByTestId('sort-priority-desc').click();
-    const firstPriorityDescText = await page.getByTestId('task-priority').nth(0).textContent();
-    const secondPriorityDescText = await page.getByTestId('task-priority').nth(1).textContent();
-    
-    if (firstPriorityDescText && secondPriorityDescText) {
-      const firstPriorityDesc = Number(firstPriorityDescText);
-      const secondPriorityDesc = Number(secondPriorityDescText);
-      expect(firstPriorityDesc >= secondPriorityDesc).toBeTruthy();
-    } else {
-      throw new Error('Task priorities not found');
-    }
-  });
+    // Add comment
+    await page.getByPlaceholder('Add a comment...').fill('Test comment');
+    await page.getByRole('button', { name: 'Post' }).click();
 
-  test('should handle invalid task creation', async ({ page }) => {
-    // Click create task button
-    await page.getByTestId('create-task-button').click();
-    
-    // Try to save without required fields
-    await page.getByTestId('save-task-button').click();
-    
-    // Verify error messages
-    await expect(page.getByText('Name is required')).toBeVisible();
-    await expect(page.getByText('Description is required')).toBeVisible();
-  });
-
-  test('should handle task update failure', async ({ page }) => {
-    // Click edit button on first task
-    await page.getByTestId('edit-task-button').nth(0).click();
-    
-    // Clear required fields
-    await page.getByTestId('task-name-input').fill('');
-    await page.getByTestId('task-description-input').fill('');
-    
-    // Try to save invalid data
-    await page.getByTestId('save-task-button').click();
-    
-    // Verify error messages
-    await expect(page.getByText('Name is required')).toBeVisible();
-    await expect(page.getByText('Description is required')).toBeVisible();
+    // Verify comment added
+    await expect(page.getByText('Test comment')).toBeVisible();
   });
 });

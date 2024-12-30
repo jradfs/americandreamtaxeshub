@@ -16,12 +16,13 @@ American Dream Taxes Hub is a practice management tool designed specifically for
 - Priority-based task organization
 - Progress tracking
 - Template-based task generation
-- Time tracking capabilities
+- Real-time status updates
 
 ### 3. Template System
 - Pre-defined task templates for common tax procedures
 - Customizable workflows
 - Categories: Tax Preparation, Bookkeeping, Planning, etc.
+- Template-based project creation
 
 ## Technical Stack
 
@@ -38,6 +39,12 @@ American Dream Taxes Hub is a practice management tool designed specifically for
 - Real-time subscriptions
 - Row Level Security (RLS)
 
+### Testing
+- Playwright for E2E testing
+- Jest for unit testing
+- MSW for API mocking
+- Supertest for API testing
+
 ### Authentication
 - Supabase Auth
 - Role-based access control
@@ -46,7 +53,7 @@ American Dream Taxes Hub is a practice management tool designed specifically for
 ## Development Guidelines
 
 ### 1. Code Organization
-\`\`\`plaintext
+```plaintext
 src/
   ├── app/                    # Next.js app router pages
   ├── components/            
@@ -57,7 +64,11 @@ src/
   ├── lib/                   # Utility functions and helpers
   ├── hooks/                 # Custom React hooks
   └── types/                 # TypeScript type definitions
-\`\`\`
+tests/
+  ├── e2e/                   # Playwright E2E tests
+  ├── __tests__/            # Jest unit tests
+  └── integration/          # API integration tests
+```
 
 ### 2. Coding Standards
 - Use TypeScript for all new code
@@ -65,107 +76,108 @@ src/
 - Use @/* path aliases (not src/*)
 - Implement proper loading and error states
 - Add proper TypeScript types for all data structures
+- Write tests for new features
 
 ### 3. Component Structure
-\`\`\`typescript
+```typescript
 // Example component structure
 'use client'
 
 import { useState, useEffect } from 'react'
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
+import { useToast } from "@/components/ui/use-toast"
 
 type ComponentProps = {
   // Define prop types
 }
 
 export function ComponentName({ ...props }: ComponentProps) {
-  // Component logic
+  const [loading, setLoading] = useState(false)
+  const { toast } = useToast()
+  const supabase = createClientComponentClient()
+
+  // Component logic with proper error handling
+  const handleAction = async () => {
+    try {
+      setLoading(true)
+      // Action logic
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "An error occurred",
+        variant: "destructive",
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
+
   return (
-    // JSX
+    // JSX with loading states
   )
 }
-\`\`\`
+```
 
 ### 4. Database Access
 - Always use Supabase client for database operations
 - Implement proper error handling
 - Use TypeScript types for database models
 - Follow RLS policies
+- Handle real-time updates properly
 
 ### 5. State Management
 - Use React hooks for local state
 - Leverage Supabase real-time for shared state
 - Implement proper loading states
 - Handle errors gracefully
+- Use optimistic updates where appropriate
+
+### 6. Testing
+- Write E2E tests for critical workflows
+- Add unit tests for complex logic
+- Test error states and edge cases
+- Follow testing best practices
+- Maintain test documentation
 
 ## Getting Started
 
-1. **Clone and Install**
-\`\`\`bash
-git clone [repository-url]
-cd american-dream-taxes-hub
+### 1. Environment Setup
+```bash
+# Install dependencies
 npm install
-\`\`\`
 
-2. **Environment Setup**
-\`\`\`bash
-# Create .env.local with:
-NEXT_PUBLIC_SUPABASE_URL=your-supabase-url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
-\`\`\`
+# Set up environment variables
+cp .env.example .env.local
 
-3. **Development Server**
-\`\`\`bash
+# Start development server
 npm run dev
-\`\`\`
 
-## Current Priority Tasks
+# Run tests
+npm run test        # Unit tests
+npm run test:e2e    # E2E tests
+```
 
-1. **Client Management**
-- Implement client creation dialog
-- Add client editing functionality
-- Add client search/filtering
+### 2. Development Workflow
+1. Create feature branch
+2. Implement changes
+3. Add tests
+4. Run test suite
+5. Submit pull request
 
-2. **Task Management**
-- Complete task creation workflow
-- Implement task assignment
-- Add task status updates
+### 3. Testing
+- Run tests before commits
+- Add tests for new features
+- Update existing tests as needed
+- Check test coverage
 
-3. **Template System**
-- Build template creation interface
-- Implement template application
+### 4. Deployment
+- Automated via GitHub Actions
+- Requires passing tests
+- Includes database migrations
+- Updates documentation
 
-4. **Workspace Integration**
-- Review existing workspace code
-- Plan reintegration strategy
-- Update UI/UX for workspace views
-
-## Testing
-- Manual testing for all features
-- Focus on edge cases
-- Test across different screen sizes
-- Verify all database operations
-
-## Deployment
-- Deployment through Vercel
-- Environment variable management
-- Database backup procedures
-- CI/CD pipeline considerations
-
-## Resources
-- [Next.js Documentation](https://nextjs.org/docs)
-- [Supabase Documentation](https://supabase.com/docs)
-- [shadcn/ui Components](https://ui.shadcn.com/)
-- [Tailwind CSS Documentation](https://tailwindcss.com/docs)
-
-## Communication Channels
-- GitHub for code reviews and issues
-- Discord for team communication
-- Weekly sync meetings
-- Daily standup updates
-
-## Notes
-- Keep code modular and reusable
-- Focus on performance and user experience
-- Regular commits with clear messages
-- Document any major changes or decisions
+## Additional Resources
+- [Testing Guide](./docs/testing/testing-guide.md)
+- [API Documentation](./docs/api/overview.md)
+- [Database Schema](./docs/database/schema.md)
+- [Component Library](./docs/components/overview.md)

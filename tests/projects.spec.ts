@@ -1,41 +1,128 @@
 import { test, expect } from '@playwright/test';
+import { format } from 'date-fns';
 
-test.describe('Project Details Page', () => {
+test.describe('Projects Page', () => {
   test.beforeEach(async ({ page }) => {
-    // Navigate to a specific project page
-    await page.goto('/projects/8c40d585-9b52-443f-8ebc-74c464e7e03');
+    // Navigate to projects page and wait for it to load
+    await page.goto('http://localhost:3000/projects');
+    await expect(page.getByRole('heading', { name: 'Projects' })).toBeVisible();
   });
 
-  test('should load project details', async ({ page }) => {
-    // Verify project name is displayed
-    await expect(page.getByTestId('project-name')).toBeVisible();
-    
-    // Verify project description is displayed
-    await expect(page.getByTestId('project-description')).toBeVisible();
+  test('should display projects list page', async ({ page }) => {
+    await expect(page.getByRole('heading', { name: 'Projects' })).toBeVisible();
+    await expect(page.getByText('Manage your active projects')).toBeVisible();
   });
 
-  test('should display associated tasks', async ({ page }) => {
-    // Verify tasks section is visible
-    await expect(page.getByTestId('tasks-section')).toBeVisible();
+  test('should create new project', async ({ page }) => {
+    // Click new project button
+    await page.getByRole('button', { name: 'New Project' }).click();
+
+    // Wait for dialog
+    await expect(page.getByRole('dialog')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'New Project' })).toBeVisible();
+
+    // Fill in project details
+    await page.getByLabel('Project Name').fill('Test Project');
+    await page.getByLabel('Description').fill('Test Description');
     
-    // Verify at least one task is displayed
-    await expect(page.getByTestId('task-item').nth(0)).toBeVisible();
+    // Select client
+    await page.getByRole('combobox', { name: 'Client' }).click();
+    await page.getByRole('option').first().click();
+    
+    // Select template
+    await page.getByRole('combobox', { name: 'Template' }).click();
+    await page.getByRole('option').first().click();
+
+    // Set status
+    await page.getByRole('combobox', { name: 'Status' }).click();
+    await page.getByRole('option', { name: 'In Progress' }).click();
+
+    // Set due date
+    const dueDate = format(new Date('2024-12-31'), 'PP');
+    await page.getByRole('button', { name: 'Pick a due date' }).click();
+    await page.getByRole('button', { name: dueDate }).click();
+
+    // Submit form
+    await page.getByRole('button', { name: 'Create Project' }).click();
+
+    // Verify project was created
+    await expect(page.getByText('Test Project')).toBeVisible();
   });
 
-  test('should allow editing project details', async ({ page }) => {
-    // Click edit button
-    await page.getByTestId('edit-project-button').click();
+  test('should filter projects', async ({ page }) => {
+    // Open filters
+    await page.getByRole('button', { name: 'Filter' }).click();
     
-    // Verify edit form is visible
-    await expect(page.getByTestId('project-edit-form')).toBeVisible();
+    // Apply status filter
+    await page.getByRole('combobox', { name: 'Status' }).click();
+    await page.getByRole('option', { name: 'In Progress' }).click();
     
-    // Update project name
-    await page.getByTestId('project-name-input').fill('Updated Project Name');
+    // Apply client filter
+    await page.getByRole('combobox', { name: 'Client' }).click();
+    await page.getByRole('option').first().click();
     
-    // Save changes
-    await page.getByTestId('save-project-button').click();
+    // Apply filters
+    await page.getByRole('button', { name: 'Apply Filters' }).click();
     
-    // Verify updated name is displayed
-    await expect(page.getByTestId('project-name')).toHaveText('Updated Project Name');
+    // Verify filters are applied
+    await expect(page.getByText('Filtered Results')).toBeVisible();
+  });
+
+  test('should refresh project list', async ({ page }) => {
+    await page.getByRole('button', { name: 'Refresh' }).click();
+    await expect(page.getByRole('progressbar')).toBeVisible();
+    await expect(page.getByRole('progressbar')).not.toBeVisible({ timeout: 5000 });
+  });
+
+  test('should handle error states', async ({ page }) => {
+    // Simulate error by triggering refresh with failed request
+    await page.route('**/api/projects**', (route) => route.fulfill({
+      status: 500,
+      body: 'Server error'
+    }));
+    
+    await page.getByRole('button', { name: 'Refresh' }).click();
+    await expect(page.getByText('Failed to refresh projects')).toBeVisible();
+  });
+
+  test('should edit project', async ({ page }) => {
+    // Click edit button on first project
+    await page.getByRole('button', { name: 'Edit Project' }).first().click();
+    
+    // Wait for dialog
+    await expect(page.getByRole('dialog')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Edit Project' })).toBeVisible();
+
+    // Update project details
+    await page.getByLabel('Project Name').fill('Updated Project');
+    await page.getByLabel('Description').fill('Updated Description');
+
+    // Submit form
+    await page.getByRole('button', { name: 'Save Changes' }).click();
+
+    // Verify project was updated
+    await expect(page.getByText('Updated Project')).toBeVisible();
+  });
+
+  test('should delete project', async ({ page }) => {
+    // Create a project to delete
+    await test.step('Create project', async () => {
+      await page.getByRole('button', { name: 'New Project' }).click();
+      await page.getByLabel('Project Name').fill('Project to Delete');
+      await page.getByLabel('Description').fill('This project will be deleted');
+      await page.getByRole('combobox', { name: 'Client' }).click();
+      await page.getByRole('option').first().click();
+      await page.getByRole('combobox', { name: 'Template' }).click();
+      await page.getByRole('option').first().click();
+      await page.getByRole('button', { name: 'Create Project' }).click();
+      await expect(page.getByText('Project to Delete')).toBeVisible();
+    });
+
+    // Delete the project
+    await test.step('Delete project', async () => {
+      await page.getByRole('button', { name: 'Delete Project' }).first().click();
+      await page.getByRole('button', { name: 'Confirm' }).click();
+      await expect(page.getByText('Project to Delete')).not.toBeVisible();
+    });
   });
 });

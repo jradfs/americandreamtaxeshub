@@ -20,18 +20,18 @@ const mainNavItems = [
     icon: LayoutDashboard,
   },
   {
-    title: "Workspace",
-    href: "/workspace",
-    icon: FolderKanban,
-  },
-  {
     title: "Clients",
     href: "/clients",
     icon: Users,
   },
   {
-    title: "Tasks",
+    title: "Projects",
     href: "/projects",
+    icon: ClipboardList,
+  },
+  {
+    title: "Tasks",
+    href: "/tasks",
     icon: ClipboardList,
   },
   {

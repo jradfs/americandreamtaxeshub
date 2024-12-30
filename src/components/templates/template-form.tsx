@@ -1,3 +1,5 @@
+'use client';
+
 import { useState } from 'react';
 import { Tables } from 'src/types/database.types';
 import { Button } from '../ui/button';

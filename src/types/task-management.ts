@@ -10,7 +10,6 @@ export interface Task {
   description?: string;
   status: Status;
   priority: Priority;
-  workspace_id: string;
   created_at: string;
   updated_at: string;
   assigned_user_id?: string;
@@ -30,20 +29,6 @@ export interface TaskSection {
   };
 }
 
-export interface Workspace {
-  id: string;
-  name: string;
-  projects: Project[];
-  tasks: Task[];
-  client_id?: string;
-  settings: {
-    default_view: ViewType;
-    default_grouping: GroupingType;
-  };
-  created_at: string;
-  updated_at: string;
-}
-
 export interface Project {
   id: string;
   name: string;
@@ -51,7 +36,6 @@ export interface Project {
   tasks: string[]; // Task IDs
   status: Status;
   priority: Priority;
-  workspace_id: string;
   created_at: string;
   updated_at: string;
 }
@@ -71,5 +55,4 @@ export interface UnifiedViewConfig {
       assignees: string[];
     };
   };
-  workspaces: Workspace[];
 }
