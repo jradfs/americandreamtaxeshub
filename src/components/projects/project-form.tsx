@@ -42,7 +42,7 @@ const projectSchema = z.object({
   name: z.string().min(1, 'Name is required'),
   description: z.string().optional(),
   client_id: z.string().min(1, 'Client is required'),
-  status: z.string().optional(),
+  status: z.string().default('not_started'),
   priority: z.enum(['low', 'medium', 'high']).default('medium'),
   due_date: z.date().optional(),
   service_type: z.enum([
@@ -138,10 +138,10 @@ export function ProjectForm({ project, onSuccess }: ProjectFormProps) {
       description: project?.description || '',
       client_id: project?.client?.id || '',
       status: project?.status || 'not_started',
-      priority: project?.priority || 'medium', // Ensure default value
+      priority: project?.priority || 'medium',
       due_date: project?.due_date ? new Date(project.due_date) : undefined,
       service_type: project?.service_type || 'uncategorized',
-      template_id: undefined,
+      template_id: project?.template_id || undefined,
       tasks: []
     }
   });
@@ -207,15 +207,15 @@ export function ProjectForm({ project, onSuccess }: ProjectFormProps) {
 
     setIsLoading(true);
     try {
-      // Prepare project data
+      // Prepare project data with defaults
       const projectData = {
         name: values.name,
         description: values.description,
         client_id: values.client_id,
-        status: 'not_started',
-        priority: values.priority,
+        status: values.status || 'not_started',
+        priority: values.priority || 'medium',
         due_date: values.due_date?.toISOString(),
-        service_type: values.service_type,
+        service_type: values.service_type || 'uncategorized',
         template_id: values.template_id,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
