@@ -198,18 +198,23 @@ export function ProjectForm({ project, onSuccess }: ProjectFormProps) {
   };
 
   const onSubmit = async (values: z.infer<typeof projectSchema>) => {
+    console.log('Form values before validation:', values);
+    
     if (!validateTaskDependencies(values.tasks || [])) {
+      console.error('Task dependency validation failed');
       toast.error('Please fix task dependency errors');
       return;
     }
 
     // Additional validation for due date
     if (values.due_date && values.due_date < new Date()) {
+      console.error('Due date validation failed - date is in the past');
       toast.error('Due date must be in the future');
       return;
     }
 
     console.log('Submitting project with values:', values);
+    console.log('Validating task dependencies...');
     console.log('Validating task dependencies...');
     
     if (!validateTaskDependencies(values.tasks || [])) {
@@ -242,6 +247,7 @@ export function ProjectForm({ project, onSuccess }: ProjectFormProps) {
       };
 
       console.log('Project data to insert:', projectData);
+      console.log('Inserting project into database...');
 
       // Insert project
       const { data: project, error: projectError } = await supabase
@@ -261,6 +267,7 @@ export function ProjectForm({ project, onSuccess }: ProjectFormProps) {
       }
 
       console.log('Project created successfully:', project);
+      console.log('Project ID:', project.id);
       console.log('Project ID:', project.id);
 
       // Insert tasks if template was used
