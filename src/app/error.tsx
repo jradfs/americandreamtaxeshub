@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect } from 'react'
-import { Button } from 'components/ui/button'
+import { Button } from '@/components/ui/button'
 import { 
   Card,
   CardHeader,
@@ -9,7 +9,7 @@ import {
   CardDescription,
   CardContent,
   CardFooter
-} from 'components/ui/card'
+} from '@/components/ui/card'
 
 export default function Error({
   error,
