@@ -8,6 +8,7 @@ import SupabaseProvider from "@/lib/supabase/supabase-provider";
 import { Sidebar } from "@/components/layout/sidebar";
 import { cn } from "@/lib/utils";
 import { Toaster } from "@/components/ui/toaster";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 const fontSans = FontSans({
   subsets: ["latin"],
@@ -41,6 +42,9 @@ export default function RootLayout({ children }: RootLayoutProps) {
                 <div className="relative flex min-h-screen">
                   <Sidebar />
                   <main className="flex-1 pl-64 p-8">
+                    <div className="absolute top-4 right-4">
+                      <ThemeToggle />
+                    </div>
                     {children}
                   </main>
                   <Toaster />
