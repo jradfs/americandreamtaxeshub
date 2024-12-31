@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 import { Toaster } from "@/components/ui/toaster";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { MainContent } from "@/components/layout/main-content";
+import { useSidebar } from "@/components/providers/sidebar-provider";
 
 
 export const metadata: Metadata = {
@@ -21,6 +22,7 @@ interface RootLayoutProps {
 }
 
 export default function RootLayout({ children }: RootLayoutProps) {
+  const { isCollapsed } = useSidebar();
   const { isCollapsed } = useSidebar();
   return (
     <html lang="en" suppressHydrationWarning>
