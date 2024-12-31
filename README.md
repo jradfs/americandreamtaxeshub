@@ -28,6 +28,21 @@ A comprehensive practice management tool for tax professionals and accounting fi
 - Category organization
 - Automated task creation
 
+## Dark Mode Implementation
+
+The application features a carefully designed dark mode with:
+
+- Background: `#0f172a` (Deep navy shade)
+- Foreground: `#f8fafc` (Light text for contrast)
+- Automatic system preference detection
+- Manual toggle via theme switcher
+
+### Key Points:
+- Colors are defined in `tailwind.config.ts`
+- Dark mode variables are set in `globals.css`
+- Always use Tailwind's dark: prefix for dark mode styles
+- Test for proper contrast in both modes
+
 ## Font Guidelines
 
 The application uses a system font stack for consistent, beautiful rendering across platforms:

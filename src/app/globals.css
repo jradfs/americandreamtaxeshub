@@ -32,8 +32,8 @@
   }
 
   .dark {
-    --background: 0 0% 3.9%;
-    --foreground: 0 0% 98%;
+    --background: 0 0% 3.9%; /* Matches the deep navy shade in tailwind config */
+    --foreground: 0 0% 98%; /* Light text for contrast */
     --card: 0 0% 3.9%;
     --card-foreground: 0 0% 98%;
     --popover: 0 0% 3.9%;
