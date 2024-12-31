@@ -177,10 +177,19 @@ export function ProjectForm({ project, onSuccess }: ProjectFormProps) {
   const validateTaskDependencies = (tasks: any[]) => {
     const errors: Record<string, string> = {};
     
-    // Simple validation - ensure dependencies is an array
     tasks.forEach(task => {
+      // Ensure dependencies is an array
       if (task.dependencies && !Array.isArray(task.dependencies)) {
         errors[task.id] = 'Dependencies must be an array';
+      }
+      // Validate dependency IDs exist in the task list
+      if (task.dependencies) {
+        const invalidDeps = task.dependencies.filter((dep: string) => 
+          !tasks.some(t => t.id === dep)
+        );
+        if (invalidDeps.length > 0) {
+          errors[task.id] = `Invalid dependencies: ${invalidDeps.join(', ')}`;
+        }
       }
     });
 
@@ -191,6 +200,12 @@ export function ProjectForm({ project, onSuccess }: ProjectFormProps) {
   const onSubmit = async (values: z.infer<typeof projectSchema>) => {
     if (!validateTaskDependencies(values.tasks || [])) {
       toast.error('Please fix task dependency errors');
+      return;
+    }
+
+    // Additional validation for due date
+    if (values.due_date && values.due_date < new Date()) {
+      toast.error('Due date must be in the future');
       return;
     }
 
