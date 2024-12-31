@@ -1,7 +1,4 @@
-// This is a test comment to ensure the file is being overwritten correctly
-import { Task } from '@/types/task';
-
-export function cn(...classes: string[]) {
+export function cn(...classes: (string | undefined | null | false)[]): string {
   return classes.filter(Boolean).join(' ');
 }
 
