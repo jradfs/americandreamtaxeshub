@@ -28,6 +28,22 @@ A comprehensive practice management tool for tax professionals and accounting fi
 - Category organization
 - Automated task creation
 
+## Font Guidelines
+
+The application uses a system font stack for consistent, beautiful rendering across platforms:
+
+```css
+font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, 
+             "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", 
+             "Segoe UI Emoji", "Segoe UI Symbol";
+```
+
+### Key Points:
+- Always use Tailwind's `font-sans` utility class
+- Never declare `font-family` directly in CSS
+- Font configuration is centralized in `tailwind.config.ts`
+- Changes require team discussion
+
 ## Technology Stack
 
 ### Frontend
