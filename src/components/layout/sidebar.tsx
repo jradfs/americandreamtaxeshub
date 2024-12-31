@@ -52,7 +52,7 @@ const sidebarNavItems = [
 
 export function Sidebar() {
   const pathname = usePathname();
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const { isCollapsed, toggleCollapse } = useSidebar();
 
   return (
     <aside
@@ -63,7 +63,7 @@ export function Sidebar() {
     >
       {/* Collapse/Expand Button */}
       <button
-        onClick={() => setIsCollapsed(!isCollapsed)}
+        onClick={toggleCollapse}
         className="absolute -right-3 top-4 rounded-full border bg-background p-1 shadow-sm hover:bg-accent"
       >
         {isCollapsed ? (

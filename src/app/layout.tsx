@@ -44,9 +44,6 @@ export default function RootLayout({ children }: RootLayoutProps) {
                 <div className="relative flex min-h-screen">
                   <Sidebar />
                   <main className="flex-1 p-8 transition-all duration-300 ease-in-out">
-                    <div className="absolute top-4 right-4">
-                      <ThemeToggle />
-                    </div>
                     {children}
                   </main>
                   <Toaster />
