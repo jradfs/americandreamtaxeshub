@@ -1,3 +1,5 @@
+const path = require('path');
+
 /** @type {import('next').NextConfig} */
 export const nextConfig = {
   reactStrictMode: true,
@@ -11,7 +13,7 @@ export const nextConfig = {
     // Add path alias for src directory
     config.resolve.alias = {
       ...config.resolve.alias,
-      '@': './src'
+      '@': path.resolve(__dirname, 'src')
     };
     
     return config;
