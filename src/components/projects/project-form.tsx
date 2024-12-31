@@ -176,19 +176,25 @@ export function ProjectForm({ project, onSuccess }: ProjectFormProps) {
 
   const validateTaskDependencies = (tasks: any[]) => {
     const errors: Record<string, string> = {};
-    const taskTitles = tasks.map(t => t.title);
-    const taskIds = tasks.map(t => t.id);
+    const taskMap = new Map<string, string>(); // id -> title
+    tasks.forEach(task => {
+      taskMap.set(task.id, task.title);
+      if (task.title) {
+        taskMap.set(task.title.toLowerCase(), task.id);
+      }
+    });
 
     tasks.forEach(task => {
       if (task.dependencies) {
         task.dependencies.forEach((dep: string) => {
-          // Check both title and id for dependencies
-          if (!taskTitles.includes(dep) && !taskIds.includes(dep)) {
+          // Check if dependency exists in the map
+          if (!taskMap.has(dep) && !taskMap.has(dep.toLowerCase())) {
             errors[task.id] = `Dependency "${dep}" not found`;
           }
           
           // Check for circular dependencies
-          if (task.id === dep) {
+          const depId = taskMap.get(dep.toLowerCase()) || dep;
+          if (task.id === depId) {
             errors[task.id] = `Task cannot depend on itself`;
           }
         });
@@ -236,7 +242,13 @@ export function ProjectForm({ project, onSuccess }: ProjectFormProps) {
           title: task.title,
           description: task.description,
           priority: task.priority,
-          dependencies: task.dependencies,
+          dependencies: task.dependencies?.map(dep => {
+            // Convert dependency titles to IDs if needed
+            const matchingTask = values.tasks?.find(t => 
+              t.title.toLowerCase() === dep.toLowerCase() || t.id === dep
+            );
+            return matchingTask?.id || dep;
+          }),
           project_id: project.id,
           status: 'not_started',
           created_at: new Date().toISOString(),
@@ -252,11 +264,11 @@ export function ProjectForm({ project, onSuccess }: ProjectFormProps) {
 
       toast.success('Project created successfully');
       onSuccess();
-    } catch (error: any) {
-      console.error('Error saving project:', error);
+    } catch (error) {
+      console.error('Error creating project:', error);
       toast.error({
         title: 'Error',
-        description: error.message || 'Failed to save project. Please try again.',
+        description: error instanceof Error ? error.message : 'Failed to create project',
         variant: 'destructive'
       });
     } finally {
