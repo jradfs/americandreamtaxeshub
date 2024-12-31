@@ -1,0 +1,11 @@
+{
+  "rules": {
+    "no-restricted-syntax": [
+      "error",
+      {
+        "selector": "Property[key.name='fontFamily']",
+        "message": "Use Tailwind font utilities instead of direct font-family declarations"
+      }
+    ]
+  }
+}

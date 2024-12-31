@@ -1,5 +1,10 @@
 import type { Config } from 'tailwindcss';
 
+/*
+ * Font Configuration:
+ * Uses system fonts for consistent, beautiful rendering across platforms
+ * Do not modify without team discussion
+ */
 const config: Config = {
   content: [
     './src/**/*.{js,ts,jsx,tsx,mdx}',
