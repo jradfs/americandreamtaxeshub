@@ -27,7 +27,7 @@ export default function RootLayout({ children }: RootLayoutProps) {
         className={cn(
           "min-h-screen bg-background font-sans antialiased",
           "font-sans", // Explicitly set sans font family
-          "dark:bg-dark-background" // Ensure dark mode background is applied
+          "dark:bg-background" // Use the CSS variable for dark mode
         )}
         suppressHydrationWarning
       >
