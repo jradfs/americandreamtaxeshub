@@ -8,6 +8,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "clean": "rm -rf .next",
+    "type-check": "tsc --noEmit",
     "update-types": "npx supabase gen types typescript --project-id \"fnjkkmwmpxqvezqextxg\" > src/types/supabase.types.ts",
     "db:pull": "npx supabase db pull"
   },
