@@ -43,7 +43,7 @@ const projectSchema = z.object({
   description: z.string().optional(),
   client_id: z.string().min(1, 'Client is required'),
   status: z.string().optional(),
-  priority: z.enum(['low', 'medium', 'high']).default('medium'), // Ensure default value
+  priority: z.enum(['low', 'medium', 'high']).default('medium'),
   due_date: z.date().optional(),
   service_type: z.enum([
     'tax_returns', 
@@ -61,6 +61,15 @@ const projectSchema = z.object({
     priority: z.string().optional(),
     dependencies: z.array(z.string()).optional()
   })).optional()
+}).refine(data => {
+  // Validate that if template_id is provided, tasks must exist
+  if (data.template_id && !data.tasks?.length) {
+    return false;
+  }
+  return true;
+}, {
+  message: "Template tasks are required when using a template",
+  path: ["tasks"]
 });
 
 interface ProjectTemplate {
@@ -100,15 +109,22 @@ export function ProjectForm({ project, onSuccess }: ProjectFormProps) {
   useEffect(() => {
     const checkStorageAccess = async () => {
       try {
-        const { data, error } = await supabase
-          .from('projects')
-          .select('*')
-          .limit(1);
-        
-        if (error) throw error;
+        // Test both projects and tasks table access
+        const [{ error: projectsError }, { error: tasksError }] = await Promise.all([
+          supabase.from('projects').select('*').limit(1),
+          supabase.from('tasks').select('*').limit(1)
+        ]);
+
+        if (projectsError || tasksError) {
+          throw projectsError || tasksError;
+        }
       } catch (error) {
         console.error('Storage access error:', error);
-        toast.error('Failed to access storage. Please check your permissions.');
+        toast.error({
+          title: 'Permission Error',
+          description: 'Failed to access storage. Please check your permissions and try again.',
+          variant: 'destructive'
+        });
       }
     };
 
@@ -181,51 +197,54 @@ export function ProjectForm({ project, onSuccess }: ProjectFormProps) {
 
     setIsLoading(true);
     try {
+      // Prepare project data
       const projectData = {
-        ...values,
+        name: values.name,
+        description: values.description,
+        client_id: values.client_id,
+        status: 'not_started',
+        priority: values.priority,
         due_date: values.due_date?.toISOString(),
-        status: 'not_started', // Default status
+        service_type: values.service_type,
+        template_id: values.template_id,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       };
 
-      if (project?.id) {
-        // Update existing project
-        const { error } = await supabase
-          .from('projects')
-          .update(projectData)
-          .eq('id', project.id);
+      // Insert project
+      const { data: project, error: projectError } = await supabase
+        .from('projects')
+        .insert(projectData)
+        .select()
+        .single();
 
-        if (error) throw error;
-        toast.success('Project updated successfully');
-      } else {
-        // Create new project
-        const { data, error } = await supabase
-          .from('projects')
-          .insert(projectData)
-          .select()
-          .single();
+      if (projectError) throw projectError;
 
-        if (error) throw error;
-        toast.success('Project created successfully');
-        
-        // Create template tasks if template was selected
-        if (values.template_id && values.tasks?.length) {
-          await supabase
-            .from('tasks')
-            .insert(values.tasks.map(task => ({
-              ...task,
-              project_id: data.id,
-              status: 'not_started',
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString()
-            })));
-        }
+      // Insert tasks if template was used
+      if (values.template_id && values.tasks?.length) {
+        const tasksData = values.tasks.map(task => ({
+          title: task.title,
+          description: task.description,
+          priority: task.priority,
+          dependencies: task.dependencies,
+          project_id: project.id,
+          status: 'not_started',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        }));
+
+        const { error: tasksError } = await supabase
+          .from('tasks')
+          .insert(tasksData);
+
+        if (tasksError) throw tasksError;
       }
+
+      toast.success('Project created successfully');
       onSuccess();
     } catch (error) {
       console.error('Error saving project:', error);
-      toast.error('Failed to save project');
+      toast.error('Failed to save project. Please check your permissions and try again.');
     } finally {
       setIsLoading(false);
     }
