@@ -8,6 +8,7 @@ import { Sidebar } from "@/components/layout/sidebar";
 import { cn } from "@/lib/utils";
 import { Toaster } from "@/components/ui/toaster";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { MainContent } from "@/components/layout/main-content";
 
 
 export const metadata: Metadata = {
@@ -43,9 +44,9 @@ export default function RootLayout({ children }: RootLayoutProps) {
               <SidebarProvider>
                 <div className="relative flex min-h-screen">
                   <Sidebar />
-                  <main className="flex-1 p-8 transition-all duration-300 ease-in-out">
+                  <MainContent>
                     {children}
-                  </main>
+                  </MainContent>
                   <Toaster />
                 </div>
               </SidebarProvider>
