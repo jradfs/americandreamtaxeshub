@@ -15,14 +15,6 @@
     "test": "jest",
     "test:watch": "jest --watch"
   },
-  "jest": {
-    "preset": "next/jest",
-    "testEnvironment": "jsdom",
-    "setupFilesAfterEnv": ["<rootDir>/tests/jest.setup.js"],
-    "moduleNameMapper": {
-      "^@/(.*)$": "<rootDir>/src/$1"
-    }
-  },
   "dependencies": {
     "@executeautomation/playwright-mcp-server": "^0.2.6",
     "@hello-pangea/dnd": "^17.0.0",
