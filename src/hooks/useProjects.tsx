@@ -20,7 +20,6 @@ export function useProjects(clientId?: string): {
   const fetchProjects = async () => {
     setIsLoading(true);
     try {
-      // First fetch projects with client info
       let query = supabase
         .from('projects')
         .select(`
@@ -31,7 +30,7 @@ export function useProjects(clientId?: string): {
             company_name,
             contact_info
           ),
-          tasks (
+          tasks:tasks!tasks_project_id_fkey (
             id,
             title,
             description,
@@ -54,7 +53,6 @@ export function useProjects(clientId?: string): {
         throw new Error('Failed to fetch projects');
       }
 
-      // Handle missing data gracefully
       const projectsWithRelations = projectsData?.map(project => ({
         ...project,
         client: project.client || null,
@@ -83,7 +81,23 @@ export function useProjects(clientId?: string): {
     const { data, error } = await supabase
       .from('projects')
       .insert(project)
-      .select()
+      .select(`
+        *,
+        client:clients (
+          id,
+          full_name,
+          company_name,
+          contact_info
+        ),
+        tasks:tasks!tasks_project_id_fkey (
+          id,
+          title,
+          description,
+          status,
+          priority,
+          due_date
+        )
+      `)
       .single();
 
     if (error) throw error;
@@ -91,14 +105,14 @@ export function useProjects(clientId?: string): {
 
     const newProject: ProjectWithRelations = {
       ...data,
-      client: null,
-      tasks: [],
+      client: data.client || null,
+      tasks: data.tasks || [],
       category: data.category || { service: 'uncategorized' },
-      tax_info: null,
-      accounting_info: null,
-      payroll_info: null,
-      business_services_info: null,
-      irs_notice_info: null,
+      tax_info: data.tax_info || null,
+      accounting_info: data.accounting_info || null,
+      payroll_info: data.payroll_info || null,
+      business_services_info: data.business_services_info || null,
+      irs_notice_info: data.irs_notice_info || null,
     };
 
     setProjects(current => [...current, newProject]);
@@ -110,7 +124,23 @@ export function useProjects(clientId?: string): {
       .from('projects')
       .update(updates)
       .eq('id', id)
-      .select()
+      .select(`
+        *,
+        client:clients (
+          id,
+          full_name,
+          company_name,
+          contact_info
+        ),
+        tasks:tasks!tasks_project_id_fkey (
+          id,
+          title,
+          description,
+          status,
+          priority,
+          due_date
+        )
+      `)
       .single();
 
     if (error) throw error;
@@ -118,8 +148,8 @@ export function useProjects(clientId?: string): {
 
     const updatedProject = {
       ...data,
-      client: projects.find(p => p.id === id)?.client || null,
-      tasks: projects.find(p => p.id === id)?.tasks || [],
+      client: data.client || null,
+      tasks: data.tasks || [],
       category: data.category || { service: 'uncategorized' },
       tax_info: data.tax_info || null,
       accounting_info: data.accounting_info || null,
