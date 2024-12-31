@@ -43,7 +43,11 @@ const projectSchema = z.object({
   description: z.string().optional(),
   client_id: z.string().min(1, 'Client is required'),
   status: z.string().optional(),
-  priority: z.enum(['low', 'medium', 'high']).default('medium'),
+  priority: z.enum(['low', 'medium', 'high'])
+    .default('medium')
+    .refine(val => val !== null && val !== undefined, {
+      message: 'Priority is required',
+    }),
   due_date: z.date().optional(),
   service_type: z.enum([
     'tax_returns', 
@@ -138,7 +142,7 @@ export function ProjectForm({ project, onSuccess }: ProjectFormProps) {
       description: project?.description || '',
       client_id: project?.client?.id || '',
       status: project?.status || 'not_started',
-      priority: project?.priority || 'medium', // Default to 'medium'
+      priority: project?.priority || 'medium',
       due_date: project?.due_date ? new Date(project.due_date) : undefined,
       service_type: project?.service_type || 'uncategorized',
       template_id: undefined,
@@ -391,28 +395,35 @@ export function ProjectForm({ project, onSuccess }: ProjectFormProps) {
             <FormField
               control={form.control}
               name="priority"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Priority</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    value={field.value}
-                    defaultValue="medium"
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select priority" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="low">Low</SelectItem>
-                      <SelectItem value="medium">Medium</SelectItem>
-                      <SelectItem value="high">High</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
+              render={({ field }) => {
+                // Ensure value is never null
+                const value = field.value || 'medium';
+                return (
+                  <FormItem>
+                    <FormLabel>Priority</FormLabel>
+                    <Select
+                      onValueChange={(val) => {
+                        field.onChange(val);
+                        form.setValue('priority', val);
+                      }}
+                      value={value}
+                      defaultValue="medium"
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select priority" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="low">Low</SelectItem>
+                        <SelectItem value="medium">Medium</SelectItem>
+                        <SelectItem value="high">High</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                );
+              }}
             />
 
             <FormField
