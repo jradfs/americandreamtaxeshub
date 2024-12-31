@@ -194,6 +194,8 @@ export function ProjectForm({ project, onSuccess }: ProjectFormProps) {
       return;
     }
 
+    console.log('Submitting project with values:', values);
+
     setIsLoading(true);
     try {
       // Prepare project data with defaults
@@ -210,6 +212,8 @@ export function ProjectForm({ project, onSuccess }: ProjectFormProps) {
         updated_at: new Date().toISOString()
       };
 
+      console.log('Project data to insert:', projectData);
+
       // Insert project
       const { data: project, error: projectError } = await supabase
         .from('projects')
@@ -217,7 +221,12 @@ export function ProjectForm({ project, onSuccess }: ProjectFormProps) {
         .select()
         .single();
 
-      if (projectError) throw projectError;
+      if (projectError) {
+        console.error('Project insert error:', projectError);
+        throw projectError;
+      }
+
+      console.log('Project created successfully:', project);
 
       // Insert tasks if template was used
       if (values.template_id && values.tasks?.length) {
@@ -232,11 +241,16 @@ export function ProjectForm({ project, onSuccess }: ProjectFormProps) {
           updated_at: new Date().toISOString()
         }));
 
+        console.log('Tasks data to insert:', tasksData);
+
         const { error: tasksError } = await supabase
           .from('tasks')
           .insert(tasksData);
 
-        if (tasksError) throw tasksError;
+        if (tasksError) {
+          console.error('Tasks insert error:', tasksError);
+          throw tasksError;
+        }
       }
 
       toast.success('Project created successfully');
