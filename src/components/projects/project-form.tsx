@@ -169,8 +169,11 @@ export function ProjectForm({ project, onSuccess }: ProjectFormProps) {
   }, [supabase]);
 
   useEffect(() => {
-    const requiredFields = ['name', 'client_id', 'service_type'];
-    const completedFields = requiredFields.filter(field => form.getValues(field));
+    const requiredFields = ['name', 'client_id', 'service_type', 'priority'];
+    const completedFields = requiredFields.filter(field => {
+      const value = form.getValues(field);
+      return value !== null && value !== undefined && value !== '';
+    });
     const progress = (completedFields.length / requiredFields.length) * 100;
     setFormProgress(progress);
   }, [form.watch()]);
@@ -178,12 +181,19 @@ export function ProjectForm({ project, onSuccess }: ProjectFormProps) {
   const validateTaskDependencies = (tasks: any[]) => {
     const errors: Record<string, string> = {};
     const taskTitles = tasks.map(t => t.title);
+    const taskIds = tasks.map(t => t.id);
 
     tasks.forEach(task => {
       if (task.dependencies) {
         task.dependencies.forEach((dep: string) => {
-          if (!taskTitles.includes(dep)) {
-            errors[task.title] = `Dependency "${dep}" not found`;
+          // Check both title and id for dependencies
+          if (!taskTitles.includes(dep) && !taskIds.includes(dep)) {
+            errors[task.id] = `Dependency "${dep}" not found`;
+          }
+          
+          // Check for circular dependencies
+          if (task.id === dep) {
+            errors[task.id] = `Task cannot depend on itself`;
           }
         });
       }
@@ -246,9 +256,13 @@ export function ProjectForm({ project, onSuccess }: ProjectFormProps) {
 
       toast.success('Project created successfully');
       onSuccess();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving project:', error);
-      toast.error('Failed to save project. Please check your permissions and try again.');
+      toast.error({
+        title: 'Error',
+        description: error.message || 'Failed to save project. Please try again.',
+        variant: 'destructive'
+      });
     } finally {
       setIsLoading(false);
     }
