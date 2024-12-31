@@ -1,4 +1,4 @@
-cl'use client'
+'use client'
 
 import { useAuth } from 'src/components/providers/auth-provider.tsx';
 import { redirect } from "next/navigation"
