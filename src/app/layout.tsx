@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 import { Toaster } from "@/components/ui/toaster";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { MainContent } from "@/components/layout/main-content";
+import { useSidebar } from "@/components/providers/sidebar-provider";
 
 
 export const metadata: Metadata = {
@@ -44,7 +45,10 @@ export default function RootLayout({ children }: RootLayoutProps) {
               <SidebarProvider>
                 <div className="relative flex min-h-screen">
                   <Sidebar />
-                  <MainContent>
+                  <MainContent className={cn(
+                    "transition-all duration-300 ease-in-out",
+                    isCollapsed ? "pl-[4.5rem]" : "pl-[16.5rem]"
+                  )}>
                     {children}
                   </MainContent>
                   <Toaster />

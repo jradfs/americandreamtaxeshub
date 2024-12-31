@@ -60,6 +60,7 @@ export function Sidebar() {
         "fixed left-0 top-0 z-40 h-full border-r bg-background transition-all duration-300 ease-in-out",
         isCollapsed ? "w-16" : "w-64"
       )}
+      style={{ zIndex: 50 }}
     >
       {/* Collapse/Expand Button */}
       <button
