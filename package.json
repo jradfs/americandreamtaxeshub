@@ -11,7 +11,9 @@
     "clean": "rm -rf .next",
     "type-check": "tsc --noEmit",
     "update-types": "npx supabase gen types typescript --project-id \"fnjkkmwmpxqvezqextxg\" > src/types/supabase.types.ts",
-    "db:pull": "npx supabase db pull"
+    "db:pull": "npx supabase db pull",
+    "test": "jest",
+    "test:watch": "jest --watch"
   },
   "dependencies": {
     "@executeautomation/playwright-mcp-server": "^0.2.6",
