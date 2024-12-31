@@ -140,15 +140,16 @@ export interface ProjectFormValues {
   name: string;
   description: string | null;
   client_id: string | null;
-  status: ProjectStatus;
+  status: Database['public']['Enums']['project_status'];
   priority: 'low' | 'medium' | 'high';
   due_date: string | null;
   service_type: ServiceType;
-  tax_info?: TaxInfo;
-  accounting_info?: AccountingInfo;
-  payroll_info?: PayrollInfo;
-  business_services_info?: BusinessServicesInfo;
-  irs_notice_info?: IRSNoticeInfo;
-  consulting_info?: ConsultingInfo;
-  template_id?: string;
+  tax_info?: Json | null;
+  accounting_info?: Json | null;
+  payroll_info?: Json | null;
+  business_services_info?: Json | null;
+  irs_notice_info?: Json | null;
+  consulting_info?: Json | null;
+  template_id?: string | null;
+  use_template?: boolean;
 }
