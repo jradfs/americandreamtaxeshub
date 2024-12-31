@@ -43,7 +43,7 @@ const projectSchema = z.object({
   description: z.string().optional(),
   client_id: z.string().min(1, 'Client is required'),
   status: z.string().optional(),
-  priority: z.enum(['low', 'medium', 'high']).default('medium'),
+  priority: z.enum(['low', 'medium', 'high']).default('medium'), // Ensure default value
   due_date: z.date().optional(),
   service_type: z.enum([
     'tax_returns', 
@@ -122,7 +122,7 @@ export function ProjectForm({ project, onSuccess }: ProjectFormProps) {
       description: project?.description || '',
       client_id: project?.client?.id || '',
       status: project?.status || 'not_started',
-      priority: project?.priority || 'medium',
+      priority: project?.priority || 'medium', // Ensure default value
       due_date: project?.due_date ? new Date(project.due_date) : undefined,
       service_type: project?.service_type || 'uncategorized',
       template_id: undefined,
@@ -377,7 +377,8 @@ export function ProjectForm({ project, onSuccess }: ProjectFormProps) {
                   <FormLabel>Priority</FormLabel>
                   <Select
                     onValueChange={field.onChange}
-                    defaultValue={field.value}
+                    value={field.value} // Ensure value is set
+                    defaultValue="medium" // Set default value
                   >
                     <FormControl>
                       <SelectTrigger>
