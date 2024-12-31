@@ -1,4 +1,4 @@
-import { Database } from "./database";
+import { Database, Tables } from "./database";
 
 export type Project = Database["public"]["Tables"]["projects"]["Row"];
 export type NewProject = Database["public"]["Tables"]["projects"]["Insert"];
@@ -126,29 +126,15 @@ export interface Task {
   updated_at: string;
 }
 
-export interface Project {
-  id: string;
-  name: string;
-  description?: string;
-  client_id: string;
-  status: ProjectStatus;
-  priority: 'low' | 'medium' | 'high';
-  due_date?: string;
-  service_type: ServiceType;
-  tax_info?: TaxInfo;
-  accounting_info?: AccountingInfo;
-  payroll_info?: PayrollInfo;
-  business_services_info?: BusinessServicesInfo;
-  irs_notice_info?: IRSNoticeInfo;
-  consulting_info?: ConsultingInfo;
-  created_at: string;
-  updated_at: string;
-}
 
 export interface ProjectWithRelations extends Project {
   client?: Client;
   tasks?: Task[];
 }
+
+export type ProjectTemplate = Tables<'project_templates'> & {
+  tasks?: Tables<'template_tasks'>[];
+};
 
 export interface ProjectFormValues {
   name: string;
@@ -164,4 +150,5 @@ export interface ProjectFormValues {
   business_services_info?: BusinessServicesInfo;
   irs_notice_info?: IRSNoticeInfo;
   consulting_info?: ConsultingInfo;
+  template_id?: string;
 }

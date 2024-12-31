@@ -10,7 +10,6 @@ import {
   ClipboardList,
   FileText,
   Settings,
-  FolderKanban,
 } from "lucide-react"
 
 const mainNavItems = [
@@ -18,11 +17,6 @@ const mainNavItems = [
     title: "Dashboard",
     href: "/dashboard",
     icon: LayoutDashboard,
-  },
-  {
-    title: "Workspace",
-    href: "/workspace",
-    icon: FolderKanban,
   },
   {
     title: "Clients",

@@ -6,7 +6,7 @@ import type { NextRequest } from 'next/server'
 const publicRoutes = ['/login', '/auth/callback']
 
 // Routes that require authentication
-const protectedRoutes = ['/dashboard', '/clients', '/projects', '/tasks', '/templates', '/workspace']
+const protectedRoutes = ['/dashboard', '/clients', '/projects', '/tasks', '/templates']
 
 export async function middleware(req: NextRequest) {
   const res = NextResponse.next()

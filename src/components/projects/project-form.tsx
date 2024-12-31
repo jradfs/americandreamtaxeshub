@@ -38,10 +38,40 @@ import { Separator } from '@/components/ui/separator';
 import { useProjectTemplates } from '@/hooks/useProjectTemplates';
 import { ErrorBoundary } from '@/components/ui/error-boundary';
 
-// Keep the projectSchema definition as is
 const projectSchema = z.object({
-  // ... (keep existing schema)
+  template_id: z.string().min(1, 'Template is required'),
+  name: z.string().min(1, 'Name is required'),
+  description: z.string().optional(),
+  client_id: z.string().min(1, 'Client is required'),
+  status: z.string().optional(),
+  priority: z.string().optional(),
+  due_date: z.date().optional(),
+  service_type: z.string().optional(),
+  tasks: z.array(z.object({
+    title: z.string().min(1, 'Task title is required'),
+    description: z.string().optional(),
+    priority: z.string().optional(),
+    dependencies: z.array(z.string()).optional()
+  })).optional()
 });
+
+interface ProjectTemplate {
+  id: string;
+  title: string;
+  description: string | null;
+  default_priority: string;
+}
+
+interface TemplateTask {
+  id: string;
+  title: string;
+  description: string;
+  priority: string;
+  dependencies: string[];
+  order_index: number;
+}
+
+type ProjectFormValues = z.infer<typeof projectSchema>;
 
 interface ProjectFormProps {
   project?: ProjectWithRelations;
@@ -49,31 +79,31 @@ interface ProjectFormProps {
 }
 
 export function ProjectForm({ project, onSuccess }: ProjectFormProps) {
-  // Keep all the existing state and hooks
   const supabase = createClientComponentClient();
-  const [clients, setClients] = useState([]);
+  const [clients, setClients] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('basic-info');
   const [formProgress, setFormProgress] = useState(0);
-  const { templates } = useProjectTemplates();
+  const { templates, loading: templatesLoading } = useProjectTemplates();
+  const [selectedTemplate, setSelectedTemplate] = useState<ProjectTemplate | null>(null);
+  const [templateTasks, setTemplateTasks] = useState<any[]>([]);
+  const [taskDependencyErrors, setTaskDependencyErrors] = useState<Record<string, string>>({});
 
-  const form = useForm<z.infer<typeof projectSchema>>({
+  const form = useForm<ProjectFormValues>({
     resolver: zodResolver(projectSchema),
     defaultValues: {
       name: project?.name || '',
       description: project?.description || '',
-      client_id: project?.client_id || '',
+      client_id: project?.client?.id || '',
       status: project?.status || 'not_started',
       priority: project?.priority || 'medium',
       due_date: project?.due_date ? new Date(project.due_date) : undefined,
       service_type: project?.service_type || 'uncategorized',
-      tax_info: project?.tax_info,
-      accounting_info: project?.accounting_info,
-      payroll_info: project?.payroll_info
+      template_id: undefined,
+      tasks: []
     }
   });
 
-  // Keep the useEffect hooks as is
   useEffect(() => {
     const fetchClients = async () => {
       const { data: clientsData, error } = await supabase
@@ -99,9 +129,56 @@ export function ProjectForm({ project, onSuccess }: ProjectFormProps) {
     setFormProgress(progress);
   }, [form.watch()]);
 
-  // Keep the onSubmit function as is
+  const validateTaskDependencies = (tasks: any[]) => {
+    const errors: Record<string, string> = {};
+    const taskTitles = tasks.map(t => t.title);
+
+    tasks.forEach(task => {
+      if (task.dependencies) {
+        task.dependencies.forEach((dep: string) => {
+          if (!taskTitles.includes(dep)) {
+            errors[task.title] = `Dependency "${dep}" not found`;
+          }
+        });
+      }
+    });
+
+    setTaskDependencyErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   const onSubmit = async (values: z.infer<typeof projectSchema>) => {
-    // ... (keep existing implementation)
+    if (!validateTaskDependencies(values.tasks || [])) {
+      toast.error('Please fix task dependency errors');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      if (project?.id) {
+        // Update existing project
+        const { error } = await supabase
+          .from('projects')
+          .update(values)
+          .eq('id', project.id);
+
+        if (error) throw error;
+        toast.success('Project updated successfully');
+      } else {
+        // Create new project
+        const { error } = await supabase
+          .from('projects')
+          .insert(values);
+
+        if (error) throw error;
+        toast.success('Project created successfully');
+      }
+      onSuccess();
+    } catch (error) {
+      toast.error('Failed to save project');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const watchedServiceType = form.watch('service_type');
@@ -113,12 +190,136 @@ export function ProjectForm({ project, onSuccess }: ProjectFormProps) {
           <div className="mb-6">
             <div className="flex items-center justify-between mb-2">
               <h2 className="text-lg font-medium">Project Details</h2>
-              <Badge variant={formProgress === 100 ? "success" : "secondary"}>
+                    <Badge variant={formProgress === 100 ? "default" : "secondary"}>
                 {formProgress === 100 ? "Complete" : "In Progress"}
               </Badge>
             </div>
             <Progress value={formProgress} className="h-2" />
           </div>
+
+          <FormField
+            control={form.control}
+            name="template_id"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Template</FormLabel>
+                <Select
+                  onValueChange={async (value) => {
+                    const template = templates.find(t => t.id === value);
+                    setSelectedTemplate(template || null);
+                    field.onChange(value);
+                    if (template) {
+                      form.setValue('name', template.title);
+                      form.setValue('description', template.description);
+                      form.setValue('priority', template.default_priority);
+
+                      // Fetch template tasks
+                      const { data: tasks, error } = await supabase
+                        .from('template_tasks')
+                        .select('*')
+                        .eq('template_id', template.id)
+                        .order('order_index');
+                      
+                      if (error) {
+                        toast.error('Failed to load template tasks');
+                        return;
+                      }
+                      setTemplateTasks(tasks || []);
+                      form.setValue('tasks', tasks?.map(task => ({
+                        title: task.title,
+                        description: task.description,
+                        priority: task.priority,
+                        dependencies: task.dependencies
+                      })) || []);
+                    } else {
+                      setTemplateTasks([]);
+                      form.setValue('tasks', []);
+                    }
+                  }}
+                  defaultValue={field.value}
+                >
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a template" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {templatesLoading && <SelectItem value="loading" disabled>Loading templates...</SelectItem>}
+                    {templates.map(template => (
+                      <SelectItem key={template.id} value={template.id}>
+                        {template.title}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormDescription>
+                  Select a template to pre-fill project details
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          {selectedTemplate && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Template Preview</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  <div>
+                    <span className="font-medium">Description:</span> {selectedTemplate.description}
+                  </div>
+                  <div>
+                    <span className="font-medium">Default Priority:</span> {selectedTemplate.default_priority}
+                  </div>
+                </div>
+                
+                {templateTasks.length > 0 && (
+                  <div className="mt-4">
+                    <h3 className="font-medium mb-2">Template Tasks</h3>
+                    <div className="space-y-2">
+                      {templateTasks.map((task, index) => (
+                        <div key={task.id} className="p-2 border rounded">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="font-medium">{task.title}</p>
+                              {task.description && (
+                                <p className="text-sm text-muted-foreground">{task.description}</p>
+                              )}
+                            </div>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                const currentTasks = form.getValues('tasks') || [];
+                                const updatedTasks = currentTasks.filter(t => t.title !== task.title);
+                                form.setValue('tasks', updatedTasks);
+                                setTemplateTasks(prev => prev.filter(t => t.id !== task.id));
+                              }}
+                            >
+                              Remove
+                            </Button>
+                          </div>
+                          {task.dependencies && task.dependencies.length > 0 && (
+                            <div className="mt-1 text-sm text-muted-foreground">
+                              Depends on: {task.dependencies.join(', ')}
+                            </div>
+                          )}
+                          {taskDependencyErrors[task.id] && (
+                            <div className="text-sm text-destructive mt-1">
+                              {taskDependencyErrors[task.id]}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
             <TabsList className="grid w-full grid-cols-3">

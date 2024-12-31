@@ -9,7 +9,6 @@ import {
   Calendar,
   Settings,
   Layers,
-  FolderKanban,
 } from 'lucide-react'
 
 const items = [
@@ -17,11 +16,6 @@ const items = [
     title: 'Dashboard',
     href: '/dashboard',
     icon: LayoutGrid,
-  },
-  {
-    title: 'Workspace',
-    href: '/workspace',
-    icon: FolderKanban,
   },
   {
     title: 'Clients',

@@ -1,88 +1,83 @@
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
-import { cookies } from 'next/headers'
+import { createServerClient } from '@supabase/ssr'
 import { NextResponse } from 'next/server'
+import { cookies } from 'next/headers'
+import { Database } from 'types/database'
 
-export async function GET(request: Request) {
-  try {
-    const supabase = createRouteHandlerClient({ cookies })
-
-    // Get the user session
-    const { data: { session }, error: sessionError } = await supabase.auth.getSession()
-    if (sessionError) throw sessionError
-
-    if (!session) {
-      return new NextResponse('Unauthorized', { status: 401 })
-    }
-
-    // Fetch projects with related data
-    const { data: projects, error: projectsError } = await supabase
-      .from('projects')
-      .select(`
-        *,
-        client:clients (
-          id,
-          full_name,
-          company_name,
-          contact_info
-        ),
-        tasks (
-          id,
-          title,
-          description,
-          status,
-          priority,
-          due_date
-        )
-      `)
-      .order('created_at', { ascending: false })
-      .eq('user_id', session.user.id)
-
-    if (projectsError) throw projectsError
-
-    return NextResponse.json(projects || [])
-  } catch (error) {
-    console.error('Error in GET /api/projects:', error)
-    return new NextResponse(JSON.stringify({ error: 'Internal Server Error' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' }
-    })
-  }
+interface CreateProjectRequest {
+  template_id: string
+  title: string
+  description?: string
+  settings: Record<string, unknown>
+  tasks: Array<{
+    title: string
+    description?: string
+    priority: string
+    dependencies?: string[]
+  }>
 }
 
 export async function POST(request: Request) {
+  const cookieStore = await cookies()
+  
+  const supabase = createServerClient<Database>(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name: string) {
+          return cookieStore.get(name)?.value
+        },
+      },
+    }
+  )
+
+  const body: CreateProjectRequest = await request.json()
+
   try {
-    const supabase = createRouteHandlerClient({ cookies })
-    const json = await request.json()
-
-    // Get the user session
-    const { data: { session }, error: sessionError } = await supabase.auth.getSession()
-    if (sessionError) throw sessionError
-
-    if (!session) {
-      return new NextResponse('Unauthorized', { status: 401 })
-    }
-
-    // Add user_id to the project data
-    const projectData = {
-      ...json,
-      user_id: session.user.id
-    }
-
-    // Insert the project
+    // Create the project
     const { data: project, error: projectError } = await supabase
       .from('projects')
-      .insert([projectData])
+      .insert({
+        name: body.title,
+        description: body.description,
+        settings: body.settings,
+        template_id: body.template_id
+      })
       .select()
       .single()
 
-    if (projectError) throw projectError
+    if (projectError) {
+      throw projectError
+    }
 
-    return NextResponse.json(project)
-  } catch (error) {
-    console.error('Error in POST /api/projects:', error)
-    return new NextResponse(JSON.stringify({ error: 'Internal Server Error' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' }
+    // Create tasks from template
+    if (body.tasks && body.tasks.length > 0) {
+      const { error: tasksError } = await supabase
+        .from('tasks')
+        .insert(body.tasks.map(task => ({
+          project_id: project.id,
+          title: task.title,
+          description: task.description,
+          priority: task.priority,
+          dependencies: task.dependencies || []
+        })))
+
+      if (tasksError) {
+        throw tasksError
+      }
+    }
+
+    return NextResponse.json({
+      success: true,
+      data: project
     })
+  } catch (error) {
+    console.error('Error creating project:', error)
+    return NextResponse.json({
+      success: false,
+      error: 'Failed to create project'
+    }, { status: 500 })
   }
 }
+
+export const dynamic = 'force-dynamic'
