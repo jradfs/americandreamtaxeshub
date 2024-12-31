@@ -210,6 +210,20 @@ export function ProjectForm({ project, onSuccess }: ProjectFormProps) {
     }
 
     console.log('Submitting project with values:', values);
+    console.log('Validating task dependencies...');
+    
+    if (!validateTaskDependencies(values.tasks || [])) {
+      console.error('Task dependency validation failed');
+      toast.error('Please fix task dependency errors');
+      return;
+    }
+
+    // Additional validation for due date
+    if (values.due_date && values.due_date < new Date()) {
+      console.error('Due date validation failed - date is in the past');
+      toast.error('Due date must be in the future');
+      return;
+    }
 
     setIsLoading(true);
     try {
@@ -238,10 +252,16 @@ export function ProjectForm({ project, onSuccess }: ProjectFormProps) {
 
       if (projectError) {
         console.error('Project insert error:', projectError);
+        console.error('Error details:', {
+          code: projectError.code,
+          message: projectError.message,
+          details: projectError.details
+        });
         throw projectError;
       }
 
       console.log('Project created successfully:', project);
+      console.log('Project ID:', project.id);
 
       // Insert tasks if template was used
       if (values.template_id && values.tasks?.length) {
@@ -264,8 +284,14 @@ export function ProjectForm({ project, onSuccess }: ProjectFormProps) {
 
         if (tasksError) {
           console.error('Tasks insert error:', tasksError);
+          console.error('Error details:', {
+            code: tasksError.code,
+            message: tasksError.message,
+            details: tasksError.details
+          });
           throw tasksError;
         }
+        console.log('Tasks created successfully:', tasksData.length, 'tasks');
       }
 
       toast.success('Project created successfully');
