@@ -42,10 +42,18 @@ const projectSchema = z.object({
   name: z.string().min(1, 'Name is required'),
   description: z.string().optional(),
   client_id: z.string().min(1, 'Client is required'),
-  status: z.string().optional().default('not_started'),
-  priority: z.string().optional().default('medium'),
+  status: z.string().optional(),
+  priority: z.enum(['low', 'medium', 'high']).default('medium'),
   due_date: z.date().optional(),
-  service_type: z.string().optional().default('uncategorized'),
+  service_type: z.enum([
+    'tax_returns', 
+    'accounting', 
+    'payroll', 
+    'business_services', 
+    'irs_representation', 
+    'consulting', 
+    'uncategorized'
+  ]).default('uncategorized'),
   template_id: z.string().optional(),
   tasks: z.array(z.object({
     title: z.string().min(1, 'Task title is required'),
@@ -88,6 +96,24 @@ export function ProjectForm({ project, onSuccess }: ProjectFormProps) {
   const [selectedTemplate, setSelectedTemplate] = useState<ProjectTemplate | null>(null);
   const [templateTasks, setTemplateTasks] = useState<any[]>([]);
   const [taskDependencyErrors, setTaskDependencyErrors] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    const checkStorageAccess = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('projects')
+          .select('*')
+          .limit(1);
+        
+        if (error) throw error;
+      } catch (error) {
+        console.error('Storage access error:', error);
+        toast.error('Failed to access storage. Please check your permissions.');
+      }
+    };
+
+    checkStorageAccess();
+  }, [supabase]);
 
   const form = useForm<ProjectFormValues>({
     resolver: zodResolver(projectSchema),
@@ -155,26 +181,50 @@ export function ProjectForm({ project, onSuccess }: ProjectFormProps) {
 
     setIsLoading(true);
     try {
+      const projectData = {
+        ...values,
+        due_date: values.due_date?.toISOString(),
+        status: 'not_started', // Default status
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+
       if (project?.id) {
         // Update existing project
         const { error } = await supabase
           .from('projects')
-          .update(values)
+          .update(projectData)
           .eq('id', project.id);
 
         if (error) throw error;
         toast.success('Project updated successfully');
       } else {
         // Create new project
-        const { error } = await supabase
+        const { data, error } = await supabase
           .from('projects')
-          .insert(values);
+          .insert(projectData)
+          .select()
+          .single();
 
         if (error) throw error;
         toast.success('Project created successfully');
+        
+        // Create template tasks if template was selected
+        if (values.template_id && values.tasks?.length) {
+          await supabase
+            .from('tasks')
+            .insert(values.tasks.map(task => ({
+              ...task,
+              project_id: data.id,
+              status: 'not_started',
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            })));
+        }
       }
       onSuccess();
     } catch (error) {
+      console.error('Error saving project:', error);
       toast.error('Failed to save project');
     } finally {
       setIsLoading(false);
