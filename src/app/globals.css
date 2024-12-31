@@ -34,7 +34,7 @@
   .dark {
     --background: 222.2 47.4% 11.2%; /* HSL equivalent of #0f172a */
     --foreground: 210 40% 98%; /* Light text for contrast */
-    --card: 222.2 47.4% 15%; /* Slightly lighter than background */
+    --card: 222.2 47.4% 11.2%; /* Match background for cards */
     --card-foreground: 210 40% 98%;
     --popover: 0 0% 3.9%;
     --popover-foreground: 0 0% 98%;
