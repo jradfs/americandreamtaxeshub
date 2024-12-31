@@ -43,7 +43,7 @@ const projectSchema = z.object({
   description: z.string().optional(),
   client_id: z.string().min(1, 'Client is required'),
   status: z.string().default('not_started'),
-  priority: z.enum(['low', 'medium', 'high']).default('medium'),
+  priority: z.enum(['low', 'medium', 'high']).default('medium').transform(val => val.toLowerCase()),
   due_date: z.date().optional(),
   service_type: z.enum([
     'tax_returns', 
@@ -138,7 +138,7 @@ export function ProjectForm({ project, onSuccess }: ProjectFormProps) {
       description: project?.description || '',
       client_id: project?.client?.id || '',
       status: project?.status || 'not_started',
-      priority: project?.priority || 'medium',
+      priority: (project?.priority || 'medium').toLowerCase(), // Ensure lowercase
       due_date: project?.due_date ? new Date(project.due_date) : undefined,
       service_type: project?.service_type || 'uncategorized',
       template_id: project?.template_id || undefined,
@@ -418,15 +418,16 @@ export function ProjectForm({ project, onSuccess }: ProjectFormProps) {
               control={form.control}
               name="priority"
               render={({ field }) => {
-                // Ensure value is never null
-                const value = field.value || 'medium';
+                // Ensure value is never null and lowercase
+                const value = (field.value || 'medium').toLowerCase();
                 return (
                   <FormItem>
                     <FormLabel>Priority</FormLabel>
                     <Select
                       onValueChange={(val) => {
-                        field.onChange(val);
-                        form.setValue('priority', val);
+                        const lowerVal = val.toLowerCase();
+                        field.onChange(lowerVal);
+                        form.setValue('priority', lowerVal);
                       }}
                       value={value}
                       defaultValue="medium"
