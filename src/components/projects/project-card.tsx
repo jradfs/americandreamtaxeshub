@@ -95,10 +95,8 @@ export function ProjectCard({ project, onProjectUpdated, selected, showHover, on
       <Link href={`/projects/${project.id}`} className="block group">
         <Card className={cn(
           "relative transition-all duration-200 h-[160px]",
-          "bg-background dark:bg-card",
           "hover:bg-secondary/5 dark:hover:bg-card/90",
-          selected && "ring-2 ring-primary ring-offset-2",
-          "text-foreground dark:text-card-foreground"
+          selected && "ring-2 ring-primary ring-offset-2"
         )}>
           {/* Status Indicator */}
           <div className={cn(
