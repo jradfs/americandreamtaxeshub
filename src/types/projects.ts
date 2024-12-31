@@ -22,13 +22,26 @@ export type TaxReturnType =
   | '940'
   | 'other';
 
+export type ProjectStatus = 
+  | 'not_started'      // Initial state
+  | 'in_progress'      // Work has begun
+  | 'waiting_for_info' // Blocked on client input
+  | 'needs_review'     // Ready for internal review
+  | 'completed'        // Work is done
+  | 'archived';        // Project is archived
+
 export type ReviewStatus =
-  | 'not_started'
-  | 'in_progress'
-  | 'needs_review'
-  | 'reviewed'
-  | 'approved'
-  | 'rejected';
+  | 'not_started'      // Review not started
+  | 'in_progress'      // Under review
+  | 'needs_revision'   // Changes requested
+  | 'approved'         // Review passed
+  | 'rejected';        // Review failed
+
+export type TaskStatus =
+  | 'not_started'      // Task not started
+  | 'in_progress'      // Task being worked on
+  | 'blocked'          // Task is blocked
+  | 'completed';       // Task is done
 
 export interface TaxInfo {
   return_type: TaxReturnType;
@@ -105,7 +118,7 @@ export interface Task {
   id: string;
   title: string;
   description?: string;
-  status: 'not_started' | 'in_progress' | 'completed' | 'blocked';
+  status: TaskStatus;
   priority: 'low' | 'medium' | 'high';
   due_date?: string;
   assignee_id?: string;
@@ -118,7 +131,7 @@ export interface Project {
   name: string;
   description?: string;
   client_id: string;
-  status: 'not_started' | 'in_progress' | 'waiting_for_info' | 'needs_review' | 'completed' | 'archived';
+  status: ProjectStatus;
   priority: 'low' | 'medium' | 'high';
   due_date?: string;
   service_type: ServiceType;
@@ -141,7 +154,7 @@ export interface ProjectFormValues {
   name: string;
   description: string | null;
   client_id: string | null;
-  status: 'not_started' | 'in_progress' | 'waiting_for_info' | 'needs_review' | 'completed' | 'archived';
+  status: ProjectStatus;
   priority: 'low' | 'medium' | 'high';
   due_date: string | null;
   service_type: ServiceType;

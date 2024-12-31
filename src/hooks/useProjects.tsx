@@ -30,6 +30,14 @@ export function useProjects(clientId?: string): {
             full_name,
             company_name,
             contact_info
+          ),
+          tasks (
+            id,
+            title,
+            description,
+            status,
+            priority,
+            due_date
           )
         `)
         .order('due_date', { ascending: true })
@@ -41,22 +49,17 @@ export function useProjects(clientId?: string): {
 
       const { data: projectsData, error: projectsError } = await query;
 
-      if (projectsError) throw projectsError;
+      if (projectsError) {
+        console.error('Error fetching projects:', projectsError);
+        throw new Error('Failed to fetch projects');
+      }
 
-      // Then fetch tasks for each project
-      const projectIds = projectsData?.map(p => p.id) || [];
-      const { data: tasksData, error: tasksError } = await supabase
-        .from('tasks')
-        .select('*')
-        .in('project_id', projectIds);
-
-      if (tasksError) throw tasksError;
-
-      // Combine the data
+      // Handle missing data gracefully
       const projectsWithRelations = projectsData?.map(project => ({
         ...project,
-        tasks: tasksData?.filter(task => task.project_id === project.id) || [],
-        category: project.category || { service: 'uncategorized' },
+        client: project.client || null,
+        tasks: project.tasks || [],
+        category: project.category || { service: project.service_type || 'uncategorized' },
         tax_info: project.tax_info || null,
         accounting_info: project.accounting_info || null,
         payroll_info: project.payroll_info || null,
@@ -67,8 +70,10 @@ export function useProjects(clientId?: string): {
       setProjects(projectsWithRelations);
       setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
-      console.error('Error fetching projects:', err);
+      const errorMessage = err instanceof Error ? err.message : 'An error occurred while fetching projects';
+      console.error('Error in fetchProjects:', err);
+      setError(errorMessage);
+      setProjects([]);
     } finally {
       setIsLoading(false);
     }
