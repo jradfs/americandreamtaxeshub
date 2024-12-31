@@ -11,7 +11,11 @@ import {
   FileText,
   Settings,
   FolderKanban,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
+import { useState } from "react";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 const sidebarNavItems = [
   {
@@ -48,9 +52,26 @@ const sidebarNavItems = [
 
 export function Sidebar() {
   const pathname = usePathname();
+  const [isCollapsed, setIsCollapsed] = useState(false);
 
   return (
-    <aside className="fixed left-0 top-0 z-40 h-full w-64 border-r bg-background">
+    <aside
+      className={cn(
+        "fixed left-0 top-0 z-40 h-full border-r bg-background transition-all duration-300 ease-in-out",
+        isCollapsed ? "w-16" : "w-64"
+      )}
+    >
+      {/* Collapse/Expand Button */}
+      <button
+        onClick={() => setIsCollapsed(!isCollapsed)}
+        className="absolute -right-3 top-4 rounded-full border bg-background p-1 shadow-sm hover:bg-accent"
+      >
+        {isCollapsed ? (
+          <ChevronRight className="h-4 w-4" />
+        ) : (
+          <ChevronLeft className="h-4 w-4" />
+        )}
+      </button>
       <div className="flex h-full flex-col">
         <div className="flex h-14 items-center border-b px-4">
           <Link href="/dashboard" className="flex items-center space-x-2">
@@ -71,16 +92,22 @@ export function Sidebar() {
                     variant={pathname === item.href ? "secondary" : "ghost"}
                     className={cn(
                       "w-full justify-start gap-2",
-                      pathname === item.href && "bg-muted"
+                      pathname === item.href && "bg-muted",
+                      isCollapsed && "justify-center"
                     )}
                   >
                     <Icon size={20} />
-                    {item.title}
+                    {!isCollapsed && item.title}
                   </Button>
                 </Link>
               );
             })}
           </nav>
+        </div>
+        </div>
+        {/* Dark Mode Toggle at Bottom */}
+        <div className="p-2">
+          <ThemeToggle isCollapsed={isCollapsed} />
         </div>
       </div>
     </aside>

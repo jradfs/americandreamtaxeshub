@@ -10,6 +10,9 @@ const config: Config = {
       fontFamily: {
         sans: ['Inter', 'sans-serif'],
       },
+      transitionDuration: {
+        '300': '300ms',
+      },
       colors: {
         border: 'hsl(var(--border))',
         input: 'hsl(var(--input))',
