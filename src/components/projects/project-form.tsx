@@ -43,7 +43,7 @@ const projectSchema = z.object({
   description: z.string().optional(),
   client_id: z.string().min(1, 'Client is required'),
   status: z.string().default('not_started'),
-  priority: z.enum(['low', 'medium', 'high']).default('medium').transform(val => val.toLowerCase()),
+  priority: z.enum(['low', 'medium', 'high']).default('medium'),
   due_date: z.date().optional(),
   service_type: z.enum([
     'tax_returns', 
@@ -176,28 +176,11 @@ export function ProjectForm({ project, onSuccess }: ProjectFormProps) {
 
   const validateTaskDependencies = (tasks: any[]) => {
     const errors: Record<string, string> = {};
-    const taskMap = new Map<string, string>(); // id -> title
+    
+    // Simple validation - ensure dependencies is an array
     tasks.forEach(task => {
-      taskMap.set(task.id, task.title);
-      if (task.title) {
-        taskMap.set(task.title.toLowerCase(), task.id);
-      }
-    });
-
-    tasks.forEach(task => {
-      if (task.dependencies) {
-        task.dependencies.forEach((dep: string) => {
-          // Check if dependency exists in the map
-          if (!taskMap.has(dep) && !taskMap.has(dep.toLowerCase())) {
-            errors[task.id] = `Dependency "${dep}" not found`;
-          }
-          
-          // Check for circular dependencies
-          const depId = taskMap.get(dep.toLowerCase()) || dep;
-          if (task.id === depId) {
-            errors[task.id] = `Task cannot depend on itself`;
-          }
-        });
+      if (task.dependencies && !Array.isArray(task.dependencies)) {
+        errors[task.id] = 'Dependencies must be an array';
       }
     });
 
@@ -242,13 +225,7 @@ export function ProjectForm({ project, onSuccess }: ProjectFormProps) {
           title: task.title,
           description: task.description,
           priority: task.priority,
-          dependencies: task.dependencies?.map(dep => {
-            // Convert dependency titles to IDs if needed
-            const matchingTask = values.tasks?.find(t => 
-              t.title.toLowerCase() === dep.toLowerCase() || t.id === dep
-            );
-            return matchingTask?.id || dep;
-          }),
+          dependencies: task.dependencies || [],
           project_id: project.id,
           status: 'not_started',
           created_at: new Date().toISOString(),
@@ -419,16 +396,12 @@ export function ProjectForm({ project, onSuccess }: ProjectFormProps) {
               name="priority"
               render={({ field }) => {
                 // Ensure value is never null and lowercase
-                const value = (field.value || 'medium').toLowerCase();
+                const value = field.value || 'medium';
                 return (
                   <FormItem>
                     <FormLabel>Priority</FormLabel>
                     <Select
-                      onValueChange={(val) => {
-                        const lowerVal = val.toLowerCase();
-                        field.onChange(lowerVal);
-                        form.setValue('priority', lowerVal);
-                      }}
+                      onValueChange={field.onChange}
                       value={value}
                       defaultValue="medium"
                     >
