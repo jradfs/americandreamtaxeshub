@@ -23,7 +23,6 @@ interface RootLayoutProps {
 
 export default function RootLayout({ children }: RootLayoutProps) {
   const { isCollapsed } = useSidebar();
-  const { isCollapsed } = useSidebar();
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
