@@ -14,7 +14,7 @@ import {
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
-import { useState } from "react";
+import { useSidebar } from "@/components/providers/sidebar-provider";
 import { ThemeToggle } from "@/components/theme-toggle";
 
 const sidebarNavItems = [
@@ -72,10 +72,13 @@ export function Sidebar() {
           <ChevronLeft className="h-4 w-4" />
         )}
       </button>
+
       <div className="flex h-full flex-col">
         <div className="flex h-14 items-center border-b px-4">
           <Link href="/dashboard" className="flex items-center space-x-2">
-            <span className="font-bold">American Dream Taxes Hub</span>
+            {!isCollapsed && (
+              <span className="font-bold">American Dream Taxes Hub</span>
+            )}
           </Link>
         </div>
         <div className="flex-1 overflow-auto py-2">
@@ -83,11 +86,7 @@ export function Sidebar() {
             {sidebarNavItems.map((item, index) => {
               const Icon = item.icon;
               return (
-                <Link
-                  key={index}
-                  href={item.href}
-                  className="mb-1"
-                >
+                <Link key={index} href={item.href} className="mb-1">
                   <Button
                     variant={pathname === item.href ? "secondary" : "ghost"}
                     className={cn(
@@ -104,13 +103,11 @@ export function Sidebar() {
             })}
           </nav>
         </div>
+        {/* Dark Mode Toggle at Bottom */}
+        <div className="p-2">
+          <ThemeToggle isCollapsed={isCollapsed} />
         </div>
       </div>
-      {/* Dark Mode Toggle at Bottom */}
-      <div className="p-2">
-        <ThemeToggle isCollapsed={isCollapsed} />
-      </div>
-    </div>
-  </aside>
+    </aside>
   );
 }
