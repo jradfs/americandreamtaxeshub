@@ -10,7 +10,9 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 export default async function ProjectsPage() {
-  return (
+  try {
+    // Add any data fetching logic here with proper error handling
+    return (
     <div className="container px-6 py-8">
       <div className="flex items-center justify-between mb-8">
         <div>
