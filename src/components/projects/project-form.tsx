@@ -58,7 +58,7 @@ const projectSchema = z.object({
   tasks: z.array(z.object({
     title: z.string().min(1, 'Task title is required'),
     description: z.string().optional(),
-    priority: z.string().optional(),
+    priority: z.enum(['low', 'medium', 'high']).default('medium'),
     dependencies: z.array(z.string()).optional()
   })).optional()
 }).refine(data => {
@@ -138,7 +138,7 @@ export function ProjectForm({ project, onSuccess }: ProjectFormProps) {
       description: project?.description || '',
       client_id: project?.client?.id || '',
       status: project?.status || 'not_started',
-      priority: project?.priority || 'medium', // Ensure default value
+      priority: project?.priority || 'medium', // Default to 'medium'
       due_date: project?.due_date ? new Date(project.due_date) : undefined,
       service_type: project?.service_type || 'uncategorized',
       template_id: undefined,
@@ -396,8 +396,8 @@ export function ProjectForm({ project, onSuccess }: ProjectFormProps) {
                   <FormLabel>Priority</FormLabel>
                   <Select
                     onValueChange={field.onChange}
-                    value={field.value} // Ensure value is set
-                    defaultValue="medium" // Set default value
+                    value={field.value}
+                    defaultValue="medium"
                   >
                     <FormControl>
                       <SelectTrigger>
