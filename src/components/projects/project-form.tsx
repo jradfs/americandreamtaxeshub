@@ -43,11 +43,7 @@ const projectSchema = z.object({
   description: z.string().optional(),
   client_id: z.string().min(1, 'Client is required'),
   status: z.string().optional(),
-  priority: z.enum(['low', 'medium', 'high'])
-    .default('medium')
-    .refine(val => val !== null && val !== undefined, {
-      message: 'Priority is required',
-    }),
+  priority: z.enum(['low', 'medium', 'high']).default('medium'),
   due_date: z.date().optional(),
   service_type: z.enum([
     'tax_returns', 
@@ -142,7 +138,7 @@ export function ProjectForm({ project, onSuccess }: ProjectFormProps) {
       description: project?.description || '',
       client_id: project?.client?.id || '',
       status: project?.status || 'not_started',
-      priority: project?.priority || 'medium',
+      priority: project?.priority || 'medium', // Ensure default value
       due_date: project?.due_date ? new Date(project.due_date) : undefined,
       service_type: project?.service_type || 'uncategorized',
       template_id: undefined,
