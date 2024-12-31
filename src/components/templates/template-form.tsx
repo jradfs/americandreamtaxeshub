@@ -12,19 +12,33 @@ import {
 } from '../ui/select';
 import { Plus, Minus, GripVertical } from 'lucide-react';
 
-interface Task {
+interface TemplateTask {
+  id?: string;
   title: string;
-  order: number;
+  description?: string;
+  priority: string;
+  dependencies: string[];
+  order_index: number;
+  estimated_hours?: number;
+  required_skills?: string[];
 }
 
 interface TemplateFormProps {
   mode: 'create' | 'edit';
   template?: Tables<'project_templates'> & {
-    priority?: string;
-    tasks?: Task[];
+    tasks?: TemplateTask[];
+    version?: number;
+    is_archived?: boolean;
   };
   categories: Tables<'template_categories'>[];
   onSuccess: () => void;
+}
+
+interface TemplatePreview {
+  total_tasks: number;
+  estimated_hours: number;
+  required_skills: string[];
+  dependencies: Record<string, string[]>;
 }
 
 export default function TemplateForm({
@@ -38,10 +52,43 @@ export default function TemplateForm({
     description: template?.description || '',
     categoryId: template?.category_id || '',
     priority: template?.priority || 'medium',
-    tasks: template?.tasks || [] as Task[],
+    version: template?.version || 1,
+    is_archived: template?.is_archived || false,
+    tasks: template?.tasks || [] as TemplateTask[],
+    project_defaults: template?.project_defaults || {},
+    recurring_schedule: template?.recurring_schedule || null,
+    seasonal_priority: template?.seasonal_priority || null,
   });
 
   const [newTask, setNewTask] = useState('');
+  const [templatePreview, setTemplatePreview] = useState<TemplatePreview>({
+    total_tasks: 0,
+    estimated_hours: 0,
+    required_skills: [],
+    dependencies: {}
+  });
+
+  useEffect(() => {
+    // Calculate template preview stats
+    const totalTasks = formData.tasks.length;
+    const estimatedHours = formData.tasks.reduce((sum, task) => sum + (task.estimated_hours || 0), 0);
+    const requiredSkills = Array.from(new Set(
+      formData.tasks.flatMap(task => task.required_skills || [])
+    ));
+    const dependencies = formData.tasks.reduce((acc, task) => {
+      if (task.dependencies && task.dependencies.length > 0) {
+        acc[task.title] = task.dependencies;
+      }
+      return acc;
+    }, {} as Record<string, string[]>);
+
+    setTemplatePreview({
+      total_tasks: totalTasks,
+      estimated_hours: estimatedHours,
+      required_skills: requiredSkills,
+      dependencies: dependencies
+    });
+  }, [formData.tasks]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -77,12 +124,33 @@ export default function TemplateForm({
 
   const addTask = () => {
     if (newTask.trim()) {
+      const newTaskData: TemplateTask = {
+        title: newTask,
+        priority: 'medium',
+        dependencies: [],
+        order_index: formData.tasks.length,
+        estimated_hours: 1,
+        required_skills: []
+      };
+      
       setFormData({
         ...formData,
-        tasks: [...formData.tasks, { title: newTask, order: formData.tasks.length }],
+        tasks: [...formData.tasks, newTaskData],
       });
       setNewTask('');
     }
+  };
+
+  const updateTask = (index: number, field: string, value: any) => {
+    const updatedTasks = [...formData.tasks];
+    updatedTasks[index] = {
+      ...updatedTasks[index],
+      [field]: value
+    };
+    setFormData({
+      ...formData,
+      tasks: updatedTasks
+    });
   };
 
   const removeTask = (index: number) => {
@@ -175,26 +243,71 @@ export default function TemplateForm({
       <div className="space-y-4">
         <label className="block text-sm font-medium mb-2">Tasks</label>
         <div className="space-y-3">
-          {formData.tasks.map((task: Task, index: number) => (
-            <div key={index} className="flex items-center gap-3">
-              <GripVertical className="w-4 h-4 text-muted-foreground" />
-              <Input
-                value={task.title}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                  const updatedTasks = [...formData.tasks];
-                  updatedTasks[index].title = e.target.value;
-                  setFormData({ ...formData, tasks: updatedTasks });
-                }}
-                className="flex-1"
-              />
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                onClick={() => removeTask(index)}
-              >
-                <Minus className="w-4 h-4" />
-              </Button>
+          {formData.tasks.map((task: TemplateTask, index: number) => (
+            <div key={index} className="p-4 border rounded-lg space-y-2">
+              <div className="flex items-center gap-3">
+                <GripVertical className="w-4 h-4 text-muted-foreground" />
+                <Input
+                  value={task.title}
+                  onChange={(e) => updateTask(index, 'title', e.target.value)}
+                  className="flex-1"
+                  placeholder="Task title"
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => removeTask(index)}
+                >
+                  <Minus className="w-4 h-4" />
+                </Button>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium">Priority</label>
+                  <Select
+                    value={task.priority}
+                    onValueChange={(value) => updateTask(index, 'priority', value)}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select priority" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="low">Low</SelectItem>
+                      <SelectItem value="medium">Medium</SelectItem>
+                      <SelectItem value="high">High</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium">Estimated Hours</label>
+                  <Input
+                    type="number"
+                    value={task.estimated_hours}
+                    onChange={(e) => updateTask(index, 'estimated_hours', parseInt(e.target.value))}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium">Required Skills</label>
+                <Input
+                  value={task.required_skills?.join(', ') || ''}
+                  onChange={(e) => updateTask(index, 'required_skills', e.target.value.split(',').map(s => s.trim()))}
+                  placeholder="Comma separated skills"
+                />
+              </div>
+
+              <div>
+                <label className="text-sm font-medium">Dependencies</label>
+                <Input
+                  value={task.dependencies?.join(', ') || ''}
+                  onChange={(e) => updateTask(index, 'dependencies', e.target.value.split(',').map(s => s.trim()))}
+                  placeholder="Comma separated task titles"
+                />
+              </div>
             </div>
           ))}
           <div className="flex gap-3">
@@ -212,7 +325,71 @@ export default function TemplateForm({
         </div>
       </div>
 
-      <div className="flex justify-end pt-6">
+      <Card className="mt-6">
+        <CardHeader>
+          <CardTitle>Template Preview</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-sm font-medium">Total Tasks</label>
+              <div className="text-lg font-semibold">
+                {templatePreview.total_tasks}
+              </div>
+            </div>
+            <div>
+              <label className="text-sm font-medium">Estimated Hours</label>
+              <div className="text-lg font-semibold">
+                {templatePreview.estimated_hours}
+              </div>
+            </div>
+            <div>
+              <label className="text-sm font-medium">Required Skills</label>
+              <div className="text-lg font-semibold">
+                {templatePreview.required_skills.join(', ') || 'None'}
+              </div>
+            </div>
+            <div>
+              <label className="text-sm font-medium">Task Dependencies</label>
+              <div className="space-y-1">
+                {Object.entries(templatePreview.dependencies).map(([task, deps]) => (
+                  <div key={task} className="text-sm">
+                    {task}: {deps.join(', ')}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="flex justify-between pt-6">
+        <div className="space-x-2">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => {
+              setFormData({
+                ...formData,
+                is_archived: !formData.is_archived
+              });
+            }}
+          >
+            {formData.is_archived ? 'Unarchive' : 'Archive'}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => {
+              setFormData({
+                ...formData,
+                version: formData.version + 1
+              });
+            }}
+          >
+            Create New Version
+          </Button>
+        </div>
         <Button type="submit">
           {mode === 'create' ? 'Create Template' : 'Save Changes'}
         </Button>
