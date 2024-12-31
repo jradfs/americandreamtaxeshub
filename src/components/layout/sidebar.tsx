@@ -105,11 +105,12 @@ export function Sidebar() {
           </nav>
         </div>
         </div>
-        {/* Dark Mode Toggle at Bottom */}
-        <div className="p-2">
-          <ThemeToggle isCollapsed={isCollapsed} />
-        </div>
       </div>
-    </aside>
+      {/* Dark Mode Toggle at Bottom */}
+      <div className="p-2">
+        <ThemeToggle isCollapsed={isCollapsed} />
+      </div>
+    </div>
+  </aside>
   );
 }
