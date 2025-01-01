@@ -20,7 +20,6 @@ import {
 } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { format } from 'date-fns'
 
 type Client = {
   id: string
