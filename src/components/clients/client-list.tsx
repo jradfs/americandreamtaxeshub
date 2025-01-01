@@ -20,7 +20,6 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { format } from 'date-fns'
-import { Trash } from 'lucide-react'
 
 type Client = {
   id: string
@@ -93,18 +92,18 @@ export function ClientList() {
   }
 
   useEffect(() => {
+    // Only run this effect in the browser
+    if (typeof window === 'undefined') return
+
     const fetchClients = async () => {
       try {
-        // Ensure we're in the browser environment
-        if (typeof window !== 'undefined') {
-          const { data, error } = await supabase
-            .from('clients')
-            .select('*')
-            .order('created_at', { ascending: false })
+        const { data, error } = await supabase
+          .from('clients')
+          .select('*')
+          .order('created_at', { ascending: false })
 
-          if (error) throw error
-          setClients(data || [])
-        }
+        if (error) throw error
+        setClients(data || [])
       } catch (error) {
         console.error('Error fetching clients:', error)
         toast({
@@ -121,12 +120,7 @@ export function ClientList() {
   }, [])
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-32">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
-        <span className="ml-3">Loading clients...</span>
-      </div>
-    )
+    return <div className="flex items-center justify-center h-32">Loading clients...</div>
   }
 
   return (
