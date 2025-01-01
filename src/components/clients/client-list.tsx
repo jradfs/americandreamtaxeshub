@@ -9,7 +9,7 @@ import {
   Trash 
 } from 'lucide-react'
 import { useToast } from '@/components/ui/use-toast'
-import { format } from 'date-fns'
+import format from 'date-fns/format'
 import {
   Table,
   TableBody,
@@ -161,16 +161,16 @@ export function ClientList() {
                 </Badge>
               </TableCell>
               <TableCell>
-                {format(new Date(client.created_at), 'MMM d, yyyy')}
+                {format.default(new Date(client.created_at), 'MMM d, yyyy')}
               </TableCell>
               <TableCell>
                 {client.tax_info?.filing_status || '-'}
               </TableCell>
               <TableCell>
-                {client.tax_info?.last_filed ? format(new Date(client.tax_info.last_filed), 'MM/dd/yyyy') : '-'}
+                {client.tax_info?.last_filed ? format.default(new Date(client.tax_info.last_filed), 'MM/dd/yyyy') : '-'}
               </TableCell>
               <TableCell>
-                {client.tax_info?.next_deadline ? format(new Date(client.tax_info.next_deadline), 'MM/dd/yyyy') : '-'}
+                {client.tax_info?.next_deadline ? format.default(new Date(client.tax_info.next_deadline), 'MM/dd/yyyy') : '-'}
               </TableCell>
               <TableCell className="space-x-2">
                 <Button variant="ghost" size="sm" onClick={() => handleQuickEmail(client)}>
