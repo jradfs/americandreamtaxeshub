@@ -146,20 +146,23 @@ export function ClientList() {
 
   return (
     <div className="space-y-4">
-      <ColumnManager 
-        allColumns={ALL_COLUMNS}
-        visibleColumns={visibleColumns}
-        onColumnToggle={(column) => {
-          setVisibleColumns((prev) => {
-            const newColumns = prev.includes(column)
-              ? prev.filter((c) => c !== column)
-              : [...prev, column]
-            // Save to localStorage
-            localStorage.setItem(COLUMN_STORAGE_KEY, JSON.stringify(newColumns))
-            return newColumns
-          })
-        }}
-      />
+      <div className="flex items-center justify-between">
+        <h2 className="text-xl font-semibold">Clients</h2>
+        <ColumnManager 
+          allColumns={ALL_COLUMNS}
+          visibleColumns={visibleColumns}
+          onColumnToggle={(column) => {
+            setVisibleColumns((prev) => {
+              const newColumns = prev.includes(column)
+                ? prev.filter((c) => c !== column)
+                : [...prev, column]
+              // Save to localStorage
+              localStorage.setItem(COLUMN_STORAGE_KEY, JSON.stringify(newColumns))
+              return newColumns
+            })
+          }}
+        />
+      </div>
       <Table>
         <TableHeader>
           <TableRow>
