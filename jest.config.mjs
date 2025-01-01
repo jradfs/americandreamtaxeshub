@@ -13,8 +13,7 @@ const customJestConfig = {
   },
   testMatch: [
     '<rootDir>/tests/__tests__/**/*.test.ts',
-    '<rootDir>/tests/__tests__/**/*.test.tsx',
-    // Exclude Playwright tests
+    '<rootDir>/tests/__tests__/**/*.test.tsx'
   ],
   collectCoverageFrom: [
     'src/**/*.{js,jsx,ts,tsx}',
