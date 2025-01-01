@@ -14,7 +14,6 @@
     "db:pull": "npx supabase db pull",
     "test": "jest",
     "test:watch": "jest --watch",
-    "test:playwright": "npx playwright test"
   },
   "dependencies": {
     "@executeautomation/playwright-mcp-server": "^0.2.6",
