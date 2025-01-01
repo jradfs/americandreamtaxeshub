@@ -28,6 +28,8 @@ type Client = {
   tax_info: {
     tax_id?: string
     filing_status?: string
+    last_filed?: string
+    next_deadline?: string
   }
   created_at: string
   updated_at: string
@@ -37,6 +39,20 @@ export function ClientList() {
   const [clients, setClients] = useState<Client[]>([])
   const [loading, setLoading] = useState(true)
   const supabase = createClientComponentClient()
+
+  const handleQuickEmail = (client: Client) => {
+    window.location.href = `mailto:${client.contact_email}`
+  }
+
+  const handleRequestDocument = (client: Client) => {
+    // TODO: Implement document request logic
+    console.log('Requesting documents from', client.full_name)
+  }
+
+  const handleAddNote = (client: Client) => {
+    // TODO: Implement add note logic
+    console.log('Adding note for', client.full_name)
+  }
 
   useEffect(() => {
     async function fetchClients() {
@@ -73,6 +89,9 @@ export function ClientList() {
             <TableHead>Type</TableHead>
             <TableHead>Status</TableHead>
             <TableHead>Created</TableHead>
+            <TableHead>Filing Status</TableHead>
+            <TableHead>Last Filed</TableHead>
+            <TableHead>Next Deadline</TableHead>
             <TableHead className="text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
@@ -105,9 +124,24 @@ export function ClientList() {
               <TableCell>
                 {format(new Date(client.created_at), 'MMM d, yyyy')}
               </TableCell>
-              <TableCell className="text-right">
-                <Button variant="ghost" size="sm">
-                  Edit
+              <TableCell>
+                {client.tax_info?.filing_status || '-'}
+              </TableCell>
+              <TableCell>
+                {client.tax_info?.last_filed ? format(new Date(client.tax_info.last_filed), 'MM/dd/yyyy') : '-'}
+              </TableCell>
+              <TableCell>
+                {client.tax_info?.next_deadline ? format(new Date(client.tax_info.next_deadline), 'MM/dd/yyyy') : '-'}
+              </TableCell>
+              <TableCell className="space-x-2">
+                <Button variant="ghost" size="sm" onClick={() => handleQuickEmail(client)}>
+                  <Mail className="h-4 w-4" />
+                </Button>
+                <Button variant="ghost" size="sm" onClick={() => handleRequestDocument(client)}>
+                  <FileText className="h-4 w-4" />
+                </Button>
+                <Button variant="ghost" size="sm" onClick={() => handleAddNote(client)}>
+                  <ClipboardList className="h-4 w-4" />
                 </Button>
               </TableCell>
             </TableRow>
