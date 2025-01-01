@@ -42,29 +42,52 @@ export function ClientDialog({ client, open, onOpenChange, onClose }: ClientDial
     status: client?.status || "active",
   })
 
+  const validateForm = () => {
+    if (!formData.full_name.trim()) {
+      toast({
+        title: "Validation Error",
+        description: "Full name is required",
+        variant: "destructive",
+      })
+      return false
+    }
+
+    if (!formData.contact_email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.contact_email)) {
+      toast({
+        title: "Validation Error",
+        description: "Valid email is required",
+        variant: "destructive",
+      })
+      return false
+    }
+
+    return true
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    
+    if (!validateForm()) return
+
     setLoading(true)
 
     try {
-      if (client) {
-        await updateClient(client.id, formData)
-        toast({
-          title: "Client updated",
-          description: "Client information has been updated successfully.",
-        })
-      } else {
-        await addClient(formData)
-        toast({
-          title: "Client added",
-          description: "New client has been added successfully.",
-        })
-      }
+      const { error } = await supabase
+        .from('clients')
+        .upsert([formData])
+
+      if (error) throw error
+
+      toast({
+        title: client ? "Client updated" : "Client added",
+        description: client ? "Client updated successfully" : "New client added successfully",
+      })
       onClose()
+      window.location.reload()
     } catch (error) {
       toast({
         title: "Error",
-        description: "There was an error processing your request.",
+        description: error.message,
         variant: "destructive",
       })
     } finally {

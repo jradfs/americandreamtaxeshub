@@ -13,6 +13,7 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { format } from 'date-fns'
+import { Trash } from 'lucide-react'
 
 type Client = {
   id: string
@@ -54,8 +55,31 @@ export function ClientList() {
     console.log('Adding note for', client.full_name)
   }
 
+  const handleDeleteClient = async (clientId: string) => {
+    try {
+      const { error } = await supabase
+        .from('clients')
+        .delete()
+        .eq('id', clientId)
+
+      if (error) throw error
+
+      setClients(clients.filter(c => c.id !== clientId))
+      toast({
+        title: "Client deleted",
+        description: "Client was successfully removed",
+      })
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to delete client",
+        variant: "destructive",
+      })
+    }
+  }
+
   useEffect(() => {
-    async function fetchClients() {
+    const fetchClients = async () => {
       try {
         const { data, error } = await supabase
           .from('clients')
@@ -66,6 +90,11 @@ export function ClientList() {
         setClients(data || [])
       } catch (error) {
         console.error('Error fetching clients:', error)
+        toast({
+          title: "Error",
+          description: "Failed to load clients",
+          variant: "destructive",
+        })
       } finally {
         setLoading(false)
       }
@@ -142,6 +171,13 @@ export function ClientList() {
                 </Button>
                 <Button variant="ghost" size="sm" onClick={() => handleAddNote(client)}>
                   <ClipboardList className="h-4 w-4" />
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => handleDeleteClient(client.id)}
+                >
+                  <Trash className="h-4 w-4" />
                 </Button>
               </TableCell>
             </TableRow>

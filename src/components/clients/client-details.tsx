@@ -32,8 +32,34 @@ interface ClientDetailsProps {
   };
 }
 
-export function ClientDetails({ client }: ClientDetailsProps) {
-  const [activeTab, setActiveTab] = useState('dashboard');
+export function ClientDetails({ clientId }: { clientId: string }) {
+  const [client, setClient] = useState<Client | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [activeTab, setActiveTab] = useState('dashboard')
+
+  useEffect(() => {
+    const fetchClient = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('clients')
+          .select('*')
+          .eq('id', clientId)
+          .single()
+
+        if (error) throw error
+        setClient(data)
+      } catch (error) {
+        console.error('Error fetching client:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchClient()
+  }, [clientId])
+
+  if (loading) return <div>Loading client details...</div>
+  if (!client) return <div>Client not found</div>
   const { tasks, updateTask, deleteTask } = useTasks({
     clientId: client.id,
     assignedUserId: undefined // We'll add user context later
