@@ -1,5 +1,5 @@
 import { render, screen, fireEvent } from '@testing-library/react'
-import { ProjectCard } from '@/components/projects/ProjectCard'
+import { ProjectCard } from 'src/components/projects/ProjectCard'
 import { ProjectWithRelations } from '@/types/projects'
 
 describe('ProjectCard', () => {
