@@ -153,57 +153,76 @@ export function ClientList() {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Name</TableHead>
-            <TableHead>Company</TableHead>
-            <TableHead>Contact</TableHead>
-            <TableHead>Type</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Created</TableHead>
-            <TableHead>Filing Status</TableHead>
-            <TableHead>Last Filed</TableHead>
-            <TableHead>Next Deadline</TableHead>
-            <TableHead className="text-right">Actions</TableHead>
+            {visibleColumns.includes('Name') && <TableHead>Name</TableHead>}
+            {visibleColumns.includes('Company') && <TableHead>Company</TableHead>}
+            {visibleColumns.includes('Contact') && <TableHead>Contact</TableHead>}
+            {visibleColumns.includes('Type') && <TableHead>Type</TableHead>}
+            {visibleColumns.includes('Status') && <TableHead>Status</TableHead>}
+            {visibleColumns.includes('Created') && <TableHead>Created</TableHead>}
+            {visibleColumns.includes('Filing Status') && <TableHead>Filing Status</TableHead>}
+            {visibleColumns.includes('Last Filed') && <TableHead>Last Filed</TableHead>}
+            {visibleColumns.includes('Next Deadline') && <TableHead>Next Deadline</TableHead>}
+            {visibleColumns.includes('Actions') && <TableHead className="text-right">Actions</TableHead>}
           </TableRow>
         </TableHeader>
         <TableBody>
           {clients.map((client) => (
             <TableRow key={client.id}>
-              <TableCell className="font-medium">
-                <div>
-                  <div>{client.full_name}</div>
-                  <div className="text-sm text-gray-500">{client.contact_info?.phone}</div>
-                </div>
-              </TableCell>
-              <TableCell>{client.company_name || '-'}</TableCell>
-              <TableCell>
-                <div>
-                  <div>{client.contact_email}</div>
-                  <div className="text-sm text-gray-500">{client.contact_info?.address}</div>
-                </div>
-              </TableCell>
-              <TableCell>
-                <Badge variant="outline">
-                  {client.type}
-                </Badge>
-              </TableCell>
-              <TableCell>
-                <Badge variant={client.status === 'active' ? 'default' : 'secondary'}>
-                  {client.status}
-                </Badge>
-              </TableCell>
-              <TableCell>
-                {format(new Date(client.created_at), 'MMM d, yyyy')}
-              </TableCell>
-              <TableCell>
-                {client.tax_info?.filing_status || '-'}
-              </TableCell>
-              <TableCell>
-                {client.tax_info?.last_filed ? format(new Date(client.tax_info.last_filed), 'MM/dd/yyyy') : '-'}
-              </TableCell>
-              <TableCell>
-                {client.tax_info?.next_deadline ? format(new Date(client.tax_info.next_deadline), 'MM/dd/yyyy') : '-'}
-              </TableCell>
-              <TableCell className="space-x-2">
+              {visibleColumns.includes('Name') && (
+                <TableCell className="font-medium">
+                  <div>
+                    <div>{client.full_name}</div>
+                    <div className="text-sm text-gray-500">{client.contact_info?.phone}</div>
+                  </div>
+                </TableCell>
+              )}
+              {visibleColumns.includes('Company') && (
+                <TableCell>{client.company_name || '-'}</TableCell>
+              )}
+              {visibleColumns.includes('Contact') && (
+                <TableCell>
+                  <div>
+                    <div>{client.contact_email}</div>
+                    <div className="text-sm text-gray-500">{client.contact_info?.address}</div>
+                  </div>
+                </TableCell>
+              )}
+              {visibleColumns.includes('Type') && (
+                <TableCell>
+                  <Badge variant="outline">
+                    {client.type}
+                  </Badge>
+                </TableCell>
+              )}
+              {visibleColumns.includes('Status') && (
+                <TableCell>
+                  <Badge variant={client.status === 'active' ? 'default' : 'secondary'}>
+                    {client.status}
+                  </Badge>
+                </TableCell>
+              )}
+              {visibleColumns.includes('Created') && (
+                <TableCell>
+                  {format(new Date(client.created_at), 'MMM d, yyyy')}
+                </TableCell>
+              )}
+              {visibleColumns.includes('Filing Status') && (
+                <TableCell>
+                  {client.tax_info?.filing_status || '-'}
+                </TableCell>
+              )}
+              {visibleColumns.includes('Last Filed') && (
+                <TableCell>
+                  {client.tax_info?.last_filed ? format(new Date(client.tax_info.last_filed), 'MM/dd/yyyy') : '-'}
+                </TableCell>
+              )}
+              {visibleColumns.includes('Next Deadline') && (
+                <TableCell>
+                  {client.tax_info?.next_deadline ? format(new Date(client.tax_info.next_deadline), 'MM/dd/yyyy') : '-'}
+                </TableCell>
+              )}
+              {visibleColumns.includes('Actions') && (
+                <TableCell className="space-x-2">
                 <Button variant="ghost" size="sm" onClick={() => handleQuickEmail(client)}>
                   <Mail className="h-4 w-4" />
                 </Button>
