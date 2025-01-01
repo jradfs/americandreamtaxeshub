@@ -2,6 +2,12 @@
 
 import { useState, useEffect } from 'react'
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
+import { 
+  Mail, 
+  FileText, 
+  ClipboardList, 
+  Trash 
+} from 'lucide-react'
 import { useToast } from '@/components/ui/use-toast'
 import {
   Table,
@@ -78,7 +84,6 @@ export function ClientList() {
         variant: "destructive",
       })
     }
-  }
       toast({
         title: "Error",
         description: "Failed to delete client",
@@ -90,13 +95,16 @@ export function ClientList() {
   useEffect(() => {
     const fetchClients = async () => {
       try {
-        const { data, error } = await supabase
-          .from('clients')
-          .select('*')
-          .order('created_at', { ascending: false })
+        // Ensure we're in the browser environment
+        if (typeof window !== 'undefined') {
+          const { data, error } = await supabase
+            .from('clients')
+            .select('*')
+            .order('created_at', { ascending: false })
 
-        if (error) throw error
-        setClients(data || [])
+          if (error) throw error
+          setClients(data || [])
+        }
       } catch (error) {
         console.error('Error fetching clients:', error)
         toast({
@@ -110,7 +118,7 @@ export function ClientList() {
     }
 
     fetchClients()
-  }, [toast])
+  }, [])
 
   if (loading) {
     return (
