@@ -79,6 +79,13 @@ export function ClientList() {
       })
     }
   }
+      toast({
+        title: "Error",
+        description: "Failed to delete client",
+        variant: "destructive",
+      })
+    }
+  }
 
   useEffect(() => {
     const fetchClients = async () => {
@@ -103,7 +110,7 @@ export function ClientList() {
     }
 
     fetchClients()
-  }, [])
+  }, [toast])
 
   if (loading) {
     return (
