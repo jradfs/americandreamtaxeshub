@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useTransition } from 'react'
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
 import { 
   Mail, 
@@ -44,6 +44,7 @@ type Client = {
 
 export function ClientList() {
   const [clients, setClients] = useState<Client[]>([])
+  const [isPending, startTransition] = useTransition()
   const [loading, setLoading] = useState(true)
   const supabase = createClientComponentClient()
   const { toast } = useToast()
@@ -110,7 +111,9 @@ export function ClientList() {
       }
     }
 
-    fetchClients()
+    startTransition(() => {
+      fetchClients()
+    })
   }, [])
 
   if (loading) {
