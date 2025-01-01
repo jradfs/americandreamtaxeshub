@@ -85,7 +85,6 @@ export function ClientList() {
       })
     }
   }
-  }
 
   useEffect(() => {
     // Only run this effect in the browser
