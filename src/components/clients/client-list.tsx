@@ -236,23 +236,24 @@ export function ClientList() {
               )}
               {visibleColumns.includes('Actions') && (
                 <TableCell className="space-x-2">
-                <Button variant="ghost" size="sm" onClick={() => handleQuickEmail(client)}>
-                  <Mail className="h-4 w-4" />
-                </Button>
-                <Button variant="ghost" size="sm" onClick={() => handleRequestDocument(client)}>
-                  <FileText className="h-4 w-4" />
-                </Button>
-                <Button variant="ghost" size="sm" onClick={() => handleAddNote(client)}>
-                  <ClipboardList className="h-4 w-4" />
-                </Button>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  onClick={() => handleDeleteClient(client.id)}
-                >
-                  <Trash className="h-4 w-4" />
-                </Button>
-              </TableCell>
+                  <Button variant="ghost" size="sm" onClick={() => handleQuickEmail(client)}>
+                    <Mail className="h-4 w-4" />
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={() => handleRequestDocument(client)}>
+                    <FileText className="h-4 w-4" />
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={() => handleAddNote(client)}>
+                    <ClipboardList className="h-4 w-4" />
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => handleDeleteClient(client.id)}
+                  >
+                    <Trash className="h-4 w-4" />
+                  </Button>
+                </TableCell>
+              )}
             </TableRow>
           ))}
         </TableBody>
