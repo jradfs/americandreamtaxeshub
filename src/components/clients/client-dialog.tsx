@@ -1,3 +1,4 @@
+import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
 import { useClients } from 'src/hooks/useClients';
 import { Client } from 'src/types/hooks';
 import { Button } from 'src/components/ui/button';
@@ -30,6 +31,7 @@ interface ClientDialogProps {
 }
 
 export function ClientDialog({ client, open, onOpenChange, onClose }: ClientDialogProps) {
+  const supabase = createClientComponentClient()
   const { addClient, updateClient } = useClients()
   const { toast } = useToast()
   const [loading, setLoading] = useState(false)
