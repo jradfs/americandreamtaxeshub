@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
+import { useToast } from '@/components/ui/use-toast'
 import {
   Table,
   TableBody,
@@ -40,6 +41,7 @@ export function ClientList() {
   const [clients, setClients] = useState<Client[]>([])
   const [loading, setLoading] = useState(true)
   const supabase = createClientComponentClient()
+  const { toast } = useToast()
 
   const handleQuickEmail = (client: Client) => {
     window.location.href = `mailto:${client.contact_email}`
@@ -104,7 +106,12 @@ export function ClientList() {
   }, [])
 
   if (loading) {
-    return <div className="flex items-center justify-center h-32">Loading clients...</div>
+    return (
+      <div className="flex items-center justify-center h-32">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+        <span className="ml-3">Loading clients...</span>
+      </div>
+    )
   }
 
   return (
