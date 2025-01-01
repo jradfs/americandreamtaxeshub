@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useTransition } from 'react'
+import { ColumnManager } from './column-manager'
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
 import { 
   Mail, 
@@ -42,7 +43,30 @@ type Client = {
   updated_at: string
 }
 
+const ALL_COLUMNS = [
+  'Name',
+  'Company',
+  'Contact',
+  'Type',
+  'Status',
+  'Created',
+  'Filing Status',
+  'Last Filed',
+  'Next Deadline',
+  'Actions'
+]
+
+const COLUMN_STORAGE_KEY = 'client-columns-prefs'
+
 export function ClientList() {
+  const [visibleColumns, setVisibleColumns] = useState<string[]>(() => {
+    // Load from localStorage or use all columns as default
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem(COLUMN_STORAGE_KEY)
+      return saved ? JSON.parse(saved) : ALL_COLUMNS
+    }
+    return ALL_COLUMNS
+  })
   const [clients, setClients] = useState<Client[]>([])
   const [isPending, startTransition] = useTransition()
   const [loading, setLoading] = useState(true)
@@ -122,6 +146,18 @@ export function ClientList() {
 
   return (
     <div className="space-y-4">
+      <ColumnManager 
+        allColumns={ALL_COLUMNS}
+        visibleColumns={visibleColumns}
+        onColumnToggle={(column) => {
+          const newColumns = visibleColumns.includes(column)
+            ? visibleColumns.filter((c) => c !== column)
+            : [...visibleColumns, column]
+          
+          setVisibleColumns(newColumns)
+          localStorage.setItem(COLUMN_STORAGE_KEY, JSON.stringify(newColumns))
+        }}
+      />
       <Table>
         <TableHeader>
           <TableRow>
