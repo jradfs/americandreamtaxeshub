@@ -9,7 +9,7 @@ import {
   Trash 
 } from 'lucide-react'
 import { useToast } from '@/components/ui/use-toast'
-import { format } from 'date-fns'
+import format from 'date-fns/format'
 import {
   Table,
   TableBody,
