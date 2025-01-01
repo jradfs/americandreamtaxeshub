@@ -9,6 +9,7 @@ import {
   Trash 
 } from 'lucide-react'
 import { useToast } from '@/components/ui/use-toast'
+import { format } from 'date-fns'
 import {
   Table,
   TableBody,
@@ -83,12 +84,7 @@ export function ClientList() {
         variant: "destructive",
       })
     }
-      toast({
-        title: "Error",
-        description: "Failed to delete client",
-        variant: "destructive",
-      })
-    }
+  }
   }
 
   useEffect(() => {
