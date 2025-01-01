@@ -59,7 +59,14 @@ const ALL_COLUMNS = [
 const COLUMN_STORAGE_KEY = 'client-columns-prefs'
 
 export function ClientList() {
-  const [visibleColumns, setVisibleColumns] = useState<string[]>(ALL_COLUMNS)
+  const [visibleColumns, setVisibleColumns] = useState<string[]>(() => {
+    // Only run this effect in the browser
+    if (typeof window === 'undefined') return ALL_COLUMNS
+    
+    // Try to load from localStorage
+    const savedColumns = localStorage.getItem(COLUMN_STORAGE_KEY)
+    return savedColumns ? JSON.parse(savedColumns) : ALL_COLUMNS
+  })
   const [clients, setClients] = useState<Client[]>([])
   const [isPending, startTransition] = useTransition()
   const [loading, setLoading] = useState(true)
@@ -143,11 +150,14 @@ export function ClientList() {
         allColumns={ALL_COLUMNS}
         visibleColumns={visibleColumns}
         onColumnToggle={(column) => {
-          setVisibleColumns((prev) =>
-            prev.includes(column)
+          setVisibleColumns((prev) => {
+            const newColumns = prev.includes(column)
               ? prev.filter((c) => c !== column)
               : [...prev, column]
-          )
+            // Save to localStorage
+            localStorage.setItem(COLUMN_STORAGE_KEY, JSON.stringify(newColumns))
+            return newColumns
+          })
         }}
       />
       <Table>

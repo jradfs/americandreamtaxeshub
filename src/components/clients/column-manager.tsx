@@ -34,10 +34,12 @@ export function ColumnManager({
           {allColumns.map((column) => (
             <DropdownMenuItem
               key={column}
-              onSelect={(e) => {
+              onClick={(e) => {
                 e.preventDefault()
+                e.stopPropagation()
                 onColumnToggle(column)
               }}
+              className="cursor-pointer"
             >
               <Checkbox
                 checked={visibleColumns.includes(column)}
