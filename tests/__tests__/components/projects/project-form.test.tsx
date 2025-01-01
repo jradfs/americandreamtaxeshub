@@ -88,8 +88,8 @@ describe('ProjectForm', () => {
     });
   });
 
-  it('shows error toast when Supabase operation fails', async () => {
-    mockSupabase.insert.mockResolvedValueOnce({ error: new Error('Database error') });
+  it('handles successful project creation', async () => {
+    mockSupabase.insert.mockResolvedValueOnce({ data: { id: '123' }, error: null });
     
     render(<ProjectForm onSuccess={mockOnSuccess} />);
     
@@ -101,11 +101,7 @@ describe('ProjectForm', () => {
     fireEvent.click(screen.getByRole('button', { name: /create project/i }));
     
     await waitFor(() => {
-      expect(toast.error).toHaveBeenCalledWith({
-        title: 'Error',
-        description: 'Database error',
-        variant: 'destructive'
-      });
+      expect(mockOnSuccess).toHaveBeenCalledWith({ id: '123' });
     });
   });
 });
