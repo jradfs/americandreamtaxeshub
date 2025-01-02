@@ -35,19 +35,18 @@ import { Building2, FileText, MoreHorizontal } from "lucide-react";
 
 export function ProjectList() {
   const { 
-    filters,
-    updateFilters,
-    clearFilters,
-    selectedFilter,
-    setSelectedFilter,
-    groupProjectsByService,
-    groupProjectsByDeadline,
-    groupProjectsByStatus,
-    groupProjectsByClient,
-    filterProjects,
     projects,
     loading,
     error,
+    filters,
+    updateFilters,
+    clearFilters,
+    filterProjects,
+    groupProjects,
+    groupProjectsByService,
+    groupProjectsByStatus,
+    groupProjectsByDeadline,
+    groupProjectsByClient,
     refresh,
     bulkUpdateProjects,
     archiveProjects
@@ -71,21 +70,32 @@ export function ProjectList() {
 
   // Group projects based on selected view
   const groupedProjects = useMemo(() => {
-    const filteredProjects = filterProjects(projects);
+    if (!projects || !filterProjects || !groupProjects) return {};
     
-    switch (view) {
-      case 'deadline':
-        return groupProjectsByDeadline(filteredProjects);
-      case 'status':
-        return groupProjectsByStatus(filteredProjects);
-      case 'service':
-        return groupProjectsByService(filteredProjects);
-      case 'client':
-        return groupProjectsByClient(filteredProjects);
-      default:
-        return groupProjectsByDeadline(filteredProjects);
-    }
-  }, [projects, view, filterProjects, groupProjectsByDeadline, groupProjectsByStatus, groupProjectsByService, groupProjectsByClient]);
+    const filteredProjects = filterProjects(projects);
+    return groupProjects(filteredProjects, view);
+  }, [projects, view, filterProjects, groupProjects]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <div className="animate-spin">
+          <RefreshCw className="w-6 h-6" />
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <Alert variant="destructive">
+        <AlertTriangle className="h-4 w-4" />
+        <AlertDescription>
+          There was an error loading the projects. Please try refreshing the page.
+        </AlertDescription>
+      </Alert>
+    );
+  }
 
   const handleEditProject = (project: ProjectWithRelations) => {
     setEditingProject(project);

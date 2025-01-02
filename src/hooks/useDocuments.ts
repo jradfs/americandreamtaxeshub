@@ -1,115 +1,130 @@
 import { useState, useEffect } from 'react'
-import { supabase } from '@/lib/supabase'
-import { Document, DocumentInsert, DocumentUpdate } from '@/types/hooks'
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { Document, DocumentFormData } from '@/types/hooks'
+import { Database } from '@/types/database.types'
 
-export function useDocuments(clientId?: number, projectId?: number) {
+interface UseDocumentsOptions {
+  projectId?: string
+  clientId?: string
+}
+
+export function useDocuments(options: UseDocumentsOptions = {}) {
   const [documents, setDocuments] = useState<Document[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const supabase = createClientComponentClient<Database>()
 
   useEffect(() => {
-    if (clientId || projectId) {
-      fetchDocuments()
-    }
-  }, [clientId, projectId])
+    fetchDocuments()
+  }, [options.projectId, options.clientId])
 
   async function fetchDocuments() {
     try {
       let query = supabase
         .from('documents')
-        .select('*')
-        .order('uploaded_at', { ascending: false })
+        .select(`
+          *,
+          project:project_id (*),
+          client:client_id (*)
+        `)
+        .order('created_at', { ascending: false })
 
-      if (clientId) {
-        query = query.eq('client_id', clientId)
+      if (options.projectId) {
+        query = query.eq('project_id', options.projectId)
       }
 
-      if (projectId) {
-        query = query.eq('project_id', projectId)
+      if (options.clientId) {
+        query = query.eq('client_id', options.clientId)
       }
 
-      const { data, error } = await query
+      const { data, error: fetchError } = await query
 
-      if (error) throw error
-      setDocuments(data)
+      if (fetchError) throw fetchError
+
+      setDocuments(data || [])
+      setError(null)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred')
+      console.error('Error fetching documents:', err)
+      setError('Failed to fetch documents')
+      setDocuments([])
     } finally {
       setLoading(false)
     }
   }
 
-  async function uploadDocument(
-    file: File,
-    documentInfo: Omit<DocumentInsert, 'storage_path' | 'file_name' | 'file_type'>
+  async function uploadDocument(file: File, documentInfo: DocumentFormData) {
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('projectId', documentInfo.project_id || '')
+      formData.append('clientId', documentInfo.client_id || '')
+      formData.append('category', documentInfo.category || '')
+      formData.append('description', documentInfo.description || '')
+
+      const response = await fetch('/api/documents', {
+        method: 'POST',
+        body: formData
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to upload document')
+      }
+
+      const data = await response.json()
+      setDocuments(prev => [data, ...prev])
+      return { data, error: null }
+    } catch (err) {
+      console.error('Error uploading document:', err)
+      return { data: null, error: 'Failed to upload document' }
+    }
+  }
+
+  async function deleteDocument(documentId: string) {
+    try {
+      const response = await fetch(`/api/documents?id=${documentId}`, {
+        method: 'DELETE'
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to delete document')
+      }
+
+      setDocuments(prev => prev.filter(doc => doc.id !== documentId))
+      return { error: null }
+    } catch (err) {
+      console.error('Error deleting document:', err)
+      return { error: 'Failed to delete document' }
+    }
+  }
+
+  async function updateDocument(
+    documentId: string,
+    updates: Partial<Omit<Document, 'id' | 'created_at' | 'updated_at'>>
   ) {
     try {
-      // Upload file to Supabase Storage
-      const fileExt = file.name.split('.').pop() || ''
-      const fileName = file.name
-      const storagePath = `${documentInfo.client_id}/${Date.now()}_${fileName}`
-      
-      const { error: uploadError } = await supabase.storage
+      const { data, error: updateError } = await supabase
         .from('documents')
-        .upload(storagePath, file)
+        .update({
+          ...updates,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', documentId)
+        .select(`
+          *,
+          project:project_id (*),
+          client:client_id (*)
+        `)
+        .single()
 
-      if (uploadError) throw uploadError
+      if (updateError) throw updateError
 
-      // Create document record in the database
-      const { data, error: dbError } = await supabase
-        .from('documents')
-        .insert([{
-          ...documentInfo,
-          file_name: fileName,
-          file_type: fileExt,
-          storage_path: storagePath,
-          uploaded_at: new Date().toISOString()
-        }])
-        .select()
-
-      if (dbError) throw dbError
-      setDocuments(prev => [...prev, data[0]])
-      return data[0]
+      setDocuments(prev =>
+        prev.map(doc => (doc.id === documentId ? data : doc))
+      )
+      return { data, error: null }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred')
-      throw err
-    }
-  }
-
-  async function deleteDocument(id: number, storagePath: string) {
-    try {
-      // Delete file from storage
-      const { error: storageError } = await supabase.storage
-        .from('documents')
-        .remove([storagePath])
-
-      if (storageError) throw storageError
-
-      // Delete document record
-      const { error: dbError } = await supabase
-        .from('documents')
-        .delete()
-        .eq('id', id)
-
-      if (dbError) throw dbError
-      setDocuments(prev => prev.filter(doc => doc.id !== id))
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred')
-      throw err
-    }
-  }
-
-  async function getDocumentUrl(storagePath: string) {
-    try {
-      const { data, error } = await supabase.storage
-        .from('documents')
-        .createSignedUrl(storagePath, 3600) // URL valid for 1 hour
-
-      if (error) throw error
-      return data.signedUrl
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred')
-      throw err
+      console.error('Error updating document:', err)
+      return { data: null, error: 'Failed to update document' }
     }
   }
 
@@ -117,9 +132,9 @@ export function useDocuments(clientId?: number, projectId?: number) {
     documents,
     loading,
     error,
+    fetchDocuments,
     uploadDocument,
     deleteDocument,
-    getDocumentUrl,
-    refreshDocuments: fetchDocuments,
+    updateDocument
   }
 }

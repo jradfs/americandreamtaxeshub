@@ -16,17 +16,28 @@ export function createClient() {
           try {
             cookieStore.set({ name, value, ...options });
           } catch (error) {
-            // Handle error
+            console.error('Error setting cookie:', error);
           }
         },
         remove(name: string, options: CookieOptions) {
           try {
             cookieStore.set({ name, value: '', ...options });
           } catch (error) {
-            // Handle error
+            console.error('Error removing cookie:', error);
           }
         },
       },
+      auth: {
+        persistSession: true,
+        storageKey: 'american-dream-taxes-auth',
+        autoRefreshToken: true,
+        detectSessionInUrl: true
+      },
+      global: {
+        headers: {
+          'X-Client-Info': 'american-dream-taxes-hub'
+        }
+      }
     }
   );
 }

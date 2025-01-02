@@ -3,10 +3,9 @@
 import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { 
   Form,
   FormControl, 
@@ -16,6 +15,7 @@ import {
   FormLabel, 
   FormMessage 
 } from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
 import { 
   Select, 
   SelectContent, 
@@ -25,70 +25,42 @@ import {
 } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
-import { CalendarIcon, Upload, FileText, Users, AlertTriangle } from 'lucide-react';
+import { CalendarIcon, GripVertical } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
-import { toast } from 'sonner';
 import { ProjectWithRelations } from '@/types/projects';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
 import { useProjectTemplates } from '@/hooks/useProjectTemplates';
 import { ErrorBoundary } from '@/components/ui/error-boundary';
-
-const projectSchema = z.object({
-  name: z.string().min(1, 'Name is required'),
-  description: z.string().optional(),
-  client_id: z.string().min(1, 'Client is required'),
-  status: z.string().default('not_started'),
-  priority: z.enum(['low', 'medium', 'high']).default('medium'),
-  due_date: z.date().optional(),
-  service_type: z.enum([
-    'tax_returns', 
-    'accounting', 
-    'payroll', 
-    'business_services', 
-    'irs_representation', 
-    'consulting', 
-    'uncategorized'
-  ]).default('uncategorized'),
-  template_id: z.string().optional(),
-  tasks: z.array(z.object({
-    title: z.string().min(1, 'Task title is required'),
-    description: z.string().optional(),
-    priority: z.enum(['low', 'medium', 'high']).default('medium'),
-    dependencies: z.array(z.string()).optional()
-  })).optional()
-}).refine(data => {
-  // Validate that if template_id is provided, tasks must exist
-  if (data.template_id && !data.tasks?.length) {
-    return false;
-  }
-  return true;
-}, {
-  message: "Template tasks are required when using a template",
-  path: ["tasks"]
-});
+import { projectSchema, type ProjectFormValues } from '@/lib/validations/project';
+import { useTaskValidation } from '@/hooks/useTaskValidation';
+import { useProjectSubmission } from '@/hooks/useProjectSubmission';
+import { Textarea } from '@/components/ui/textarea';
+import { MultiSelect } from '@/components/ui/multi-select';
+import { useProjectForm } from '@/hooks/useProjectForm';
+import { Loader2 } from '@/components/ui/loader';
+import { DragDropContext, Draggable, Droppable } from '@hello-pangea/dnd';
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, Label } from '@/components/ui/dialog';
 
 interface ProjectTemplate {
-  id: string;
-  title: string;
-  description: string | null;
-  default_priority: string;
+  id: string
+  title: string
+  description: string | null
+  default_priority: Database['public']['Enums']['task_priority']
+  project_defaults: Record<string, unknown>
 }
 
 interface TemplateTask {
-  id: string;
-  title: string;
-  description: string;
-  priority: string;
-  dependencies: string[];
-  order_index: number;
+  id: string
+  title: string
+  description: string | null
+  priority: Database['public']['Enums']['task_priority']
+  dependencies: string[]
+  order_index: number
 }
-
-type ProjectFormValues = z.infer<typeof projectSchema>;
 
 interface ProjectFormProps {
   project?: ProjectWithRelations;
@@ -96,436 +68,173 @@ interface ProjectFormProps {
 }
 
 export function ProjectForm({ project, onSuccess }: ProjectFormProps) {
-  const supabase = createClientComponentClient();
-  const [clients, setClients] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState('basic-info');
-  const [formProgress, setFormProgress] = useState(0);
-  const { templates, loading: templatesLoading } = useProjectTemplates();
-  const [selectedTemplate, setSelectedTemplate] = useState<ProjectTemplate | null>(null);
-  const [templateTasks, setTemplateTasks] = useState<any[]>([]);
-  const [taskDependencyErrors, setTaskDependencyErrors] = useState<Record<string, string>>({});
-
-  useEffect(() => {
-    const checkStorageAccess = async () => {
-      try {
-        // Test both projects and tasks table access
-        const [{ error: projectsError }, { error: tasksError }] = await Promise.all([
-          supabase.from('projects').select('*').limit(1),
-          supabase.from('tasks').select('*').limit(1)
-        ]);
-
-        if (projectsError || tasksError) {
-          throw projectsError || tasksError;
-        }
-      } catch (error) {
-        console.error('Storage access error:', error);
-        toast.error({
-          title: 'Permission Error',
-          description: 'Failed to access storage. Please check your permissions and try again.',
-          variant: 'destructive'
-        });
-      }
-    };
-
-    checkStorageAccess();
-  }, [supabase]);
-
-  const form = useForm<ProjectFormValues>({
-    resolver: zodResolver(projectSchema),
-    defaultValues: {
-      name: project?.name || '',
-      description: project?.description || '',
-      client_id: project?.client?.id || '',
-      status: project?.status || 'not_started',
-      priority: (project?.priority || 'medium').toLowerCase(), // Ensure lowercase
-      due_date: project?.due_date ? new Date(project.due_date) : undefined,
-      service_type: project?.service_type || 'uncategorized',
-      template_id: project?.template_id || undefined,
-      tasks: []
-    }
+  const {
+    form,
+    isLoading,
+    clients,
+    templates,
+    selectedTemplate,
+    formProgress,
+    handleServiceTypeChange,
+    handleTemplateChange,
+    handleTeamMemberChange,
+    addTask,
+    removeTask,
+    updateTask,
+    reorderTasks,
+    getTaskValidationError,
+    taskDependencyErrors,
+    validateServiceSpecificFields
+  } = useProjectForm({
+    onSuccess,
+    initialData: project
   });
 
-  useEffect(() => {
-    const fetchClients = async () => {
-      const { data: clientsData, error } = await supabase
-        .from('clients')
-        .select('*')
-        .order('company_name');
-
-      if (error) {
-        toast.error('Failed to load clients');
-        return;
-      }
-
-      setClients(clientsData || []);
-    };
-
-    fetchClients();
-  }, [supabase]);
-
-  useEffect(() => {
-    const requiredFields = ['name', 'client_id', 'service_type', 'priority'];
-    const completedFields = requiredFields.filter(field => {
-      const value = form.getValues(field);
-      return value !== null && value !== undefined && value !== '';
-    });
-    const progress = (completedFields.length / requiredFields.length) * 100;
-    setFormProgress(progress);
-  }, [form.watch()]);
-
-  const validateTaskDependencies = (tasks: any[]) => {
-    const errors: Record<string, string> = {};
-    
-    tasks.forEach(task => {
-      // Ensure dependencies is an array
-      if (task.dependencies && !Array.isArray(task.dependencies)) {
-        errors[task.id] = 'Dependencies must be an array';
-      }
-      // Validate dependency IDs exist in the task list
-      if (task.dependencies) {
-        const invalidDeps = task.dependencies.filter((dep: string) => 
-          !tasks.some(t => t.id === dep)
-        );
-        if (invalidDeps.length > 0) {
-          errors[task.id] = `Invalid dependencies: ${invalidDeps.join(', ')}`;
-        }
-      }
-    });
-
-    setTaskDependencyErrors(errors);
-    return Object.keys(errors).length === 0;
-  };
-
-  const onSubmit = async (values: z.infer<typeof projectSchema>) => {
-    console.log('Form values before validation:', values);
-    
-    if (!validateTaskDependencies(values.tasks || [])) {
-      console.error('Task dependency validation failed');
-      toast.error('Please fix task dependency errors');
-      return;
-    }
-
-    // Additional validation for due date
-    if (values.due_date && values.due_date < new Date()) {
-      console.error('Due date validation failed - date is in the past');
-      toast.error('Due date must be in the future');
-      return;
-    }
-
-    console.log('Submitting project with values:', values);
-    console.log('Validating task dependencies...');
-    console.log('Validating task dependencies...');
-    
-    if (!validateTaskDependencies(values.tasks || [])) {
-      console.error('Task dependency validation failed');
-      toast.error('Please fix task dependency errors');
-      return;
-    }
-
-    // Additional validation for due date
-    if (values.due_date && values.due_date < new Date()) {
-      console.error('Due date validation failed - date is in the past');
-      toast.error('Due date must be in the future');
-      return;
-    }
-
-    setIsLoading(true);
-    try {
-      // Prepare project data with defaults
-      const projectData = {
-        name: values.name,
-        description: values.description,
-        client_id: values.client_id,
-        status: values.status || 'not_started',
-        priority: values.priority || 'medium',
-        due_date: values.due_date?.toISOString(),
-        service_type: values.service_type || 'uncategorized',
-        template_id: values.template_id,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      };
-
-      console.log('Project data to insert:', projectData);
-      console.log('Inserting project into database...');
-
-      // Insert project
-      const { data: project, error: projectError } = await supabase
-        .from('projects')
-        .insert(projectData)
-        .select()
-        .single();
-
-      if (projectError) {
-        console.error('Project insert error:', projectError);
-        console.error('Error details:', {
-          code: projectError.code,
-          message: projectError.message,
-          details: projectError.details
-        });
-        throw projectError;
-      }
-
-      console.log('Project created successfully:', project);
-      console.log('Project ID:', project.id);
-      console.log('Project ID:', project.id);
-
-      // Insert tasks if template was used
-      if (values.template_id && values.tasks?.length) {
-        const tasksData = values.tasks.map(task => ({
-          title: task.title,
-          description: task.description,
-          priority: task.priority,
-          dependencies: task.dependencies || [],
-          project_id: project.id,
-          status: 'not_started',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        }));
-
-        console.log('Tasks data to insert:', tasksData);
-
-        const { error: tasksError } = await supabase
-          .from('tasks')
-          .insert(tasksData);
-
-        if (tasksError) {
-          console.error('Tasks insert error:', tasksError);
-          console.error('Error details:', {
-            code: tasksError.code,
-            message: tasksError.message,
-            details: tasksError.details
-          });
-          throw tasksError;
-        }
-        console.log('Tasks created successfully:', tasksData.length, 'tasks');
-      }
-
-      toast.success('Project created successfully');
-      onSuccess();
-    } catch (error) {
-      console.error('Error creating project:', error);
-      toast.error({
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to create project',
-        variant: 'destructive'
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
+  const { submitProject, isSubmitting } = useProjectSubmission(onSuccess);
   const watchedServiceType = form.watch('service_type');
+  const watchedTasks = form.watch('tasks') || [];
+  const [activeTab, setActiveTab] = useState('basic-info');
+  const [showTaskDialog, setShowTaskDialog] = useState(false);
+  const [newTask, setNewTask] = useState({
+    title: '',
+    description: '',
+    priority: 'medium',
+    dependencies: [],
+    assigned_to: undefined
+  });
+
+  const getTabProgress = (tab: string): number => {
+    const fields = {
+      'basic-info': ['name', 'description'],
+      'service-details': ['service_type', 'tax_return_id', 'tax_return_status', 'accounting_period'],
+      'timeline-team': ['due_date', 'team_members', 'tasks']
+    }[tab] || [];
+
+    const filledFields = fields.filter(field => {
+      const value = form.watch(field);
+      return value !== undefined && (Array.isArray(value) ? value.length > 0 : value !== '');
+    });
+
+    return Math.round((filledFields.length / fields.length) * 100);
+  };
+
+  const onSubmit = async (values: ProjectFormValues) => {
+    if (!validateServiceSpecificFields()) {
+      toast.error('Please fill in all required fields for the selected service type');
+      return;
+    }
+    await submitProject(values);
+  };
+
+  const handleDragEnd = (result: any) => {
+    if (!result.destination) return;
+    
+    const fromIndex = result.source.index;
+    const toIndex = result.destination.index;
+    
+    if (fromIndex === toIndex) return;
+    
+    reorderTasks(fromIndex, toIndex);
+  };
+
+  const getTaxReturnOptions = () => {
+    return taxReturns.map(tr => ({
+      value: tr.id,
+      label: tr.name
+    }));
+  };
+
+  const getTeamMemberOptions = () => {
+    return teamMembers.map(member => ({
+      value: member.id,
+      label: member.name,
+      description: member.role
+    }));
+  };
 
   return (
-    <ErrorBoundary>
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-          <div className="mb-6">
-            <div className="flex items-center justify-between mb-2">
-              <h2 className="text-lg font-medium">Project Details</h2>
-                    <Badge variant={formProgress === 100 ? "default" : "secondary"}>
-                {formProgress === 100 ? "Complete" : "In Progress"}
-              </Badge>
-            </div>
-            <Progress value={formProgress} className="h-2" />
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+        <div className="flex justify-between items-center">
+          <h2 className="text-2xl font-bold">Create New Project</h2>
+          <div className="flex items-center gap-4">
+            <Progress value={formProgress} className="w-[100px]" />
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Creating...
+                </>
+              ) : (
+                'Create Project'
+              )}
+            </Button>
           </div>
+        </div>
 
-          <FormField
-            control={form.control}
-            name="template_id"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Template</FormLabel>
-                <Select
-                  onValueChange={async (value) => {
-                    const template = templates.find(t => t.id === value);
-                    setSelectedTemplate(template || null);
-                    field.onChange(value);
-                    if (template) {
-                      form.setValue('name', template.title);
-                      form.setValue('description', template.description);
-                      form.setValue('priority', template.default_priority);
-
-                      // Fetch template tasks
-                      const { data: tasks, error } = await supabase
-                        .from('template_tasks')
-                        .select('*')
-                        .eq('template_id', template.id)
-                        .order('order_index');
-                      
-                      if (error) {
-                        toast.error('Failed to load template tasks');
-                        return;
-                      }
-                      setTemplateTasks(tasks || []);
-                      form.setValue('tasks', tasks?.map(task => ({
-                        title: task.title,
-                        description: task.description,
-                        priority: task.priority,
-                        dependencies: task.dependencies
-                      })) || []);
-                    } else {
-                      setTemplateTasks([]);
-                      form.setValue('tasks', []);
-                    }
-                  }}
-                  defaultValue={field.value}
-                >
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a template" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {templatesLoading && <SelectItem value="loading" disabled>Loading templates...</SelectItem>}
-                    {templates.map(template => (
-                      <SelectItem key={template.id} value={template.id}>
-                        {template.title}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormDescription>
-                  Select a template to pre-fill project details
-                </FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <FormField
-              control={form.control}
-              name="client_id"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Client</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a client" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {clients.map(client => (
-                        <SelectItem key={client.id} value={client.id}>
-                          {client.company_name || client.full_name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="service_type"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Service Type</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a service type" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="tax_returns">Tax Returns</SelectItem>
-                      <SelectItem value="accounting">Accounting</SelectItem>
-                      <SelectItem value="payroll">Payroll</SelectItem>
-                      <SelectItem value="business_services">Business Services</SelectItem>
-                      <SelectItem value="irs_representation">IRS Representation</SelectItem>
-                      <SelectItem value="consulting">Consulting</SelectItem>
-                      <SelectItem value="uncategorized">Uncategorized</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="priority"
-              render={({ field }) => {
-                // Ensure value is never null and lowercase
-                const value = field.value || 'medium';
-                return (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Client & Template</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <FormField
+                control={form.control}
+                name="client_id"
+                render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Priority</FormLabel>
+                    <FormLabel>Client</FormLabel>
                     <Select
                       onValueChange={field.onChange}
-                      value={value}
-                      defaultValue="medium"
+                      defaultValue={field.value}
                     >
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select priority" />
+                          <SelectValue placeholder="Select client" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="low">Low</SelectItem>
-                        <SelectItem value="medium">Medium</SelectItem>
-                        <SelectItem value="high">High</SelectItem>
+                        {clients.map((client) => (
+                          <SelectItem key={client.id} value={client.id}>
+                            {client.name}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                     <FormMessage />
                   </FormItem>
-                );
-              }}
-            />
+                )}
+              />
 
-            <FormField
-              control={form.control}
-              name="due_date"
-              render={({ field }) => (
-                <FormItem className="flex flex-col">
-                  <FormLabel>Due Date</FormLabel>
-                  <Popover>
-                    <PopoverTrigger asChild>
+              <FormField
+                control={form.control}
+                name="template_id"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Project Template</FormLabel>
+                    <Select
+                      onValueChange={handleTemplateChange}
+                      defaultValue={field.value}
+                    >
                       <FormControl>
-                        <Button
-                          variant="outline"
-                          className={cn(
-                            "w-full pl-3 text-left font-normal",
-                            !field.value && "text-muted-foreground"
-                          )}
-                        >
-                          {field.value ? (
-                            format(field.value, "PPP")
-                          ) : (
-                            <span>Pick a date</span>
-                          )}
-                          <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                        </Button>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select template" />
+                        </SelectTrigger>
                       </FormControl>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={field.value}
-                        onSelect={field.onChange}
-                        disabled={(date) =>
-                          date < new Date() || date < new Date("1900-01-01")
-                        }
-                        initialFocus
-                      />
-                    </PopoverContent>
-                  </Popover>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
+                      <SelectContent>
+                        {templates.map((template) => (
+                          <SelectItem key={template.id} value={template.id}>
+                            {template.title}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </CardContent>
+          </Card>
 
           {selectedTemplate && (
             <Card>
@@ -535,48 +244,39 @@ export function ProjectForm({ project, onSuccess }: ProjectFormProps) {
               <CardContent>
                 <div className="space-y-2">
                   <div>
-                    <span className="font-medium">Description:</span> {selectedTemplate.description}
+                    <span className="font-medium">Description:</span>{' '}
+                    {selectedTemplate.description}
                   </div>
                   <div>
-                    <span className="font-medium">Default Priority:</span> {selectedTemplate.default_priority}
+                    <span className="font-medium">Default Priority:</span>{' '}
+                    {selectedTemplate.default_priority}
                   </div>
                 </div>
-                
-                {templateTasks.length > 0 && (
+
+                {selectedTemplate.tasks.length > 0 && (
                   <div className="mt-4">
                     <h3 className="font-medium mb-2">Template Tasks</h3>
                     <div className="space-y-2">
-                      {templateTasks.map((task, index) => (
-                        <div key={task.id} className="p-2 border rounded">
+                      {selectedTemplate.tasks.map((task) => (
+                        <div key={task.title} className="p-2 border rounded">
                           <div className="flex items-center justify-between">
                             <div>
                               <p className="font-medium">{task.title}</p>
                               {task.description && (
-                                <p className="text-sm text-muted-foreground">{task.description}</p>
+                                <p className="text-sm text-muted-foreground">
+                                  {task.description}
+                                </p>
                               )}
                             </div>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => {
-                                const currentTasks = form.getValues('tasks') || [];
-                                const updatedTasks = currentTasks.filter(t => t.title !== task.title);
-                                form.setValue('tasks', updatedTasks);
-                                setTemplateTasks(prev => prev.filter(t => t.id !== task.id));
-                              }}
-                            >
-                              Remove
-                            </Button>
+                            {getTaskValidationError(task.title) && (
+                              <Badge variant="destructive">
+                                {getTaskValidationError(task.title)}
+                              </Badge>
+                            )}
                           </div>
-                          {task.dependencies && task.dependencies.length > 0 && (
+                          {task.dependencies?.length > 0 && (
                             <div className="mt-1 text-sm text-muted-foreground">
                               Depends on: {task.dependencies.join(', ')}
-                            </div>
-                          )}
-                          {taskDependencyErrors[task.id] && (
-                            <div className="text-sm text-destructive mt-1">
-                              {taskDependencyErrors[task.id]}
                             </div>
                           )}
                         </div>
@@ -587,62 +287,479 @@ export function ProjectForm({ project, onSuccess }: ProjectFormProps) {
               </CardContent>
             </Card>
           )}
+        </div>
 
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="basic-info">Basic Information</TabsTrigger>
-              <TabsTrigger value="service-details">Service Details</TabsTrigger>
-              <TabsTrigger value="timeline-team">Timeline & Team</TabsTrigger>
-            </TabsList>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="basic-info" className="relative">
+              Basic Information
+              <Progress value={getTabProgress('basic-info')} className="absolute bottom-0 left-0 h-1" />
+            </TabsTrigger>
+            <TabsTrigger value="service-details" className="relative">
+              Service Details
+              <Progress value={getTabProgress('service-details')} className="absolute bottom-0 left-0 h-1" />
+            </TabsTrigger>
+            <TabsTrigger value="timeline-team" className="relative">
+              Timeline & Team
+              <Progress value={getTabProgress('timeline-team')} className="absolute bottom-0 left-0 h-1" />
+            </TabsTrigger>
+          </TabsList>
 
-            <TabsContent value="basic-info">
+          <TabsContent value="basic-info">
+            <Card>
+              <CardHeader>
+                <CardTitle>Basic Project Information</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Project Name</FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="Enter project name" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="description"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Description</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          {...field}
+                          placeholder="Enter project description"
+                          className="min-h-[100px]"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="priority"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Priority</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select priority" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="low">Low</SelectItem>
+                          <SelectItem value="medium">Medium</SelectItem>
+                          <SelectItem value="high">High</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="service-details">
+            <Card>
+              <CardHeader>
+                <CardTitle>Service Details</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="service_type"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Service Type</FormLabel>
+                      <Select
+                        onValueChange={handleServiceTypeChange}
+                        defaultValue={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select service type" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="tax_return">Tax Return</SelectItem>
+                          <SelectItem value="accounting">Accounting</SelectItem>
+                          <SelectItem value="payroll">Payroll</SelectItem>
+                          <SelectItem value="business_services">Business Services</SelectItem>
+                          <SelectItem value="irs_representation">IRS Representation</SelectItem>
+                          <SelectItem value="consulting">Consulting</SelectItem>
+                          <SelectItem value="uncategorized">Other</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {watchedServiceType === 'tax_return' && (
+                  <>
+                    <FormField
+                      control={form.control}
+                      name="tax_return_id"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Tax Return</FormLabel>
+                          <Select
+                            onValueChange={field.onChange}
+                            defaultValue={field.value}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select tax return" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {getTaxReturnOptions().map((option) => (
+                                <SelectItem key={option.value} value={option.value}>
+                                  {option.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="tax_return_status"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Status</FormLabel>
+                          <Select
+                            onValueChange={field.onChange}
+                            defaultValue={field.value}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select status" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="not_started">Not Started</SelectItem>
+                              <SelectItem value="in_progress">In Progress</SelectItem>
+                              <SelectItem value="review_needed">Review Needed</SelectItem>
+                              <SelectItem value="completed">Completed</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </>
+                )}
+
+                {watchedServiceType === 'accounting' && (
+                  <FormField
+                    control={form.control}
+                    name="accounting_period"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Accounting Period</FormLabel>
+                        <Select
+                          onValueChange={field.onChange}
+                          defaultValue={field.value}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select period" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="monthly">Monthly</SelectItem>
+                            <SelectItem value="quarterly">Quarterly</SelectItem>
+                            <SelectItem value="annual">Annual</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="timeline-team">
+            <div className="space-y-6">
               <Card>
-                {/* Keep the existing CardHeader and CardContent */}
+                <CardHeader>
+                  <CardTitle>Timeline & Team</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <FormField
+                    control={form.control}
+                    name="due_date"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Due Date</FormLabel>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <FormControl>
+                              <Button
+                                variant="outline"
+                                className={cn(
+                                  'w-full pl-3 text-left font-normal',
+                                  !field.value && 'text-muted-foreground'
+                                )}
+                              >
+                                {field.value ? (
+                                  format(field.value, 'PPP')
+                                ) : (
+                                  <span>Pick a date</span>
+                                )}
+                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                              </Button>
+                            </FormControl>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                              mode="single"
+                              selected={field.value}
+                              onSelect={field.onChange}
+                              disabled={(date) => date < new Date()}
+                              initialFocus
+                            />
+                          </PopoverContent>
+                        </Popover>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="team_members"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Team Members</FormLabel>
+                        <FormControl>
+                          <MultiSelect
+                            selected={field.value || []}
+                            onChange={handleTeamMemberChange}
+                            options={getTeamMemberOptions()}
+                            placeholder="Select team members"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </CardContent>
               </Card>
-            </TabsContent>
 
-            <TabsContent value="service-details">
-              {watchedServiceType === 'tax_returns' && (
-                <>
-                  {/* Keep the existing tax returns content */}
-                </>
-              )}
-
-              {watchedServiceType === 'accounting' && (
-                <>
-                  {/* Keep the existing accounting content */}
-                </>
-              )}
-
-              {watchedServiceType === 'payroll' && (
-                <>
-                  {/* Keep the existing payroll content */}
-                </>
-              )}
-            </TabsContent>
-
-            <TabsContent value="timeline-team">
               <Card>
-                {/* Keep the existing team & timeline content */}
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <CardTitle>Tasks</CardTitle>
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowTaskDialog(true)}
+                  >
+                    Add Task
+                  </Button>
+                </CardHeader>
+                <CardContent>
+                  <DragDropContext onDragEnd={handleDragEnd}>
+                    <Droppable droppableId="tasks">
+                      {(provided) => (
+                        <div {...provided.droppableProps} ref={provided.innerRef}>
+                          {watchedTasks.map((task, index) => (
+                            <Draggable
+                              key={task.title}
+                              draggableId={task.title}
+                              index={index}
+                            >
+                              {(provided) => (
+                                <div
+                                  ref={provided.innerRef}
+                                  {...provided.draggableProps}
+                                  className="p-4 mb-2 border rounded-lg bg-card"
+                                >
+                                  <div className="flex items-start gap-4">
+                                    <div
+                                      {...provided.dragHandleProps}
+                                      className="mt-1.5"
+                                    >
+                                      <GripVertical className="h-4 w-4" />
+                                    </div>
+                                    <div className="flex-1 space-y-2">
+                                      <div className="flex items-center justify-between">
+                                        <h4 className="font-medium">{task.title}</h4>
+                                        <div className="flex items-center gap-2">
+                                          <Badge>{task.priority}</Badge>
+                                          {task.assigned_to && (
+                                            <Badge variant="outline">
+                                              {teamMembers.find(m => m.id === task.assigned_to)?.name}
+                                            </Badge>
+                                          )}
+                                          <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() => removeTask(task.title)}
+                                          >
+                                            Remove
+                                          </Button>
+                                        </div>
+                                      </div>
+                                      {task.description && (
+                                        <p className="text-sm text-muted-foreground">
+                                          {task.description}
+                                        </p>
+                                      )}
+                                      {task.dependencies?.length > 0 && (
+                                        <div className="text-sm text-muted-foreground">
+                                          Depends on: {task.dependencies.join(', ')}
+                                        </div>
+                                      )}
+                                      {getTaskValidationError(task.title) && (
+                                        <p className="text-sm text-destructive">
+                                          {getTaskValidationError(task.title)}
+                                        </p>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
+                            </Draggable>
+                          ))}
+                          {provided.placeholder}
+                        </div>
+                      )}
+                    </Droppable>
+                  </DragDropContext>
+                </CardContent>
               </Card>
-            </TabsContent>
-          </Tabs>
-
-          <div className="flex justify-end space-x-4">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onSuccess()}
-              disabled={isLoading}
-            >
+            </div>
+          </TabsContent>
+        </Tabs>
+      </form>
+      <Dialog open={showTaskDialog} onOpenChange={setShowTaskDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add Task</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Title</Label>
+              <Input
+                value={newTask.title}
+                onChange={(e) =>
+                  setNewTask({ ...newTask, title: e.target.value })
+                }
+                placeholder="Enter task title"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Description</Label>
+              <Textarea
+                value={newTask.description}
+                onChange={(e) =>
+                  setNewTask({ ...newTask, description: e.target.value })
+                }
+                placeholder="Enter task description"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Priority</Label>
+              <Select
+                value={newTask.priority}
+                onValueChange={(value) =>
+                  setNewTask({ ...newTask, priority: value })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select priority" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="low">Low</SelectItem>
+                  <SelectItem value="medium">Medium</SelectItem>
+                  <SelectItem value="high">High</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Dependencies</Label>
+              <MultiSelect
+                selected={newTask.dependencies || []}
+                onChange={(value) =>
+                  setNewTask({ ...newTask, dependencies: value })
+                }
+                options={watchedTasks.map((task) => ({
+                  value: task.title,
+                  label: task.title
+                }))}
+                placeholder="Select dependencies"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Assigned To</Label>
+              <Select
+                value={newTask.assigned_to}
+                onValueChange={(value) =>
+                  setNewTask({ ...newTask, assigned_to: value })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select team member" />
+                </SelectTrigger>
+                <SelectContent>
+                  {getTeamMemberOptions().map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowTaskDialog(false)}>
               Cancel
             </Button>
-            <Button type="submit" disabled={isLoading}>
-              {isLoading ? 'Saving...' : (project?.id ? 'Update Project' : 'Create Project')}
+            <Button
+              onClick={() => {
+                if (!newTask.title) {
+                  toast.error('Task title is required');
+                  return;
+                }
+                if (watchedTasks.some(t => t.title === newTask.title)) {
+                  toast.error('Task title must be unique');
+                  return;
+                }
+                addTask(newTask);
+                setShowTaskDialog(false);
+                setNewTask({
+                  title: '',
+                  description: '',
+                  priority: 'medium',
+                  dependencies: [],
+                  assigned_to: undefined
+                });
+              }}
+            >
+              Add Task
             </Button>
-          </div>
-        </form>
-      </Form>
-    </ErrorBoundary>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </Form>
   );
 }

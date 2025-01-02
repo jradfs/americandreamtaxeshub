@@ -32,16 +32,19 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
 import { useToast } from '@/components/ui/use-toast'
 import { 
+  TaskWithRelations,
+  TaskStatus,
+  TaskPriority,
   taskStatusOptions, 
-  taskPriorityOptions, 
-  TaskWithRelations 
+  taskPriorityOptions
 } from '@/types/tasks'
+import { Database } from '@/types/database.types'
 
 const taskSchema = z.object({
   title: z.string().min(1, "Title is required"),
   description: z.string().optional(),
-  status: z.enum(['todo', 'in-progress', 'completed', 'blocked']),
-  priority: z.enum(['low', 'medium', 'high', 'urgent']),
+  status: z.custom<Database['public']['Enums']['task_status']>(),
+  priority: z.custom<Database['public']['Enums']['task_priority']>(),
   progress: z.number().min(0).max(100).optional(),
   due_date: z.date().optional()
 })
@@ -49,10 +52,10 @@ const taskSchema = z.object({
 interface TaskSidePanelProps {
   isOpen: boolean
   onClose: () => void
-  task?: TaskWithRelations | null
+  task: TaskWithRelations | null
   projectId?: string
   clientId?: string
-  onTaskUpdate?: (updatedTask: TaskWithRelations) => void
+  onTaskUpdate?: (task: TaskWithRelations) => void
 }
 
 export function TaskSidePanel({ 
@@ -63,9 +66,10 @@ export function TaskSidePanel({
   clientId,
   onTaskUpdate
 }: TaskSidePanelProps) {
-  const supabase = createClientComponentClient()
   const { toast } = useToast()
-
+  const [loading, setLoading] = useState(false)
+  const supabase = createClientComponentClient<Database>()
+  
   const form = useForm<z.infer<typeof taskSchema>>({
     resolver: zodResolver(taskSchema),
     defaultValues: {
@@ -78,71 +82,76 @@ export function TaskSidePanel({
     }
   })
 
-  useEffect(() => {
-    if (task) {
-      form.reset({
-        title: task.title || '',
-        description: task.description || '',
-        status: task.status || 'todo',
-        priority: task.priority || 'medium',
-        progress: task.progress || 0,
-        due_date: task.due_date ? new Date(task.due_date) : undefined
-      })
-    } else {
-      form.reset({
-        title: '',
-        description: '',
-        status: 'todo',
-        priority: 'medium',
-        progress: 0
-      })
-    }
-  }, [task, form])
-
   const onSubmit = async (values: z.infer<typeof taskSchema>) => {
+    setLoading(true)
     try {
-      const { data, error } = await supabase
-        .from('tasks')
-        .upsert({
-          ...values,
-          id: task?.id,
-          project_id: projectId,
-          client_id: clientId  // Automatically inherit client from project
-        })
-        .select()
-        .single()
-
-      if (error) throw error
-
-      // Notify parent component of update
-      if (onTaskUpdate && data) {
-        onTaskUpdate(data)
+      const updateData = {
+        ...values,
+        project_id: projectId,
+        client_id: clientId,
+        updated_at: new Date().toISOString()
       }
 
-      toast({
-        title: task ? "Task Updated" : "Task Created",
-        description: `The task has been successfully ${task ? 'updated' : 'created'}.`,
-        variant: "default"
-      })
+      if (task) {
+        const { data: updatedTask, error } = await supabase
+          .from('tasks')
+          .update(updateData)
+          .eq('id', task.id)
+          .select('*')
+          .single()
+
+        if (error) throw error
+
+        toast({
+          title: 'Task updated',
+          description: 'The task has been successfully updated.'
+        })
+
+        if (onTaskUpdate && updatedTask) {
+          onTaskUpdate(updatedTask as TaskWithRelations)
+        }
+      } else {
+        const { data: newTask, error } = await supabase
+          .from('tasks')
+          .insert({
+            ...updateData,
+            created_at: new Date().toISOString()
+          })
+          .select('*')
+          .single()
+
+        if (error) throw error
+
+        toast({
+          title: 'Task created',
+          description: 'The task has been successfully created.'
+        })
+
+        if (onTaskUpdate && newTask) {
+          onTaskUpdate(newTask as TaskWithRelations)
+        }
+      }
 
       onClose()
     } catch (error) {
       console.error('Error saving task:', error)
       toast({
-        title: "Error",
-        description: "Failed to save task. Please try again.",
-        variant: "destructive"
+        title: 'Error',
+        description: 'There was an error saving the task.',
+        variant: 'destructive'
       })
+    } finally {
+      setLoading(false)
     }
   }
 
   return (
     <Sheet open={isOpen} onOpenChange={onClose}>
-      <SheetContent className="w-[800px] overflow-y-auto">
+      <SheetContent>
         <SheetHeader>
-          <SheetTitle>{task ? 'Edit Task' : 'Create New Task'}</SheetTitle>
+          <SheetTitle>{task ? 'Edit Task' : 'New Task'}</SheetTitle>
           <SheetDescription>
-            {task ? 'Modify the details of this task.' : 'Add a new task to your project.'}
+            {task ? 'Update the task details below.' : 'Create a new task by filling out the form below.'}
           </SheetDescription>
         </SheetHeader>
 
@@ -153,9 +162,9 @@ export function TaskSidePanel({
               name="title"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Task Title</FormLabel>
+                  <FormLabel>Title</FormLabel>
                   <FormControl>
-                    <Input placeholder="Enter task title" {...field} />
+                    <Input {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -169,92 +178,75 @@ export function TaskSidePanel({
                 <FormItem>
                   <FormLabel>Description</FormLabel>
                   <FormControl>
-                    <Textarea 
-                      placeholder="Task description (optional)" 
-                      className="min-h-[150px]"
-                      {...field} 
-                    />
+                    <Textarea {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
 
-            <div className="grid grid-cols-3 gap-4">
-              <FormField
-                control={form.control}
-                name="status"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Status</FormLabel>
-                    <Select 
-                      onValueChange={field.onChange} 
-                      defaultValue={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select status" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {taskStatusOptions.map((status) => (
-                          <SelectItem 
-                            key={status.value} 
-                            value={status.value}
-                          >
-                            {status.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+            <FormField
+              control={form.control}
+              name="status"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Status</FormLabel>
+                  <Select
+                    onValueChange={field.onChange}
+                    defaultValue={field.value}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a status" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {taskStatusOptions.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-              <FormField
-                control={form.control}
-                name="priority"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Priority</FormLabel>
-                    <Select 
-                      onValueChange={field.onChange} 
-                      defaultValue={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select priority" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {taskPriorityOptions.map((priority) => (
-                          <SelectItem 
-                            key={priority.value} 
-                            value={priority.value}
-                          >
-                            {priority.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+            <FormField
+              control={form.control}
+              name="priority"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Priority</FormLabel>
+                  <Select
+                    onValueChange={field.onChange}
+                    defaultValue={field.value}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a priority" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {taskPriorityOptions.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-            </div>
-
-            <div className="flex justify-end space-x-2 mt-4">
-              <Button 
-                type="button" 
-                variant="outline" 
-                onClick={onClose}
-              >
+            <div className="flex justify-end space-x-2 pt-4">
+              <Button type="button" variant="outline" onClick={onClose}>
                 Cancel
               </Button>
-              <Button type="submit">
-                {task ? 'Update Task' : 'Create Task'}
+              <Button type="submit" disabled={loading}>
+                {loading ? 'Saving...' : task ? 'Update Task' : 'Create Task'}
               </Button>
             </div>
           </form>

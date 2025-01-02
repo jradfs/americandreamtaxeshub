@@ -1,5 +1,3 @@
-'use client';
-
 import { useState, useEffect, useCallback } from 'react';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { ProjectWithRelations } from '@/types/projects';
@@ -35,103 +33,65 @@ export function useProjectFilters() {
   const [error, setError] = useState<string | null>(null);
   const supabase = createClientComponentClient();
 
+  const buildQueryString = useCallback(() => {
+    const params = new URLSearchParams();
+
+    if (filters.status !== 'all') {
+      params.append('status', filters.status);
+    }
+
+    if (filters.priority !== 'all') {
+      params.append('priority', filters.priority);
+    }
+
+    if (filters.stage !== 'all') {
+      params.append('stage', filters.stage);
+    }
+
+    if (filters.clientId !== 'all') {
+      params.append('clientId', filters.clientId);
+    }
+
+    if (filters.search) {
+      params.append('search', filters.search);
+    }
+
+    if (filters.dateRange?.from) {
+      params.append('fromDate', startOfDay(filters.dateRange.from).toISOString());
+    }
+    
+    if (filters.dateRange?.to) {
+      params.append('toDate', endOfDay(filters.dateRange.to).toISOString());
+    }
+
+    params.append('sortBy', filters.sortBy);
+    params.append('sortOrder', filters.sortOrder);
+
+    return params.toString();
+  }, [filters]);
+
   const fetchProjects = useCallback(async () => {
     setLoading(true);
     setError(null);
+
     try {
-      let query = supabase
-        .from('projects')
-        .select(`
-          *,
-          client:clients (
-            id,
-            full_name,
-            company_name,
-            contact_info
-          )
-        `);
+      const queryString = buildQueryString();
+      const response = await fetch(`/api/projects?${queryString}`);
 
-      // Apply filters
-      if (filters.status !== 'all') {
-        query = query.eq('status', filters.status);
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to fetch projects');
       }
 
-      if (filters.priority !== 'all') {
-        query = query.eq('priority', filters.priority);
-      }
-
-      if (filters.stage !== 'all') {
-        query = query.eq('stage', filters.stage);
-      }
-
-      if (filters.clientId !== 'all') {
-        query = query.eq('client_id', filters.clientId);
-      }
-
-      if (filters.search) {
-        query = query.or(
-          `name.ilike.%${filters.search}%,description.ilike.%${filters.search}%`
-        );
-      }
-
-      if (filters.dateRange?.from) {
-        query = query.gte('created_at', startOfDay(filters.dateRange.from).toISOString());
-      }
-      
-      if (filters.dateRange?.to) {
-        query = query.lte('created_at', endOfDay(filters.dateRange.to).toISOString());
-      }
-
-      // Apply sorting
-      const ascending = filters.sortOrder === 'asc';
-      switch (filters.sortBy) {
-        case 'created':
-          query = query.order('created_at', { ascending });
-          break;
-        case 'due':
-          query = query.order('due_date', { ascending, nullsLast: true });
-          break;
-        case 'name':
-          query = query.order('name', { ascending });
-          break;
-        case 'status':
-          query = query.order('status', { ascending }).order('created_at', { ascending: false });
-          break;
-        case 'priority':
-          query = query.order('priority', { ascending }).order('created_at', { ascending: false });
-          break;
-        default:
-          query = query.order('created_at', { ascending: false });
-      }
-
-      const { data: projectsData, error: projectsError } = await query;
-
-      if (projectsError) throw projectsError;
-      if (!projectsData) throw new Error('No projects data received');
-
-      // Fetch tasks only if we have projects
-      const projectIds = projectsData.map(p => p.id);
-      let tasksData = [];
-      
-      if (projectIds.length > 0) {
-        const { data: tasks, error: tasksError } = await supabase
-          .from('tasks')
-          .select('*')
-          .in('project_id', projectIds);
-
-        if (tasksError) throw tasksError;
-        tasksData = tasks || [];
-      }
+      const data = await response.json();
 
       // Process projects with tasks
-      const processedData = projectsData.map(project => {
-        const projectTasks = tasksData.filter(task => task.project_id === project.id);
-        const completedTasks = projectTasks.filter(t => t.status === 'completed').length;
-        const totalTasks = projectTasks.length;
+      const processedData = data.map((project: ProjectWithRelations) => {
+        const completedTasks = project.tasks?.filter(t => t.status === 'completed').length || 0;
+        const totalTasks = project.tasks?.length || 0;
 
         return {
           ...project,
-          tasks: projectTasks,
           created_at: project.created_at ? new Date(project.created_at).toISOString() : null,
           due_date: project.due_date ? new Date(project.due_date).toISOString() : null,
           start_date: project.start_date ? new Date(project.start_date).toISOString() : null,
@@ -141,19 +101,20 @@ export function useProjectFilters() {
 
       setProjects(processedData);
       setError(null);
-
-    } catch (error) {
-      console.error('Error fetching projects:', error);
-      setError('Failed to fetch projects. Please try again.');
+    } catch (err) {
+      console.error('Error fetching projects:', err);
+      setError(err instanceof Error ? err.message : 'Failed to fetch projects');
       setProjects([]);
     } finally {
       setLoading(false);
     }
-  }, [supabase, filters]);
+  }, [buildQueryString]);
 
+  // Set up real-time subscription
   useEffect(() => {
     fetchProjects();
 
+    // Subscribe to project changes
     const projectsChannel = supabase
       .channel('projects_changes')
       .on(
@@ -175,49 +136,62 @@ export function useProjectFilters() {
   }, [fetchProjects, supabase]);
 
   const updateFilters = useCallback((newFilters: Partial<ProjectFilters>) => {
-    setFilters(current => ({
-      ...current,
-      ...newFilters
-    }));
+    setFilters(current => ({ ...current, ...newFilters }));
   }, []);
 
   const resetFilters = useCallback(() => {
     setFilters(defaultFilters);
   }, []);
 
-  // New bulk operation functions
+  const sortProjects = useCallback((field: string, order: 'asc' | 'desc') => {
+    updateFilters({ sortBy: field, sortOrder: order });
+  }, [updateFilters]);
+
+  // Bulk operations
   const bulkUpdateProjects = useCallback(async (projectIds: string[], updates: Partial<ProjectWithRelations>) => {
     try {
-      const { error: updateError } = await supabase
-        .from('projects')
-        .update(updates)
-        .in('id', projectIds);
+      const response = await fetch('/api/projects/bulk', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          projectIds,
+          updates: {
+            ...updates,
+            updated_at: new Date().toISOString()
+          }
+        })
+      });
 
-      if (updateError) throw updateError;
-      
-      // Let the real-time subscription handle the update
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to update projects');
+      }
+
+      await fetchProjects(); // Refresh the list after bulk update
       return true;
     } catch (err) {
       console.error('Error updating projects:', err);
       throw new Error('Failed to update projects');
     }
-  }, [supabase]);
+  }, [fetchProjects]);
 
   const archiveProjects = useCallback(async (projectIds: string[]) => {
     return bulkUpdateProjects(projectIds, { 
-      status: 'archived',
-      updated_at: new Date().toISOString()
+      status: 'archived'
     });
   }, [bulkUpdateProjects]);
 
   return {
     filters,
-    updateFilters,
-    resetFilters,
     projects,
     loading,
     error,
-    refresh: fetchProjects,
+    updateFilters,
+    resetFilters,
+    sortProjects,
+    refreshProjects: fetchProjects,
     bulkUpdateProjects,
     archiveProjects
   };

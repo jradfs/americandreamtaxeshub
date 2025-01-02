@@ -1,155 +1,227 @@
-import { Database, Tables } from "./database";
+import { Database } from './database.types'
+import type { Json } from './database.types'
+import { Task } from './tasks'
+import { User } from './hooks'
 
-export type Project = Database["public"]["Tables"]["projects"]["Row"];
-export type NewProject = Database["public"]["Tables"]["projects"]["Insert"];
+// Base types from database
+export type Project = Database['public']['Tables']['projects']['Row']
+export type NewProject = Database['public']['Tables']['projects']['Insert']
+export type UpdateProject = Database['public']['Tables']['projects']['Update']
 
-export type ServiceType = 
-  | 'tax_returns'
+// Enum types
+export type ServiceCategory = 
+  | 'tax_preparation'
   | 'accounting'
   | 'payroll'
   | 'business_services'
-  | 'irs_representation'
   | 'consulting'
-  | 'uncategorized';
+  | 'irs_resolution'
+  | 'other'
 
-export type TaxReturnType = 
-  | '1040'
-  | '1120'
-  | '1065'
-  | '1120S'
-  | '990'
-  | '941'
-  | '940'
-  | 'other';
+export type TaxReturnType = Database['public']['Enums']['tax_return_type']
+export type ProjectStatus = Database['public']['Enums']['project_status']
+export type ReviewStatus = Database['public']['Enums']['review_status']
+export type Priority = Database['public']['Enums']['priority']
 
-export type ProjectStatus = 
-  | 'not_started'      // Initial state
-  | 'in_progress'      // Work has begun
-  | 'waiting_for_info' // Blocked on client input
-  | 'needs_review'     // Ready for internal review
-  | 'completed'        // Work is done
-  | 'archived';        // Project is archived
+// Project metadata interface
+export interface ProjectMetadata {
+  readonly id: string
+  readonly created_at: string
+  readonly updated_at: string
+  version: number
+  archived: boolean
+}
 
-export type ReviewStatus =
-  | 'not_started'      // Review not started
-  | 'in_progress'      // Under review
-  | 'needs_revision'   // Changes requested
-  | 'approved'         // Review passed
-  | 'rejected';        // Review failed
+// Base project interface
+export interface ProjectBase extends ProjectMetadata {
+  title: string
+  description?: string
+  status: ProjectStatus
+  priority: Priority
+  due_date?: string
+  assigned_to?: string[]
+  tags?: string[]
+  category: ServiceCategory
+  client_id: string
+  team_members?: string[]
+}
 
-export type TaskStatus =
-  | 'not_started'      // Task not started
-  | 'in_progress'      // Task being worked on
-  | 'blocked'          // Task is blocked
-  | 'completed';       // Task is done
-
+// Service-specific information interfaces
 export interface TaxInfo {
-  return_type: TaxReturnType;
-  tax_year: number;
-  filing_deadline?: string;
-  extension_filed?: boolean;
-  missing_documents?: string[];
-  review_status?: ReviewStatus;
-  reviewer_id?: string;
-  review_notes?: string;
-  estimated_refund?: number;
-  estimated_balance_due?: number;
-  payment_status?: 'pending' | 'partial' | 'paid' | 'overdue';
-  estimated_tax_payments?: Record<string, boolean>;
+  return_type: TaxReturnType
+  tax_year: number
+  filing_deadline?: string
+  extension_filed?: boolean
+  extension_deadline?: string
+  estimated_refund?: number
+  estimated_liability?: number
+  prior_year_comparison?: boolean
+  missing_documents?: string[]
+  review_status?: ReviewStatus
+  reviewer_id?: string
+  review_notes?: string
+  payment_status?: 'pending' | 'partial' | 'paid' | 'overdue'
+  estimated_tax_payments?: Record<string, boolean>
+  state_returns?: Array<{
+    state: string
+    status: string
+    due_date?: string
+    extension_filed?: boolean
+  }>
 }
 
 export interface AccountingInfo {
-  service_type: 'bookkeeping' | 'financial_statements' | 'audit' | 'other';
-  period_start?: string;
-  period_end?: string;
-  frequency: 'monthly' | 'quarterly' | 'annual' | 'one_time';
-  software_used?: string;
-  last_reconciliation_date?: string;
+  service_type: 'bookkeeping' | 'financial_statements' | 'audit' | 'other'
+  period_start?: string
+  period_end?: string
+  frequency: 'monthly' | 'quarterly' | 'annual' | 'one_time'
+  software_used?: string
+  last_reconciliation_date?: string
+  chart_of_accounts_setup?: boolean
+  bank_accounts_connected?: boolean
+  credit_cards_connected?: boolean
 }
 
 export interface PayrollInfo {
-  frequency: 'weekly' | 'bi_weekly' | 'semi_monthly' | 'monthly';
-  next_payroll_date?: string;
-  employee_count?: number;
-  last_payroll_run?: string;
-  tax_deposits_current?: boolean;
-  software_used?: string;
+  frequency: 'weekly' | 'bi_weekly' | 'semi_monthly' | 'monthly'
+  next_payroll_date?: string
+  employee_count?: number
+  last_payroll_run?: string
+  tax_deposits_current?: boolean
+  software_used?: string
+  state_registrations?: string[]
+  workers_comp_setup?: boolean
+  benefits_setup?: boolean
 }
 
 export interface BusinessServicesInfo {
-  service_type: 'business_formation' | 'licensing' | 'compliance' | 'other';
-  due_date?: string;
-  state?: string;
-  entity_type?: string;
-  status?: string;
+  service_type: 'business_formation' | 'licensing' | 'compliance' | 'other'
+  due_date?: string
+  state?: string
+  entity_type?: string
+  status?: string
+  registered_agent?: string
+  annual_report_due?: string
+  licenses_needed?: string[]
+  permits_needed?: string[]
 }
 
 export interface IRSNoticeInfo {
-  notice_type: string;
-  notice_date: string;
-  response_deadline: string;
-  tax_year?: number;
-  amount_due?: number;
-  status: 'new' | 'in_progress' | 'responded' | 'resolved';
+  notice_type: string
+  notice_date: string
+  response_deadline: string
+  tax_year?: number
+  amount_due?: number
+  status: 'new' | 'in_progress' | 'responded' | 'resolved'
+  assigned_to?: string
+  response_strategy?: string
+  documents_needed?: string[]
 }
 
 export interface ConsultingInfo {
-  topic: string;
-  scheduled_date?: string;
-  duration?: number;
-  follow_up_needed?: boolean;
-  notes?: string;
+  topic: string
+  scheduled_date?: string
+  duration?: number
+  follow_up_needed?: boolean
+  notes?: string
+  attendees?: string[]
+  materials_prepared?: boolean
+  follow_up_date?: string
 }
 
+// Client and related interfaces
 export interface Client {
-  id: string;
-  full_name: string | null;
-  company_name: string | null;
-  contact_email: string;
-  contact_info: any;
-  status: string;
-  tax_info: any;
-  type: string | null;
-  created_at: string | null;
-  updated_at: string | null;
+  id: string
+  full_name: string | null
+  company_name: string | null
+  email: string
+  phone?: string
+  address?: string
+  tax_id?: string
+  client_since: string
+  status: 'active' | 'inactive' | 'pending'
+  client_type: 'individual' | 'business' | 'both'
+  notes?: string
+  metadata?: Json
 }
 
-export interface Task {
-  id: string;
-  title: string;
-  description?: string;
-  status: TaskStatus;
-  priority: 'low' | 'medium' | 'high';
-  due_date?: string;
-  assignee_id?: string;
-  created_at: string;
-  updated_at: string;
+export interface Owner {
+  id: string
+  client_id: string
+  full_name: string
+  ownership_percentage: number
+  tax_id?: string
+  contact_info?: Json
 }
 
+export interface Document {
+  id: string
+  name: string
+  type: string
+  path: string
+  uploaded_by: string
+  upload_date: string
+  metadata?: Json
+}
 
+// Project with all relations
 export interface ProjectWithRelations extends Project {
-  client?: Client;
-  tasks?: Task[];
+  client?: Client | null
+  tasks?: Task[]
+  tax_return?: Database['public']['Tables']['tax_returns']['Row'] | null
+  service_info?: {
+    type: ServiceCategory
+    info: TaxInfo | AccountingInfo | PayrollInfo | BusinessServicesInfo | IRSNoticeInfo | ConsultingInfo
+  }
 }
 
-export type ProjectTemplate = Tables<'project_templates'> & {
-  tasks?: Tables<'template_tasks'>[];
-};
+export interface Note {
+  id: string
+  project_id: string
+  content: string
+  created_by: string
+  created_at: string
+  updated_at: string
+  visibility: 'internal' | 'client' | 'private'
+}
 
-export interface ProjectFormValues {
-  name: string;
-  description: string | null;
-  client_id: string | null;
-  status: Database['public']['Enums']['project_status'];
-  priority: 'low' | 'medium' | 'high';
-  due_date: string | null;
-  service_type: ServiceType;
-  tax_info?: Json | null;
-  accounting_info?: Json | null;
-  payroll_info?: Json | null;
-  business_services_info?: Json | null;
-  irs_notice_info?: Json | null;
-  consulting_info?: Json | null;
-  template_id?: string | null;
-  use_template?: boolean;
+export interface TimeEntry {
+  id: string
+  project_id: string
+  user_id: string
+  task_id?: string
+  duration: number
+  description: string
+  billable: boolean
+  date: string
+  created_at: string
+  updated_at: string
+}
+
+// View and filter types
+export type ProjectView = 
+  | 'service' 
+  | 'deadline' 
+  | 'status' 
+  | 'client' 
+  | 'return_type' 
+  | 'review_status' 
+  | 'priority'
+
+export interface ProjectFilters {
+  search: string
+  service?: ServiceCategory[]
+  status?: ProjectStatus[]
+  priority?: Priority[]
+  dateRange?: {
+    start: Date
+    end: Date
+  }
+  clientId?: string
+  teamMemberId?: string
+  tags?: string[]
+  hasDocuments?: boolean
+  hasNotes?: boolean
+  hasTimeEntries?: boolean
+  view?: ProjectView
 }
