@@ -16,24 +16,19 @@ import { FilterState } from '@/types/hooks'
 
 interface CreateProjectRequest {
   template_id?: string
-  title: string
+  name: string
   description?: string
   client_id?: string
   status: ProjectStatus
   priority: Priority
   due_date?: string
   service_type: ServiceCategory
-  settings?: ProjectMetadata
+  tax_info?: Record<string, unknown>
+  accounting_info?: Record<string, unknown>
+  payroll_info?: Record<string, unknown>
   tasks?: TaskFormData[]
   team_members?: string[]
-  service_info?: ServiceInfo
-  metadata?: {
-    estimated_hours?: number
-    actual_hours?: number
-    billable?: boolean
-    tags?: string[]
-    custom_fields?: Record<string, unknown>
-  }
+  tax_return_id?: number
 }
 
 // Error handling utility
@@ -50,8 +45,8 @@ class APIError extends Error {
 
 // Validation utilities
 const validateProjectData = (data: CreateProjectRequest) => {
-  if (!data.title?.trim()) {
-    throw new APIError('Project title is required', 400, 'INVALID_TITLE')
+  if (!data.name?.trim()) {
+    throw new APIError('Project name is required', 400, 'INVALID_NAME')
   }
   if (!data.service_type) {
     throw new APIError('Service type is required', 400, 'INVALID_SERVICE_TYPE')
@@ -76,122 +71,75 @@ export async function POST(request: Request) {
   )
 
   try {
-    const body: CreateProjectRequest = await request.json()
-    validateProjectData(body)
+    const { data: { user } } = await supabase.auth.getUser();
 
-    // Start transaction
-    await supabase.rpc('begin_transaction')
-
-    try {
-      // Create project with improved type safety
-      const { data: project, error: projectError } = await supabase
-        .from('projects')
-        .insert({
-          title: body.title.trim(),
-          description: body.description?.trim(),
-          client_id: body.client_id,
-          status: body.status,
-          priority: body.priority,
-          due_date: body.due_date,
-          service_type: body.service_type,
-          settings: body.settings,
-          template_id: body.template_id,
-          service_info: body.service_info,
-          metadata: {
-            ...body.metadata,
-            created_at: new Date().toISOString(),
-            version: 1,
-          },
-        } satisfies NewProject)
-        .select()
-        .single()
-
-      if (projectError) throw new APIError('Failed to create project', 500, 'DB_ERROR')
-
-      // Create tasks with improved validation
-      if (body.tasks?.length) {
-        const { error: tasksError } = await supabase.from('tasks').insert(
-          body.tasks.map((task, index) => ({
-            title: task.title.trim(),
-            description: task.description?.trim(),
-            project_id: project.id,
-            status: task.status || TaskStatus.TODO,
-            priority: task.priority,
-            due_date: task.due_date,
-            assignee_id: task.assignee_id,
-            dependencies: task.dependencies,
-            order_index: index,
-            estimated_minutes: task.estimated_minutes,
-            category: task.category,
-            tags: task.tags,
-            checklist: task.checklist,
-            metadata: {
-              created_at: new Date().toISOString(),
-              version: 1,
-            },
-          }))
-        )
-
-        if (tasksError) throw new APIError('Failed to create tasks', 500, 'TASK_ERROR')
-      }
-
-      // Add team members with improved error handling
-      if (body.team_members?.length) {
-        const { error: teamError } = await supabase.from('project_team_members').insert(
-          body.team_members.map(userId => ({
-            project_id: project.id,
-            user_id: userId,
-            added_at: new Date().toISOString(),
-          }))
-        )
-
-        if (teamError) throw new APIError('Failed to add team members', 500, 'TEAM_ERROR')
-      }
-
-      // Commit transaction
-      await supabase.rpc('commit_transaction')
-
-      // Fetch complete project with relations
-      const { data: fullProject, error: fetchError } = await supabase
-        .from('projects')
-        .select(`
-          *,
-          client:client_id (*),
-          tax_return:tax_return_id (*),
-          tasks (
-            *,
-            assignee:assignee_id (*)
-          ),
-          team_members:project_team_members (
-            *,
-            user:users (*)
-          ),
-          documents (
-            *,
-            uploaded_by:uploaded_by_id (*)
-          )
-        `)
-        .eq('id', project.id)
-        .single()
-
-      if (fetchError) throw new APIError('Failed to fetch project details', 500, 'FETCH_ERROR')
-
-      return NextResponse.json(fullProject as ProjectWithRelations)
-    } catch (error) {
-      // Rollback transaction on error
-      await supabase.rpc('rollback_transaction')
-      throw error
+    if (!user) {
+      return new Response('Unauthorized', { status: 401 });
     }
+
+    const body: CreateProjectRequest = await request.json()
+    const { 
+      name,
+      description,
+      client_id,
+      service_type,
+      priority,
+      due_date,
+      status,
+      tasks,
+      tax_return_id,
+      tax_info,
+      accounting_info,
+      payroll_info
+    } = body;
+
+    const { data: project, error: projectError } = await supabase
+      .from('projects')
+      .insert({
+        name: name.trim(),
+        description: description?.trim(),
+        client_id,
+        service_type,
+        priority,
+        due_date,
+        status,
+        tax_return_id,
+        tax_info,
+        accounting_info,
+        payroll_info,
+        created_by: user.id // Add creator information
+      })
+      .select()
+      .single();
+
+    if (projectError) throw projectError;
+
+    if (tasks && tasks.length > 0) {
+      const projectTasks = tasks.map((task: any) => ({
+        ...task,
+        project_id: project.id,
+        status: 'not_started',
+        assignee_id: task.assignee_id || user.id // Use specified assignee or default to creator
+      }));
+
+      const { error: tasksError } = await supabase
+        .from('tasks')
+        .insert(projectTasks);
+
+      if (tasksError) throw tasksError;
+    }
+
+    return NextResponse.json(project, { status: 201 });
   } catch (error) {
-    console.error('Error in project creation:', error)
+    console.error('Error creating project:', error);
     if (error instanceof APIError) {
       return NextResponse.json(
-        { error: error.message, code: error.code },
+        { message: error.message },
         { status: error.status }
       )
     }
     return NextResponse.json(
-      { error: 'Internal server error', code: 'INTERNAL_ERROR' },
+      { message: 'Internal server error' },
       { status: 500 }
     )
   }
@@ -212,34 +160,72 @@ export async function GET(request: Request) {
   )
 
   try {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      return new Response('Unauthorized', { status: 401 })
+    }
+
     const { searchParams } = new URL(request.url)
     let query = supabase
       .from('projects')
       .select(`
         *,
-        client:client_id (*),
-        tax_return:tax_return_id (*),
+        client:clients (
+          id,
+          company_name,
+          full_name,
+          contact_email,
+          status,
+          type
+        ),
+        tax_return:tax_returns (
+          id,
+          tax_year,
+          filing_type,
+          status,
+          due_date
+        ),
         tasks (
-          *,
-          assignee:assignee_id (*)
+          id,
+          title,
+          description,
+          status,
+          priority,
+          due_date,
+          assignee:users (
+            id,
+            email,
+            full_name
+          )
         ),
         team_members:project_team_members (
-          *,
-          user:users (*)
+          id,
+          user:users (
+            id,
+            email,
+            full_name
+          )
         ),
         documents (
-          *,
-          uploaded_by:uploaded_by_id (*)
+          id,
+          file_name,
+          file_type,
+          uploaded_at,
+          uploaded_by:users (
+            id,
+            email,
+            full_name
+          )
         )
       `)
 
     // Apply filters with type safety
     const filters: Partial<FilterState> = {
-      status: searchParams.get('status') as ProjectStatus,
-      priority: searchParams.get('priority') as Priority,
+      status: searchParams.get('status') as ProjectStatus || undefined,
+      priority: searchParams.get('priority') as Priority || undefined,
       client: searchParams.get('clientId') || undefined,
       search: searchParams.get('search') || undefined,
-      service: searchParams.getAll('service_type') as ServiceCategory[],
+      service: searchParams.getAll('service_type').filter(Boolean) as ServiceCategory[],
       dateRange: {
         from: searchParams.get('from') ? new Date(searchParams.get('from')!) : undefined,
         to: searchParams.get('to') ? new Date(searchParams.get('to')!) : undefined,
@@ -247,55 +233,51 @@ export async function GET(request: Request) {
       isArchived: searchParams.get('archived') === 'true',
     }
 
-    // Apply filters with proper type checking
+    // Apply filters
     if (filters.status) {
       query = query.eq('status', filters.status)
     }
-
     if (filters.priority) {
       query = query.eq('priority', filters.priority)
     }
-
     if (filters.client) {
       query = query.eq('client_id', filters.client)
     }
-
-    if (filters.service?.length) {
+    if (filters.service && filters.service.length > 0) {
       query = query.in('service_type', filters.service)
     }
-
     if (filters.search) {
-      query = query.or(`title.ilike.%${filters.search}%,description.ilike.%${filters.search}%`)
+      query = query.ilike('name', `%${filters.search}%`)
+    }
+    if (filters.dateRange.from) {
+      query = query.gte('due_date', filters.dateRange.from.toISOString())
+    }
+    if (filters.dateRange.to) {
+      query = query.lte('due_date', filters.dateRange.to.toISOString())
+    }
+    if (filters.isArchived !== undefined) {
+      query = query.eq('is_archived', filters.isArchived)
     }
 
-    if (filters.dateRange?.from) {
-      query = query.gte('created_at', filters.dateRange.from.toISOString())
+    const { data, error } = await query.order('created_at', { ascending: false })
+
+    if (error) {
+      console.error('Error fetching projects:', error)
+      throw new APIError(error.message, error.code === '42501' ? 403 : 500)
     }
 
-    if (filters.dateRange?.to) {
-      query = query.lte('created_at', filters.dateRange.to.toISOString())
-    }
-
-    // Handle archived projects
-    query = query.eq('archived', filters.isArchived || false)
-
-    // Execute query with proper error handling
-    const { data: projects, error } = await query.order('created_at', { ascending: false })
-
-    if (error) throw new APIError('Failed to fetch projects', 500, 'FETCH_ERROR')
-
-    return NextResponse.json(projects as ProjectWithRelations[])
+    return NextResponse.json(data)
   } catch (error) {
-    console.error('Error fetching projects:', error)
+    console.error('Error in GET /api/projects:', error)
     if (error instanceof APIError) {
-      return NextResponse.json(
-        { error: error.message, code: error.code },
-        { status: error.status }
-      )
+      return new Response(JSON.stringify({ error: error.message }), { 
+        status: error.status,
+        headers: { 'Content-Type': 'application/json' }
+      })
     }
-    return NextResponse.json(
-      { error: 'Internal server error', code: 'INTERNAL_ERROR' },
-      { status: 500 }
+    return new Response(
+      JSON.stringify({ error: error instanceof Error ? error.message : 'Internal server error' }), 
+      { status: 500, headers: { 'Content-Type': 'application/json' } }
     )
   }
 }

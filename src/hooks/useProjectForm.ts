@@ -14,14 +14,7 @@ interface UseProjectFormProps {
 
 interface Client {
   id: string;
-  name: string;
-}
-
-interface TeamMember {
-  id: string;
-  name: string;
-  email: string;
-  role: string;
+  full_name: string;
 }
 
 interface Template {
@@ -29,7 +22,8 @@ interface Template {
   title: string;
   description: string | null;
   default_priority: string;
-  tasks: Array<{
+  template_tasks: Array<{
+    id: string;
     title: string;
     description: string;
     priority: string;
@@ -38,13 +32,23 @@ interface Template {
   }>;
 }
 
+interface Profile {
+  id: string;
+  name: string | null;
+  avatar_url: string | null;
+  created_at: string | null;
+  updated_at: string | null;
+}
+
 export function useProjectForm({ onSuccess, initialData }: UseProjectFormProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [clients, setClients] = useState<Client[]>([]);
   const [templates, setTemplates] = useState<Template[]>([]);
-  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
   const [taxReturns, setTaxReturns] = useState<Array<{ id: string; name: string }>>([]);
+  const [profiles, setProfiles] = useState<Profile[]>([]);
+  const [currentUser, setCurrentUser] = useState<Profile | null>(null);
+  const [taskDependencyErrors, setTaskDependencyErrors] = useState<string[]>([]);
   const supabase = createClientComponentClient();
 
   const form = useForm<ProjectFormValues>({
@@ -53,87 +57,186 @@ export function useProjectForm({ onSuccess, initialData }: UseProjectFormProps) 
       status: 'not_started',
       priority: 'medium',
       service_type: 'uncategorized',
-      tasks: [],
-      team_members: []
+      tasks: []
     }
   });
 
   const { handleServiceTypeChange, calculateProgress, validateServiceSpecificFields } = useServiceFields(form);
-  const { 
-    addTask, 
-    removeTask, 
-    updateTask,
-    reorderTasks,
-    validateTasks,
-    getTaskValidationError,
-    taskDependencyErrors 
-  } = useTaskManagement(form);
 
-  const watchedServiceType = form.watch('service_type');
-  const watchedClientId = form.watch('client_id');
-  const formProgress = calculateProgress(watchedServiceType);
+  // Task validation functions
+  const validateTasks = () => {
+    const tasks = form.getValues('tasks') || [];
+    const errors: string[] = [];
+
+    tasks.forEach((task, index) => {
+      if (task.dependencies?.length) {
+        task.dependencies.forEach(depTitle => {
+          const depIndex = tasks.findIndex(t => t.title === depTitle);
+          if (depIndex >= index) {
+            errors.push(`Task "${task.title}" depends on "${depTitle}" which comes after it`);
+          }
+        });
+      }
+    });
+
+    setTaskDependencyErrors(errors);
+    return errors.length === 0;
+  };
+
+  const getTaskValidationError = (taskTitle: string) => {
+    return taskDependencyErrors.find(error => error.includes(`"${taskTitle}"`));
+  };
+
+  // Task Management Functions
+  const taskManagement = {
+    addTask: (task: Partial<TaskSchema>) => {
+      const tasks = form.getValues('tasks') || [];
+      form.setValue('tasks', [
+        ...tasks,
+        {
+          ...task,
+          assignee_id: task.assignee_id || currentUser?.id,
+          dependencies: task.dependencies || []
+        }
+      ]);
+      validateTasks();
+    },
+
+    removeTask: (taskTitle: string) => {
+      const tasks = form.getValues('tasks') || [];
+      const updatedTasks = tasks.filter(t => t.title !== taskTitle);
+      form.setValue('tasks', updatedTasks);
+      validateTasks();
+    },
+
+    updateTask: (index: number, updates: Partial<TaskSchema>) => {
+      const tasks = form.getValues('tasks') || [];
+      const updatedTasks = [...tasks];
+      updatedTasks[index] = { ...updatedTasks[index], ...updates };
+      form.setValue('tasks', updatedTasks);
+      validateTasks();
+    },
+
+    reorderTasks: (fromIndex: number, toIndex: number) => {
+      const tasks = form.getValues('tasks') || [];
+      const updatedTasks = [...tasks];
+      const [movedTask] = updatedTasks.splice(fromIndex, 1);
+      updatedTasks.splice(toIndex, 0, movedTask);
+      form.setValue('tasks', updatedTasks);
+      validateTasks();
+    },
+
+    handleAssigneeChange: (taskIndex: number, userId: string) => {
+      const tasks = form.getValues('tasks') || [];
+      const updatedTasks = [...tasks];
+      updatedTasks[taskIndex] = {
+        ...updatedTasks[taskIndex],
+        assignee_id: userId
+      };
+      form.setValue('tasks', updatedTasks);
+    }
+  };
+
+  // Template handling
+  const handleTemplateChange = async (templateId: string | null) => {
+    if (!templateId) {
+      setSelectedTemplate(null);
+      form.setValue('tasks', []);
+      return;
+    }
+
+    const template = templates.find(t => t.id === templateId);
+    if (!template) return;
+
+    setSelectedTemplate(template);
+    
+    // Add template tasks with current user as assignee
+    const tasks = template.template_tasks.map(task => ({
+      ...task,
+      id: task.id,
+      project_template_id: template.id,
+      assignee_id: currentUser?.id,
+      dependencies: task.dependencies || []
+    }));
+
+    form.setValue('tasks', tasks);
+    validateTasks();
+  };
 
   useEffect(() => {
-    const fetchClients = async () => {
+    const fetchData = async () => {
       try {
-        const { data, error } = await supabase
-          .from('clients')
-          .select('id, name')
-          .order('name');
+        setIsLoading(true);
+        
+        // Get current user first
+        const { data: { session }, error: authError } = await supabase.auth.getSession();
+        if (authError) throw authError;
+        if (!session?.user) {
+          throw new Error('No authenticated user');
+        }
 
-        if (error) throw error;
-        setClients(data || []);
-      } catch (error) {
-        console.error('Error fetching clients:', error);
-        toast.error('Failed to load clients');
-      }
-    };
-
-    const fetchTemplates = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('project_templates')
-          .select(`
+        const [clientsResponse, templatesResponse, profilesResponse] = await Promise.all([
+          supabase.from('clients').select('id, full_name').order('full_name'),
+          supabase.from('project_templates').select(`
             id,
             title,
             description,
             default_priority,
-            tasks (
+            template_tasks!template_tasks_template_id_fkey (
+              id,
               title,
               description,
               priority,
               dependencies,
               order_index
             )
-          `);
+          `).order('title'),
+          supabase.from('profiles').select('*')
+        ]);
 
-        if (error) throw error;
-        setTemplates(data || []);
+        // Fetch current user profile separately to ensure we get a single result
+        const currentProfileResponse = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', session.user.id)
+          .maybeSingle();
+
+        if (clientsResponse.error) throw clientsResponse.error;
+        if (templatesResponse.error) throw templatesResponse.error;
+        if (profilesResponse.error) throw profilesResponse.error;
+        if (currentProfileResponse.error) throw currentProfileResponse.error;
+
+        setClients(clientsResponse.data || []);
+        setTemplates(templatesResponse.data || []);
+        setProfiles(profilesResponse.data || []);
+        setCurrentUser(currentProfileResponse.data);
       } catch (error) {
-        console.error('Error fetching templates:', error);
-        toast.error('Failed to load templates');
+        console.error('Error fetching data:', error);
+        toast.error(error instanceof Error ? error.message : 'Failed to load form data');
+        // Set empty arrays to prevent undefined errors
+        setClients([]);
+        setTemplates([]);
+        setProfiles([]);
+        setCurrentUser(null);
+      } finally {
+        setIsLoading(false);
       }
     };
 
-    const fetchTeamMembers = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('users')
-          .select('id, name, email, role')
-          .order('name');
-
-        if (error) throw error;
-        setTeamMembers(data || []);
-      } catch (error) {
-        console.error('Error fetching team members:', error);
-        toast.error('Failed to load team members');
-      }
-    };
-
-    fetchClients();
-    fetchTemplates();
-    fetchTeamMembers();
+    fetchData();
   }, [supabase]);
+
+  const getUserOptions = () => {
+    return profiles.map(profile => ({
+      value: profile.id,
+      label: profile.name || 'Unnamed User',
+      description: profile.avatar_url || ''
+    }));
+  };
+
+  const watchedServiceType = form.watch('service_type');
+  const watchedClientId = form.watch('client_id');
+  const formProgress = calculateProgress(watchedServiceType);
 
   // Fetch tax returns when client is selected and service type is tax_return
   useEffect(() => {
@@ -161,41 +264,6 @@ export function useProjectForm({ onSuccess, initialData }: UseProjectFormProps) 
     fetchTaxReturns();
   }, [supabase, watchedClientId, watchedServiceType]);
 
-  const handleTemplateChange = async (templateId: string | null) => {
-    if (!templateId) {
-      setSelectedTemplate(null);
-      form.setValue('tasks', []);
-      return;
-    }
-
-    const template = templates.find(t => t.id === templateId);
-    if (!template) return;
-
-    setSelectedTemplate(template);
-    
-    // Add template tasks
-    const tasks = template.tasks.map(task => ({
-      ...task,
-      dependencies: task.dependencies || []
-    }));
-
-    form.setValue('tasks', tasks);
-    validateTasks();
-  };
-
-  const handleTeamMemberChange = (teamMembers: string[]) => {
-    form.setValue('team_members', teamMembers);
-    validateTasks(); // Revalidate tasks to check team member assignments
-  };
-
-  const getTeamMemberOptions = () => {
-    return teamMembers.map(member => ({
-      value: member.id,
-      label: member.name,
-      description: member.role
-    }));
-  };
-
   const getTaxReturnOptions = () => {
     return taxReturns.map(tr => ({
       value: tr.id,
@@ -212,15 +280,12 @@ export function useProjectForm({ onSuccess, initialData }: UseProjectFormProps) 
     formProgress,
     handleServiceTypeChange,
     handleTemplateChange,
-    handleTeamMemberChange,
-    addTask,
-    removeTask,
-    updateTask,
-    reorderTasks,
+    ...taskManagement,
     getTaskValidationError,
     taskDependencyErrors,
     validateServiceSpecificFields,
-    getTeamMemberOptions,
-    getTaxReturnOptions
+    getTaxReturnOptions,
+    getUserOptions,
+    currentUser
   };
 }

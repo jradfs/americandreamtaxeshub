@@ -27,9 +27,10 @@ export const useProjectSubmission = (onSuccess: () => void) => {
         due_date: values.due_date?.toISOString(),
         service_type: values.service_type,
         template_id: values.template_id,
+        tax_info: values.tax_info,
+        accounting_info: values.accounting_info,
+        payroll_info: values.payroll_info,
         tax_return_id: values.tax_return_id,
-        tax_return_status: values.tax_return_status,
-        accounting_period: values.accounting_period,
         team_members: values.team_members,
         tasks: sortedTasks.map((task, index) => ({
           title: task.title.trim(),
@@ -56,24 +57,6 @@ export const useProjectSubmission = (onSuccess: () => void) => {
       }
 
       const data = await response.json();
-
-      // Update tax return status if needed
-      if (values.service_type === 'tax_return' && values.tax_return_id && values.tax_return_status) {
-        const taxResponse = await fetch(`/api/tax-returns/${values.tax_return_id}`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            status: values.tax_return_status
-          })
-        });
-
-        if (!taxResponse.ok) {
-          console.error('Failed to update tax return status');
-        }
-      }
-
       toast.success('Project created successfully');
       onSuccess();
       return { data, error: null };

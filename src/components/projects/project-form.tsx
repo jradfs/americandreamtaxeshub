@@ -1,49 +1,45 @@
 'use client'
 
-import React, { useEffect, useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
-import { toast } from 'sonner';
-import { Button } from '@/components/ui/button';
+import { useEffect, useState } from 'react'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { format } from 'date-fns'
+import { CalendarIcon, GripVertical, Loader2 } from 'lucide-react'
+import { DragDropContext, Draggable, Droppable } from '@hello-pangea/dnd'
+import { toast } from 'sonner'
+
+import { cn } from '@/lib/utils'
 import { 
   Form,
-  FormControl, 
-  FormDescription, 
-  FormField, 
-  FormItem, 
-  FormLabel, 
+  FormField,
+  FormItem,
+  FormLabel,
+  FormControl,
+  FormDescription,
   FormMessage 
-} from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
-} from '@/components/ui/select';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Calendar } from '@/components/ui/calendar';
-import { CalendarIcon, GripVertical } from 'lucide-react';
-import { format } from 'date-fns';
-import { cn } from '@/lib/utils';
-import { ProjectWithRelations } from '@/types/projects';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Progress } from '@/components/ui/progress';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+} from '@/components/ui/form'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Progress } from '@/components/ui/progress'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { Calendar } from '@/components/ui/calendar'
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { useProjectTemplates } from '@/hooks/useProjectTemplates';
-import { ErrorBoundary } from '@/components/ui/error-boundary';
-import { projectSchema, type ProjectFormValues } from '@/lib/validations/project';
 import { useTaskValidation } from '@/hooks/useTaskValidation';
 import { useProjectSubmission } from '@/hooks/useProjectSubmission';
-import { Textarea } from '@/components/ui/textarea';
-import { MultiSelect } from '@/components/ui/multi-select';
 import { useProjectForm } from '@/hooks/useProjectForm';
-import { Loader2 } from '@/components/ui/loader';
-import { DragDropContext, Draggable, Droppable } from '@hello-pangea/dnd';
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, Label } from '@/components/ui/dialog';
+import { ErrorBoundary } from '@/components/ui/error-boundary';
+import { projectSchema, type ProjectFormValues } from '@/lib/validations/project';
+import { MultiSelect } from '@/components/ui/multi-select';
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { Database } from '@/types/database.types';
+import { taxReturns, teamMembers } from '@/lib/data';
 
 interface ProjectTemplate {
   id: string
@@ -51,6 +47,7 @@ interface ProjectTemplate {
   description: string | null
   default_priority: Database['public']['Enums']['task_priority']
   project_defaults: Record<string, unknown>
+  template_tasks: TemplateTask[]
 }
 
 interface TemplateTask {
@@ -68,23 +65,44 @@ interface ProjectFormProps {
 }
 
 export function ProjectForm({ project, onSuccess }: ProjectFormProps) {
+  const form = useForm<ProjectFormValues>({
+    resolver: zodResolver(projectSchema),
+    defaultValues: project || {
+      creation_type: 'custom',
+      template_id: null,
+      name: '',
+      description: '',
+      client_id: '',
+      status: 'not_started',
+      priority: 'medium',
+      service_type: undefined,
+      due_date: undefined,
+      tax_info: {},
+      accounting_info: {},
+      payroll_info: {},
+      tasks: [],
+      team_members: []
+    }
+  });
+
   const {
-    form,
-    isLoading,
     clients,
     templates,
     selectedTemplate,
     formProgress,
     handleServiceTypeChange,
     handleTemplateChange,
-    handleTeamMemberChange,
     addTask,
     removeTask,
     updateTask,
     reorderTasks,
     getTaskValidationError,
     taskDependencyErrors,
-    validateServiceSpecificFields
+    validateServiceSpecificFields,
+    getTaxReturnOptions,
+    getUserOptions,
+    handleAssigneeChange,
+    currentUser
   } = useProjectForm({
     onSuccess,
     initialData: project
@@ -100,22 +118,52 @@ export function ProjectForm({ project, onSuccess }: ProjectFormProps) {
     description: '',
     priority: 'medium',
     dependencies: [],
-    assigned_to: undefined
+    assignee_id: currentUser?.id
   });
+
+  useEffect(() => {
+    setNewTask(prev => ({
+      ...prev,
+      assignee_id: currentUser?.id
+    }));
+  }, [currentUser]);
 
   const getTabProgress = (tab: string): number => {
     const fields = {
-      'basic-info': ['name', 'description'],
-      'service-details': ['service_type', 'tax_return_id', 'tax_return_status', 'accounting_period'],
-      'timeline-team': ['due_date', 'team_members', 'tasks']
-    }[tab] || [];
+      'client-info': ['client_id', 'service_type'],
+      'project-details': ['name', 'description', 'priority', 'due_date'],
+      'timeline': ['tasks'],
+      'service-specific': []
+    };
 
-    const filledFields = fields.filter(field => {
-      const value = form.watch(field);
-      return value !== undefined && (Array.isArray(value) ? value.length > 0 : value !== '');
+    if (form.getValues('service_type') === 'tax_return') {
+      fields['service-specific'] = ['tax_return_id', 'tax_info.type'];
+    } else if (form.getValues('service_type') === 'accounting') {
+      fields['service-specific'] = ['accounting_info.frequency'];
+    } else if (form.getValues('service_type') === 'payroll') {
+      fields['service-specific'] = ['payroll_info.frequency'];
+    }
+
+    const tabFields = fields[tab as keyof typeof fields] || [];
+    if (!tabFields.length) return 100;
+
+    const completedFields = tabFields.filter(field => {
+      const value = form.getValues(field);
+      return value !== undefined && value !== '' && value !== null;
     });
 
-    return Math.round((filledFields.length / fields.length) * 100);
+    return Math.round((completedFields.length / tabFields.length) * 100);
+  };
+
+  const onDragEnd = (result: any) => {
+    if (!result.destination) return;
+
+    const fromIndex = result.source.index;
+    const toIndex = result.destination.index;
+
+    if (fromIndex === toIndex) return;
+
+    reorderTasks(fromIndex, toIndex);
   };
 
   const onSubmit = async (values: ProjectFormValues) => {
@@ -126,35 +174,9 @@ export function ProjectForm({ project, onSuccess }: ProjectFormProps) {
     await submitProject(values);
   };
 
-  const handleDragEnd = (result: any) => {
-    if (!result.destination) return;
-    
-    const fromIndex = result.source.index;
-    const toIndex = result.destination.index;
-    
-    if (fromIndex === toIndex) return;
-    
-    reorderTasks(fromIndex, toIndex);
-  };
-
-  const getTaxReturnOptions = () => {
-    return taxReturns.map(tr => ({
-      value: tr.id,
-      label: tr.name
-    }));
-  };
-
-  const getTeamMemberOptions = () => {
-    return teamMembers.map(member => ({
-      value: member.id,
-      label: member.name,
-      description: member.role
-    }));
-  };
-
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+      <div className="space-y-8">
         <div className="flex justify-between items-center">
           <h2 className="text-2xl font-bold">Create New Project</h2>
           <div className="flex items-center gap-4">
@@ -184,23 +206,23 @@ export function ProjectForm({ project, onSuccess }: ProjectFormProps) {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Client</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                    >
-                      <FormControl>
+                    <FormControl>
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value}
+                      >
                         <SelectTrigger>
-                          <SelectValue placeholder="Select client" />
+                          <SelectValue placeholder="Select a client" />
                         </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {clients.map((client) => (
-                          <SelectItem key={client.id} value={client.id}>
-                            {client.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                        <SelectContent>
+                          {clients?.map((client) => (
+                            <SelectItem key={client.id} value={client.id}>
+                              {client.full_name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -208,31 +230,65 @@ export function ProjectForm({ project, onSuccess }: ProjectFormProps) {
 
               <FormField
                 control={form.control}
-                name="template_id"
+                name="creation_type"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Project Template</FormLabel>
+                    <FormLabel>Project Creation Method</FormLabel>
                     <Select
-                      onValueChange={handleTemplateChange}
-                      defaultValue={field.value}
+                      onValueChange={(value) => {
+                        field.onChange(value);
+                        if (value === 'custom') {
+                          handleTemplateChange(null);
+                        }
+                      }}
+                      value={field.value}
                     >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select template" />
-                        </SelectTrigger>
-                      </FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Choose how to create your project" />
+                      </SelectTrigger>
                       <SelectContent>
-                        {templates.map((template) => (
-                          <SelectItem key={template.id} value={template.id}>
-                            {template.title}
-                          </SelectItem>
-                        ))}
+                        <SelectItem value="template">Use a Template</SelectItem>
+                        <SelectItem value="custom">Create from Scratch</SelectItem>
                       </SelectContent>
                     </Select>
+                    <FormDescription>
+                      Choose whether to start from a template or create a custom project
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
               />
+
+              {form.watch('creation_type') === 'template' && (
+                <FormField
+                  control={form.control}
+                  name="template_id"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Project Template</FormLabel>
+                      <Select
+                        onValueChange={(value) => {
+                          field.onChange(value);
+                          handleTemplateChange(value);
+                        }}
+                        value={field.value}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select template" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {templates.map((template) => (
+                            <SelectItem key={template.id} value={template.id}>
+                              {template.title}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
             </CardContent>
           </Card>
 
@@ -253,11 +309,11 @@ export function ProjectForm({ project, onSuccess }: ProjectFormProps) {
                   </div>
                 </div>
 
-                {selectedTemplate.tasks.length > 0 && (
+                {selectedTemplate.template_tasks.length > 0 && (
                   <div className="mt-4">
                     <h3 className="font-medium mb-2">Template Tasks</h3>
                     <div className="space-y-2">
-                      {selectedTemplate.tasks.map((task) => (
+                      {selectedTemplate.template_tasks.map((task) => (
                         <div key={task.title} className="p-2 border rounded">
                           <div className="flex items-center justify-between">
                             <div>
@@ -318,7 +374,10 @@ export function ProjectForm({ project, onSuccess }: ProjectFormProps) {
                     <FormItem>
                       <FormLabel>Project Name</FormLabel>
                       <FormControl>
-                        <Input {...field} placeholder="Enter project name" />
+                        <Input
+                          {...field}
+                          placeholder="Enter project name"
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -349,21 +408,21 @@ export function ProjectForm({ project, onSuccess }: ProjectFormProps) {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Priority</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
-                      >
-                        <FormControl>
+                      <FormControl>
+                        <Select
+                          onValueChange={field.onChange}
+                          value={field.value}
+                        >
                           <SelectTrigger>
                             <SelectValue placeholder="Select priority" />
                           </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="low">Low</SelectItem>
-                          <SelectItem value="medium">Medium</SelectItem>
-                          <SelectItem value="high">High</SelectItem>
-                        </SelectContent>
-                      </Select>
+                          <SelectContent>
+                            <SelectItem value="low">Low</SelectItem>
+                            <SelectItem value="medium">Medium</SelectItem>
+                            <SelectItem value="high">High</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -384,25 +443,28 @@ export function ProjectForm({ project, onSuccess }: ProjectFormProps) {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Service Type</FormLabel>
-                      <Select
-                        onValueChange={handleServiceTypeChange}
-                        defaultValue={field.value}
-                      >
-                        <FormControl>
+                      <FormControl>
+                        <Select
+                          onValueChange={(value) => {
+                            field.onChange(value);
+                            handleServiceTypeChange(value);
+                          }}
+                          value={field.value}
+                        >
                           <SelectTrigger>
                             <SelectValue placeholder="Select service type" />
                           </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="tax_return">Tax Return</SelectItem>
-                          <SelectItem value="accounting">Accounting</SelectItem>
-                          <SelectItem value="payroll">Payroll</SelectItem>
-                          <SelectItem value="business_services">Business Services</SelectItem>
-                          <SelectItem value="irs_representation">IRS Representation</SelectItem>
-                          <SelectItem value="consulting">Consulting</SelectItem>
-                          <SelectItem value="uncategorized">Other</SelectItem>
-                        </SelectContent>
-                      </Select>
+                          <SelectContent>
+                            <SelectItem value="tax_return">Tax Return</SelectItem>
+                            <SelectItem value="accounting">Accounting</SelectItem>
+                            <SelectItem value="payroll">Payroll</SelectItem>
+                            <SelectItem value="business_services">Business Services</SelectItem>
+                            <SelectItem value="irs_representation">IRS Representation</SelectItem>
+                            <SelectItem value="consulting">Consulting</SelectItem>
+                            <SelectItem value="uncategorized">Other</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -416,23 +478,23 @@ export function ProjectForm({ project, onSuccess }: ProjectFormProps) {
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Tax Return</FormLabel>
-                          <Select
-                            onValueChange={field.onChange}
-                            defaultValue={field.value}
-                          >
-                            <FormControl>
+                          <FormControl>
+                            <Select
+                              onValueChange={field.onChange}
+                              value={field.value}
+                            >
                               <SelectTrigger>
                                 <SelectValue placeholder="Select tax return" />
                               </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {getTaxReturnOptions().map((option) => (
-                                <SelectItem key={option.value} value={option.value}>
-                                  {option.label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                              <SelectContent>
+                                {getTaxReturnOptions().map((option) => (
+                                  <SelectItem key={option.value} value={option.value}>
+                                    {option.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </FormControl>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -444,22 +506,22 @@ export function ProjectForm({ project, onSuccess }: ProjectFormProps) {
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Status</FormLabel>
-                          <Select
-                            onValueChange={field.onChange}
-                            defaultValue={field.value}
-                          >
-                            <FormControl>
+                          <FormControl>
+                            <Select
+                              onValueChange={field.onChange}
+                              value={field.value}
+                            >
                               <SelectTrigger>
                                 <SelectValue placeholder="Select status" />
                               </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              <SelectItem value="not_started">Not Started</SelectItem>
-                              <SelectItem value="in_progress">In Progress</SelectItem>
-                              <SelectItem value="review_needed">Review Needed</SelectItem>
-                              <SelectItem value="completed">Completed</SelectItem>
-                            </SelectContent>
-                          </Select>
+                              <SelectContent>
+                                <SelectItem value="not_started">Not Started</SelectItem>
+                                <SelectItem value="in_progress">In Progress</SelectItem>
+                                <SelectItem value="review_needed">Review Needed</SelectItem>
+                                <SelectItem value="completed">Completed</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </FormControl>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -474,21 +536,21 @@ export function ProjectForm({ project, onSuccess }: ProjectFormProps) {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Accounting Period</FormLabel>
-                        <Select
-                          onValueChange={field.onChange}
-                          defaultValue={field.value}
-                        >
-                          <FormControl>
+                        <FormControl>
+                          <Select
+                            onValueChange={field.onChange}
+                            value={field.value}
+                          >
                             <SelectTrigger>
                               <SelectValue placeholder="Select period" />
                             </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="monthly">Monthly</SelectItem>
-                            <SelectItem value="quarterly">Quarterly</SelectItem>
-                            <SelectItem value="annual">Annual</SelectItem>
-                          </SelectContent>
-                        </Select>
+                            <SelectContent>
+                              <SelectItem value="monthly">Monthly</SelectItem>
+                              <SelectItem value="quarterly">Quarterly</SelectItem>
+                              <SelectItem value="annual">Annual</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -502,7 +564,7 @@ export function ProjectForm({ project, onSuccess }: ProjectFormProps) {
             <div className="space-y-6">
               <Card>
                 <CardHeader>
-                  <CardTitle>Timeline & Team</CardTitle>
+                  <CardTitle>Timeline</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <FormField
@@ -511,53 +573,34 @@ export function ProjectForm({ project, onSuccess }: ProjectFormProps) {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Due Date</FormLabel>
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <FormControl>
+                        <FormControl>
+                          <Popover>
+                            <PopoverTrigger asChild>
                               <Button
                                 variant="outline"
                                 className={cn(
                                   'w-full pl-3 text-left font-normal',
-                                  !field.value && 'text-muted-foreground'
+                                  !form.getValues('due_date') && 'text-muted-foreground'
                                 )}
                               >
-                                {field.value ? (
-                                  format(field.value, 'PPP')
+                                {form.getValues('due_date') ? (
+                                  format(form.getValues('due_date'), 'PPP')
                                 ) : (
                                   <span>Pick a date</span>
                                 )}
                                 <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                               </Button>
-                            </FormControl>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0" align="start">
-                            <Calendar
-                              mode="single"
-                              selected={field.value}
-                              onSelect={field.onChange}
-                              disabled={(date) => date < new Date()}
-                              initialFocus
-                            />
-                          </PopoverContent>
-                        </Popover>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="team_members"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Team Members</FormLabel>
-                        <FormControl>
-                          <MultiSelect
-                            selected={field.value || []}
-                            onChange={handleTeamMemberChange}
-                            options={getTeamMemberOptions()}
-                            placeholder="Select team members"
-                          />
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="start">
+                              <Calendar
+                                mode="single"
+                                selected={form.getValues('due_date')}
+                                onSelect={(date) => form.setValue('due_date', date)}
+                                disabled={(date) => date < new Date()}
+                                initialFocus
+                              />
+                            </PopoverContent>
+                          </Popover>
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -577,7 +620,7 @@ export function ProjectForm({ project, onSuccess }: ProjectFormProps) {
                   </Button>
                 </CardHeader>
                 <CardContent>
-                  <DragDropContext onDragEnd={handleDragEnd}>
+                  <DragDropContext onDragEnd={onDragEnd}>
                     <Droppable droppableId="tasks">
                       {(provided) => (
                         <div {...provided.droppableProps} ref={provided.innerRef}>
@@ -605,11 +648,26 @@ export function ProjectForm({ project, onSuccess }: ProjectFormProps) {
                                         <h4 className="font-medium">{task.title}</h4>
                                         <div className="flex items-center gap-2">
                                           <Badge>{task.priority}</Badge>
-                                          {task.assigned_to && (
+                                          {task.assignee_id && (
                                             <Badge variant="outline">
-                                              {teamMembers.find(m => m.id === task.assigned_to)?.name}
+                                              {getUserOptions().find(u => u.value === task.assignee_id)?.label}
                                             </Badge>
                                           )}
+                                          <Select
+                                            value={task.assignee_id}
+                                            onChange={(value) => handleAssigneeChange(index, value)}
+                                          >
+                                            <SelectTrigger className="w-[180px]">
+                                              <SelectValue placeholder="Assign to..." />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                              {getUserOptions().map((user) => (
+                                                <SelectItem key={user.value} value={user.value}>
+                                                  {user.full_name} ({user.email})
+                                                </SelectItem>
+                                              ))}
+                                            </SelectContent>
+                                          </Select>
                                           <Button
                                             variant="ghost"
                                             size="sm"
@@ -650,7 +708,7 @@ export function ProjectForm({ project, onSuccess }: ProjectFormProps) {
             </div>
           </TabsContent>
         </Tabs>
-      </form>
+      </div>
       <Dialog open={showTaskDialog} onOpenChange={setShowTaskDialog}>
         <DialogContent>
           <DialogHeader>
@@ -681,7 +739,7 @@ export function ProjectForm({ project, onSuccess }: ProjectFormProps) {
               <Label>Priority</Label>
               <Select
                 value={newTask.priority}
-                onValueChange={(value) =>
+                onChange={(value) =>
                   setNewTask({ ...newTask, priority: value })
                 }
               >
@@ -692,6 +750,26 @@ export function ProjectForm({ project, onSuccess }: ProjectFormProps) {
                   <SelectItem value="low">Low</SelectItem>
                   <SelectItem value="medium">Medium</SelectItem>
                   <SelectItem value="high">High</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Assign To</Label>
+              <Select
+                value={newTask.assignee_id}
+                onChange={(value) =>
+                  setNewTask({ ...newTask, assignee_id: value })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select assignee" />
+                </SelectTrigger>
+                <SelectContent>
+                  {getUserOptions().map((user) => (
+                    <SelectItem key={user.value} value={user.value}>
+                      {user.full_name} ({user.email})
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -708,26 +786,6 @@ export function ProjectForm({ project, onSuccess }: ProjectFormProps) {
                 }))}
                 placeholder="Select dependencies"
               />
-            </div>
-            <div className="space-y-2">
-              <Label>Assigned To</Label>
-              <Select
-                value={newTask.assigned_to}
-                onValueChange={(value) =>
-                  setNewTask({ ...newTask, assigned_to: value })
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select team member" />
-                </SelectTrigger>
-                <SelectContent>
-                  {getTeamMemberOptions().map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
             </div>
           </div>
           <DialogFooter>
@@ -751,7 +809,7 @@ export function ProjectForm({ project, onSuccess }: ProjectFormProps) {
                   description: '',
                   priority: 'medium',
                   dependencies: [],
-                  assigned_to: undefined
+                  assignee_id: currentUser?.id
                 });
               }}
             >

@@ -38,13 +38,6 @@ export function useProjects(initialFilters?: ProjectFilters) {
       .select(`
         *,
         client:clients!projects_client_id_fkey (*),
-        tax_return:tax_returns!fk_projects_tax_return (
-          id,
-          tax_year,
-          filing_type,
-          status,
-          due_date
-        ),
         tasks!tasks_project_id_fkey (*)
       `, { count: 'exact' })
 
@@ -68,7 +61,7 @@ export function useProjects(initialFilters?: ProjectFilters) {
     }
 
     // Apply sorting
-    query = query.order(sorting.id, { ascending: !sorting.desc })
+    query = query.order('created_at', { ascending: false })
 
     // Apply pagination
     const from = pagination.pageIndex * pagination.pageSize
@@ -76,84 +69,83 @@ export function useProjects(initialFilters?: ProjectFilters) {
     query = query.range(from, to)
 
     return query
-  }, [supabase, filters, pagination, sorting])
+  }, [supabase, filters, pagination])
+
+  const fetchTaxReturns = useCallback(async (projectIds: string[]) => {
+    if (!projectIds.length) return new Map();
+
+    try {
+      const { data, error } = await supabase
+        .from('tax_returns')
+        .select('id, tax_year, filing_type, status, due_date, project_id')
+        .in('project_id', projectIds);
+
+      if (error) {
+        console.error('Error fetching tax returns:', error);
+        return new Map();
+      }
+
+      return new Map(data?.map(tr => [tr.project_id, tr]) || []);
+    } catch (error) {
+      console.error('Error in fetchTaxReturns:', error);
+      return new Map();
+    }
+  }, [supabase]);
 
   const fetchProjects = useCallback(async () => {
     try {
-      setLoading(true)
-      const query = buildQuery()
-      const { data, error, count } = await query
+      setLoading(true);
+      const query = buildQuery();
+      const { data: projectsData, error: projectsError, count } = await query;
+
+      if (projectsError) {
+        console.error('Error fetching projects:', projectsError);
+        toast.error('Failed to load projects');
+        throw projectsError;
+      }
+
+      // Fetch tax returns separately for projects that have tax_return_id
+      const projectsWithTaxReturns = projectsData?.filter(p => p.tax_return_id) || [];
+      const taxReturnsMap = await fetchTaxReturns(projectsWithTaxReturns.map(p => p.id));
+
+      // Combine the data
+      const enrichedProjects = projectsData?.map(project => ({
+        ...project,
+        tax_return: taxReturnsMap.get(project.id) || null
+      })) || [];
+
+      setProjects(enrichedProjects);
+      if (count !== null) setTotalCount(count);
+    } catch (error) {
+      console.error('Error in fetchProjects:', error);
+      setProjects([]);
+      toast.error('Failed to load projects');
+    } finally {
+      setLoading(false);
+    }
+  }, [buildQuery, fetchTaxReturns]);
+
+  const fetchTaxReturnForProject = async (projectId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('tax_returns')
+        .select('id, tax_year, filing_type, status, due_date')
+        .eq('project_id', projectId)
+        .single()
 
       if (error) {
-        console.error('Error details:', error)
-        
-        // Handle specific error cases
-        if (error.code === '42501' && error.message?.includes('tax_returns')) {
-          // If permission denied for tax_returns, try fetching without tax returns
-          const fallbackQuery = supabase
-            .from('projects')
-            .select(`
-              *,
-              client:clients!projects_client_id_fkey (*),
-              tasks!tasks_project_id_fkey (*)
-            `, { count: 'exact' })
-            .order(sorting.id, { ascending: !sorting.desc })
-            .range(
-              pagination.pageIndex * pagination.pageSize,
-              (pagination.pageIndex * pagination.pageSize) + pagination.pageSize - 1
-            )
-          
-          // Apply the same filters as the original query
-          if (filters.search) {
-            fallbackQuery.or(`name.ilike.%${filters.search}%,description.ilike.%${filters.search}%`)
-          }
-          if (filters.status?.length) {
-            fallbackQuery.in('status', filters.status)
-          }
-          if (filters.serviceType?.length) {
-            fallbackQuery.in('service_type', filters.serviceType)
-          }
-          if (filters.clientId) {
-            fallbackQuery.eq('client_id', filters.clientId)
-          }
-          if (filters.dueDateRange) {
-            fallbackQuery
-              .gte('due_date', filters.dueDateRange.from.toISOString())
-              .lte('due_date', filters.dueDateRange.to.toISOString())
-          }
-          
-          const { data: fallbackData, error: fallbackError, count: fallbackCount } = await fallbackQuery
-          
-          if (fallbackError) {
-            console.error('Fallback query error:', fallbackError)
-            toast.error('Failed to load projects. Please try again.')
-            throw fallbackError
-          }
-          
-          // Map the data to include empty tax_return field
-          const mappedData = fallbackData?.map(project => ({
-            ...project,
-            tax_return: null
-          })) || []
-          
-          setProjects(mappedData)
-          if (fallbackCount !== null) setTotalCount(fallbackCount)
-          return
+        if (error.code === '42501') { // Permission denied
+          return null
         }
-        
-        toast.error('Failed to load projects. Please try again.')
         throw error
       }
 
-      setProjects(data || [])
-      if (count !== null) setTotalCount(count)
+      return data
     } catch (error) {
-      console.error('Error fetching projects:', error)
-      setProjects([]) // Set empty array on error to prevent undefined access
-    } finally {
-      setLoading(false)
+      console.error('Error fetching tax return:', error)
+      return null
     }
-  }, [buildQuery, supabase, filters, pagination, sorting])
+  }
 
   const createProject = async (projectData: NewProject) => {
     try {
@@ -266,6 +258,7 @@ export function useProjects(initialFilters?: ProjectFilters) {
     createProject,
     updateProject,
     deleteProject,
+    fetchTaxReturnForProject,
     refreshProjects: fetchProjects
   }
 }
