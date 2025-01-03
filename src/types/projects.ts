@@ -20,7 +20,16 @@ export type ServiceCategory =
   | 'other'
 
 export type TaxReturnType = Database['public']['Enums']['tax_return_type']
-export type ProjectStatus = Database['public']['Enums']['project_status'];
+export type ProjectStatus = 
+  | 'not_started'
+  | 'on_hold'
+  | 'cancelled'
+  | 'todo'
+  | 'in_progress'
+  | 'review'
+  | 'blocked'
+  | 'completed'
+  | 'archived';
 export type ReviewStatus = Database['public']['Enums']['review_status']
 export type Priority = Database['public']['Enums']['priority']
 
