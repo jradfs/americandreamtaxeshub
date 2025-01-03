@@ -1,13 +1,13 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { createClient } from '@supabase/ssr'
 import { FocusNowDashboard } from '@/components/dashboard/focus-now-dashboard'
 import { SmartQueue } from '@/components/dashboard/smart-queue'
 
 export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
-  const supabase = createClientComponentClient()
+  const supabase = createClient()
 
   useEffect(() => {
     const checkSession = async () => {
