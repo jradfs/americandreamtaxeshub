@@ -1,14 +1,14 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import { ThemeProvider } from "src/components/theme-provider";
-import { AuthProvider } from "src/components/providers/auth-provider";
-import { SidebarProvider } from "src/components/providers/sidebar-provider";
-import { SupabaseProvider } from "src/lib/supabase/supabase-provider";
-import { Sidebar } from "src/components/layout/sidebar";
-import { cn } from "src/lib/utils";
-import { Toaster } from "src/components/ui/toaster";
-import { ThemeToggle } from "src/components/theme-toggle";
-import { MainContentWrapper } from "src/components/layout/main-content-wrapper";
+import { ThemeProvider } from "@/components/theme-provider";
+import { AuthProvider } from "@/components/providers/auth-provider";
+import { SidebarProvider } from "@/components/providers/sidebar-provider";
+import { SupabaseProvider } from "@/lib/supabase/supabase-provider";
+import { Sidebar } from "@/components/layout/sidebar";
+import { cn } from "@/lib/utils";
+import { Toaster } from "@/components/ui/toaster";
+import { ThemeToggle } from "@/components/theme-toggle";
+import { MainContentWrapper } from "@/components/layout/main-content-wrapper";
 
 export const metadata: Metadata = {
   title: "American Dream Taxes Hub",
