@@ -2,7 +2,7 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { z } from 'zod'
-import { Database } from '@/types/database.types'
+import { Database, Json } from '@/types/database.types'
 import { 
   NewProject, 
   ProjectWithRelations, 
