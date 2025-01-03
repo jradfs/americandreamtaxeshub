@@ -1,5 +1,6 @@
 import { jest } from '@jest/globals'
-import { createMockSupabaseClient } from '@/lib/supabase/__mocks__/supabase'
+import { createMockSupabaseClient } from '@/lib/supabase/__mocks__/supabase';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { POST } from '../route'
 import { NextRequest } from 'next/server'
 

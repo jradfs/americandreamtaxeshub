@@ -5,8 +5,8 @@ global.TextEncoder = TextEncoder
 global.TextDecoder = TextDecoder
 
 // Mock the Supabase client
-jest.mock('@supabase/auth-helpers-nextjs', () => ({
-  createClientComponentClient: () => ({
+jest.mock('@supabase/ssr', () => ({
+  createClient: () => ({
     auth: {
       getSession: jest.fn(),
       signIn: jest.fn(),

@@ -1,6 +1,6 @@
 import { renderHook, act } from '@testing-library/react';
 import { useProjectForm } from '@/hooks/useProjectForm';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { createClient } from '@supabase/ssr';
 import { toast } from 'sonner';
 import { useForm } from 'react-hook-form';
 import { projectSchema } from '@/lib/validations/project';
