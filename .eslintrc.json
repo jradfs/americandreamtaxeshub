@@ -16,9 +16,24 @@
     ],
     "@typescript-eslint/no-explicit-any": "off",
     "import/no-anonymous-default-export": "off",
-    "@typescript-eslint/no-unused-vars": ["warn", { "argsIgnorePattern": "^_" }],
-    "react-hooks/exhaustive-deps": "warn"
+    "@typescript-eslint/no-unused-vars": ["warn", { 
+      "argsIgnorePattern": "^_",
+      "varsIgnorePattern": "^_"
+    }],
+    "react-hooks/exhaustive-deps": "warn",
+    "react/no-unescaped-entities": "off",
+    "no-case-declarations": "off",
+    "@typescript-eslint/no-shadow": "error",
+    "no-console": ["warn", { "allow": ["error", "warn", "info"] }],
+    "react-hooks/rules-of-hooks": "error",
+    "react/jsx-key": "error"
   },
+  "ignorePatterns": [
+    "node_modules/",
+    ".next/",
+    "out/",
+    "public/"
+  ],
   "overrides": [
     {
       "files": ["**/*.{ts,tsx}"],
@@ -32,28 +47,5 @@
         ]
       }
     }
-  ]
-}
-{
-  "extends": "next/core-web-vitals",
-  "rules": {
-    "@typescript-eslint/no-unused-vars": ["warn", {
-      "argsIgnorePattern": "^_",
-      "varsIgnorePattern": "^_"
-    }],
-    "react-hooks/exhaustive-deps": "warn",
-    "react/no-unescaped-entities": "off",
-    "no-case-declarations": "off",
-    "@typescript-eslint/no-shadow": "error",
-    "no-console": ["warn", { "allow": ["error", "warn", "info"] }],
-    "@typescript-eslint/no-explicit-any": "warn",
-    "react-hooks/rules-of-hooks": "error",
-    "react/jsx-key": "error"
-  },
-  "ignorePatterns": [
-    "node_modules/",
-    ".next/",
-    "out/",
-    "public/"
   ]
 }
