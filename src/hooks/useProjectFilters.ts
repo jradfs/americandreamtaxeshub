@@ -4,16 +4,7 @@ import { ProjectWithRelations } from '@/types/projects';
 import { DateRange } from 'react-day-picker';
 import { startOfDay, endOfDay } from 'date-fns';
 
-export interface ProjectFilters {
-  search: string;
-  status: string;
-  priority: string;
-  stage: string;
-  clientId: string;
-  dateRange: DateRange | undefined;
-  sortBy: string;
-  sortOrder: 'asc' | 'desc';
-}
+import { ProjectFilters } from '@/types/projects';
 
 export const defaultFilters: ProjectFilters = {
   search: "",
@@ -23,7 +14,13 @@ export const defaultFilters: ProjectFilters = {
   clientId: "all",
   dateRange: undefined,
   sortBy: "created",
-  sortOrder: "desc"
+  sortOrder: "desc",
+  dueThisWeek: false,
+  dueThisMonth: false,
+  dueThisQuarter: false,
+  missingInfo: false,
+  needsReview: false,
+  readyToFile: false
 };
 
 export function useProjectFilters() {
