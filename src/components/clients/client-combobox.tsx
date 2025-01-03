@@ -25,8 +25,9 @@ interface ClientComboboxProps {
 
 interface Client {
   id: string;
-  full_name: string;
+  full_name: string | null;
   company_name: string | null;
+  type: 'business' | 'individual';
 }
 
 export function ClientCombobox({ value, onChange }: ClientComboboxProps) {
@@ -39,8 +40,10 @@ export function ClientCombobox({ value, onChange }: ClientComboboxProps) {
     async function loadClients() {
       const { data } = await supabase
         .from('clients')
-        .select('id, full_name, company_name')
-        .order('full_name');
+        .select('id, full_name, company_name, type')
+        .order('type')
+        .order('company_name', { nullsLast: true })
+        .order('full_name', { nullsLast: true });
       
       setClients(data || []);
       setLoading(false);
@@ -54,6 +57,17 @@ export function ClientCombobox({ value, onChange }: ClientComboboxProps) {
     [clients, value]
   );
 
+  const getDisplayName = (client: Client) => {
+    if (client.type === 'business' && client.company_name) {
+      return client.company_name;
+    }
+    return client.full_name || 'Unnamed Client';
+  };
+
+  if (loading) {
+    return <Button variant="outline" className="w-full justify-between">Loading clients...</Button>;
+  }
+
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
@@ -63,11 +77,7 @@ export function ClientCombobox({ value, onChange }: ClientComboboxProps) {
           aria-expanded={open}
           className="w-full justify-between"
         >
-          {selected ? (
-            <span>{selected.company_name || selected.full_name}</span>
-          ) : (
-            <span className="text-muted-foreground">Select client...</span>
-          )}
+          {selected ? getDisplayName(selected) : "Select a client..."}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
@@ -75,11 +85,11 @@ export function ClientCombobox({ value, onChange }: ClientComboboxProps) {
         <Command>
           <CommandInput placeholder="Search clients..." />
           <CommandEmpty>No client found.</CommandEmpty>
-          <CommandGroup className="max-h-64 overflow-auto">
+          <CommandGroup>
             {clients.map((client) => (
               <CommandItem
                 key={client.id}
-                value={client.company_name || client.full_name}
+                value={getDisplayName(client)}
                 onSelect={() => {
                   onChange(client.id);
                   setOpen(false);
@@ -91,14 +101,10 @@ export function ClientCombobox({ value, onChange }: ClientComboboxProps) {
                     value === client.id ? "opacity-100" : "opacity-0"
                   )}
                 />
-                {client.company_name ? (
-                  <div>
-                    <div>{client.company_name}</div>
-                    <div className="text-sm text-muted-foreground">{client.full_name}</div>
-                  </div>
-                ) : (
-                  client.full_name
-                )}
+                {getDisplayName(client)}
+                <span className="ml-2 text-xs text-muted-foreground">
+                  ({client.type})
+                </span>
               </CommandItem>
             ))}
           </CommandGroup>

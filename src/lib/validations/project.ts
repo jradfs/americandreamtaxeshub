@@ -136,6 +136,30 @@ export function validateTaskDependencies(tasks: z.infer<typeof taskSchema>[]): b
   );
 }
 
+// Helper function to sort tasks based on dependencies
+export function sortTasksByDependencies(tasks: z.infer<typeof taskSchema>[]): z.infer<typeof taskSchema>[] {
+  const taskMap = new Map(tasks.map(task => [task.title, task]));
+  const visited = new Set<string>();
+  const sorted: z.infer<typeof taskSchema>[] = [];
+
+  function visit(task: z.infer<typeof taskSchema>) {
+    if (visited.has(task.title)) return;
+    visited.add(task.title);
+    
+    if (task.dependencies?.length) {
+      for (const depTitle of task.dependencies) {
+        const depTask = taskMap.get(depTitle);
+        if (depTask) visit(depTask);
+      }
+    }
+    
+    sorted.push(task);
+  }
+
+  tasks.forEach(task => visit(task));
+  return sorted;
+}
+
 export type ProjectStatus = typeof projectStatus[number];
 export type PriorityLevel = typeof priorityLevels[number];
 export type ServiceType = typeof serviceTypes[number];

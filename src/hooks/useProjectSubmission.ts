@@ -19,6 +19,8 @@ export const useProjectSubmission = (onSuccess: () => void) => {
 
       // Prepare project data
       const projectData = {
+        creation_type: values.creation_type,
+        template_id: values.template_id,
         name: values.name.trim(),
         description: values.description?.trim(),
         client_id: values.client_id,
@@ -26,19 +28,18 @@ export const useProjectSubmission = (onSuccess: () => void) => {
         priority: values.priority,
         due_date: values.due_date?.toISOString(),
         service_type: values.service_type,
-        template_id: values.template_id,
-        tax_info: values.tax_info,
-        accounting_info: values.accounting_info,
-        payroll_info: values.payroll_info,
+        tax_info: values.tax_info || {},
+        accounting_info: values.accounting_info || {},
+        payroll_info: values.payroll_info || {},
         tax_return_id: values.tax_return_id,
-        team_members: values.team_members,
+        team_members: values.team_members || [],
         tasks: sortedTasks.map((task, index) => ({
           title: task.title.trim(),
           description: task.description?.trim(),
           priority: task.priority,
           dependencies: task.dependencies || [],
           order_index: index,
-          assigned_to: task.assigned_to
+          assignee_id: task.assignee_id
         }))
       };
 
@@ -51,17 +52,18 @@ export const useProjectSubmission = (onSuccess: () => void) => {
         body: JSON.stringify(projectData)
       });
 
+      const responseData = await response.json();
+
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Failed to create project');
+        throw new Error(responseData.message || 'Failed to create project');
       }
 
-      const data = await response.json();
       toast.success('Project created successfully');
       onSuccess();
-      return { data, error: null };
+      return { data: responseData, error: null };
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to create project';
+      console.error('Project creation error:', err);
       toast.error(message);
       return { data: null, error: message };
     } finally {

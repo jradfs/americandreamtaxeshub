@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { Database } from '@/types/database.types'
 import { ProjectWithRelations, NewProject, UpdateProject, ProjectStatus, ServiceType } from '@/types/projects'
+import { Task } from '@/types/database.types'
 import { toast } from 'sonner'
 import { FilterState, PaginationState, SortingState } from '@/types/hooks'
 
@@ -23,7 +24,7 @@ export function useProjects(initialFilters?: ProjectFilters) {
   const [filters, setFilters] = useState<ProjectFilters>(initialFilters || {})
   const [pagination, setPagination] = useState<PaginationState>({
     pageIndex: 0,
-    pageSize: 10
+    pageSize: 1000
   })
   const [sorting, setSorting] = useState<SortingState>({
     id: 'created_at',
@@ -77,15 +78,15 @@ export function useProjects(initialFilters?: ProjectFilters) {
     try {
       const { data, error } = await supabase
         .from('tax_returns')
-        .select('id, tax_year, filing_type, status, due_date, project_id')
-        .in('project_id', projectIds);
+        .select('*')
+        .in('id', projectIds.map(id => Number(id)));
 
       if (error) {
         console.error('Error fetching tax returns:', error);
         return new Map();
       }
 
-      return new Map(data?.map(tr => [tr.project_id, tr]) || []);
+      return new Map(data?.map(tr => [tr.id, tr]) || []);
     } catch (error) {
       console.error('Error in fetchTaxReturns:', error);
       return new Map();
@@ -106,12 +107,12 @@ export function useProjects(initialFilters?: ProjectFilters) {
 
       // Fetch tax returns separately for projects that have tax_return_id
       const projectsWithTaxReturns = projectsData?.filter(p => p.tax_return_id) || [];
-      const taxReturnsMap = await fetchTaxReturns(projectsWithTaxReturns.map(p => p.id));
+      const taxReturnsMap = await fetchTaxReturns(projectsWithTaxReturns.map(p => p.tax_return_id?.toString() || ''));
 
       // Combine the data
       const enrichedProjects = projectsData?.map(project => ({
         ...project,
-        tax_return: taxReturnsMap.get(project.id) || null
+        tax_return: project.tax_return_id ? taxReturnsMap.get(project.tax_return_id) || null : null
       })) || [];
 
       setProjects(enrichedProjects);
@@ -127,57 +128,60 @@ export function useProjects(initialFilters?: ProjectFilters) {
 
   const fetchTaxReturnForProject = async (projectId: string) => {
     try {
+      const project = projects.find(p => p.id === projectId);
+      if (!project?.tax_return_id) return null;
+
       const { data, error } = await supabase
         .from('tax_returns')
-        .select('id, tax_year, filing_type, status, due_date')
-        .eq('project_id', projectId)
-        .single()
+        .select('*')
+        .eq('id', project.tax_return_id)
+        .single();
 
       if (error) {
         if (error.code === '42501') { // Permission denied
-          return null
+          return null;
         }
-        throw error
+        throw error;
       }
 
-      return data
+      return data;
     } catch (error) {
-      console.error('Error fetching tax return:', error)
-      return null
+      console.error('Error fetching tax return:', error);
+      return null;
     }
-  }
+  };
 
-  const createProject = async (projectData: NewProject) => {
+  const createProject = async (projectData: NewProject & { tasks?: Task[] }) => {
     try {
       const { data: project, error: projectError } = await supabase
         .from('projects')
         .insert(projectData)
         .select()
-        .single()
+        .single();
 
-      if (projectError) throw projectError
+      if (projectError) throw projectError;
 
       // Handle tasks
       if (projectData.tasks?.length) {
         const tasks = projectData.tasks.map(task => ({
           ...task,
           project_id: project.id
-        }))
+        }));
 
         const { error: tasksError } = await supabase
           .from('tasks')
-          .insert(tasks)
+          .insert(tasks);
 
-        if (tasksError) throw tasksError
+        if (tasksError) throw tasksError;
       }
 
-      await fetchProjects()
-      return { data: project, error: null }
+      await fetchProjects();
+      return { data: project, error: null };
     } catch (error) {
-      console.error('Error creating project:', error)
-      return { data: null, error: 'Failed to create project' }
+      console.error('Error creating project:', error);
+      return { data: null, error: 'Failed to create project' };
     }
-  }
+  };
 
   const updateProject = async (projectId: string, updates: UpdateProject) => {
     try {
@@ -186,64 +190,45 @@ export function useProjects(initialFilters?: ProjectFilters) {
         .update(updates)
         .eq('id', projectId)
         .select()
-        .single()
+        .single();
 
-      if (projectError) throw projectError
+      if (projectError) throw projectError;
 
-      await fetchProjects()
-      return { data: project, error: null }
+      await fetchProjects();
+      return { data: project, error: null };
     } catch (error) {
-      console.error('Error updating project:', error)
-      return { data: null, error: 'Failed to update project' }
+      console.error('Error updating project:', error);
+      return { data: null, error: 'Failed to update project' };
     }
-  }
+  };
 
   const deleteProject = async (projectId: string) => {
     try {
       // Delete related records first
       await Promise.all([
         supabase.from('tasks').delete().eq('project_id', projectId),
-        supabase.from('time_entries').delete().eq('project_id', projectId),
-        supabase.from('notes').delete().eq('project_id', projectId)
-      ])
+        supabase.from('notes').delete().eq('project_id', projectId),
+        supabase.from('documents').delete().eq('project_id', projectId)
+      ]);
 
       const { error } = await supabase
         .from('projects')
         .delete()
-        .eq('id', projectId)
+        .eq('id', projectId);
 
-      if (error) throw error
+      if (error) throw error;
 
-      await fetchProjects()
-      return { error: null }
+      await fetchProjects();
+      return { error: null };
     } catch (error) {
-      console.error('Error deleting project:', error)
-      return { error: 'Failed to delete project' }
+      console.error('Error deleting project:', error);
+      return { error: 'Failed to delete project' };
     }
-  }
+  };
 
-  // Set up real-time subscription
   useEffect(() => {
-    const channel = supabase
-      .channel('projects_changes')
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'projects'
-      }, () => {
-        fetchProjects()
-      })
-      .subscribe()
-
-    return () => {
-      supabase.removeChannel(channel)
-    }
-  }, [supabase, fetchProjects])
-
-  // Initial fetch
-  useEffect(() => {
-    fetchProjects()
-  }, [fetchProjects])
+    fetchProjects();
+  }, [fetchProjects]);
 
   return {
     projects,
@@ -258,7 +243,6 @@ export function useProjects(initialFilters?: ProjectFilters) {
     createProject,
     updateProject,
     deleteProject,
-    fetchTaxReturnForProject,
-    refreshProjects: fetchProjects
-  }
+    fetchTaxReturnForProject
+  };
 }

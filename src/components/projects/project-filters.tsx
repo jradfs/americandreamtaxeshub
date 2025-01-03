@@ -29,6 +29,7 @@ import {
 } from "lucide-react";
 import { ProjectFilters as ProjectFiltersType, defaultFilters } from "@/hooks/useProjectFilters";
 import { Badge } from "@/components/ui/badge";
+import { ClientCombobox } from "@/components/clients/client-combobox";
 
 interface ProjectFiltersProps {
   filters: ProjectFiltersType;
@@ -145,22 +146,12 @@ export function ProjectFilters({ filters, onChange, clientOptions = [] }: Projec
 
           {/* Client Filter */}
           {clientOptions.length > 0 && (
-            <Select
-              value={filters.clientId}
-              onValueChange={(value) => onChange({ ...filters, clientId: value })}
-            >
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Select Client" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Clients</SelectItem>
-                {clientOptions.map((client) => (
-                  <SelectItem key={client.id} value={client.id}>
-                    {client.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="w-[180px]">
+              <ClientCombobox
+                value={filters.clientId === 'all' ? null : filters.clientId}
+                onChange={(value) => onChange({ ...filters, clientId: value || 'all' })}
+              />
+            </div>
           )}
         </div>
       </div>

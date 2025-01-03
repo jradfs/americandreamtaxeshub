@@ -7,6 +7,7 @@ import { User } from './hooks'
 export type Project = Database['public']['Tables']['projects']['Row']
 export type NewProject = Database['public']['Tables']['projects']['Insert']
 export type UpdateProject = Database['public']['Tables']['projects']['Update']
+export type ServiceType = Database['public']['Tables']['projects']['Row']['service_type']
 
 // Enum types
 export type ServiceCategory = 
@@ -99,11 +100,8 @@ export interface BusinessServicesInfo {
   due_date?: string
   state?: string
   entity_type?: string
-  status?: string
-  registered_agent?: string
-  annual_report_due?: string
-  licenses_needed?: string[]
-  permits_needed?: string[]
+  filing_requirements?: string[]
+  compliance_deadlines?: string[]
 }
 
 export interface IRSNoticeInfo {
@@ -199,17 +197,17 @@ export interface TimeEntry {
 }
 
 // View and filter types
-export type ProjectView = 
-  | 'service' 
-  | 'deadline' 
-  | 'status' 
-  | 'client' 
-  | 'return_type' 
-  | 'review_status' 
-  | 'priority'
+export interface ProjectView {
+  id: string
+  name: string
+  filters: ProjectFilters
+  layout: 'list' | 'grid' | 'calendar'
+  sortBy?: string
+  sortOrder?: 'asc' | 'desc'
+}
 
 export interface ProjectFilters {
-  search: string
+  search?: string
   service?: ServiceCategory[]
   status?: ProjectStatus[]
   priority?: Priority[]

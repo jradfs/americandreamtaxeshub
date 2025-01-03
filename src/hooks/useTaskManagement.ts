@@ -5,6 +5,7 @@ import { UseFormReturn } from 'react-hook-form'
 import { ProjectFormValues } from '@/types/projects'
 import { TaskFormData, TaskStatus, TaskPriority } from '@/types/tasks'
 import { Database } from '@/types/database.types'
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 
 type TaskSchema = TaskFormData & {
   title: string
@@ -19,6 +20,7 @@ interface ValidationError {
 
 export function useTaskManagement(form: UseFormReturn<ProjectFormValues>) {
   const [taskErrors, setTaskErrors] = useState<Record<string, ValidationError>>({})
+  const supabase = createClientComponentClient()
 
   const validateCircularDependencies = useCallback((
     tasks: TaskSchema[],
@@ -233,6 +235,23 @@ export function useTaskManagement(form: UseFormReturn<ProjectFormValues>) {
     }
   }, [form, taskErrors])
 
+  const optimizeTaskSequence = useCallback(async (tasks: Task[]) => {
+    try {
+      // Analyze dependencies and optimize task sequence
+      const optimizedSequence = analyzeDependencies(tasks)
+      const resourceAllocation = optimizeResources(tasks)
+      
+      return {
+        sequence: optimizedSequence,
+        allocation: resourceAllocation,
+        estimatedCompletion: predictCompletionTimeline(optimizedSequence)
+      }
+    } catch (error) {
+      console.error('Error optimizing tasks:', error)
+      return null
+    }
+  }, [supabase])
+
   return {
     taskErrors,
     addTask,
@@ -240,6 +259,7 @@ export function useTaskManagement(form: UseFormReturn<ProjectFormValues>) {
     updateTask,
     updateTaskOrder,
     validateTasks: () => validateTaskDependencies(form.getValues('tasks') || []),
-    getTaskMetadata
+    getTaskMetadata,
+    optimizeTaskSequence
   }
 }

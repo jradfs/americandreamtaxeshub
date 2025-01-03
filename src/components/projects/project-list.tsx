@@ -175,7 +175,7 @@ export function ProjectList() {
             <Input
               placeholder="Search projects, clients..."
               className="pl-10 h-11"
-              value={filters.search}
+              value={filters.search || ''}
               onChange={(e) => updateFilters({ search: e.target.value })}
             />
           </div>

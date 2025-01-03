@@ -18,7 +18,7 @@ export interface ProjectFilters {
 export const defaultFilters: ProjectFilters = {
   search: "",
   status: "all",
-  priority: "all",
+  priority: "all", 
   stage: "all",
   clientId: "all",
   dateRange: undefined,

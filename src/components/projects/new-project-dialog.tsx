@@ -41,6 +41,7 @@ import {
 import { CalendarIcon } from 'lucide-react'
 import { format } from 'date-fns'
 import { cn } from '@/lib/utils'
+import { ClientCombobox } from '@/components/clients/client-combobox'
 
 // Completely remove estimated_hours
 const projectSchema = z.object({
@@ -69,3 +70,187 @@ export function NewProjectDialog() {
     })
 
     const onSubmit = async (
+        // ... rest of the code remains the same ...
+    )
+
+    return (
+        <Dialog open={open} onOpenChange={setOpen}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>New Project</DialogTitle>
+                </DialogHeader>
+                <Form {...form}>
+                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                        <FormField
+                            control={form.control}
+                            name="name"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Project Name</FormLabel>
+                                    <FormControl>
+                                        <Input {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={form.control}
+                            name="client_id"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Client</FormLabel>
+                                    <FormControl>
+                                        <ClientCombobox 
+                                            value={field.value} 
+                                            onChange={field.onChange}
+                                        />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={form.control}
+                            name="description"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Description</FormLabel>
+                                    <FormControl>
+                                        <Textarea {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={form.control}
+                            name="status"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Status</FormLabel>
+                                    <FormControl>
+                                        <Select {...field}>
+                                            <SelectTrigger className="w-full">
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="todo">Todo</SelectItem>
+                                                <SelectItem value="in-progress">In Progress</SelectItem>
+                                                <SelectItem value="completed">Completed</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={form.control}
+                            name="priority"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Priority</FormLabel>
+                                    <FormControl>
+                                        <Select {...field}>
+                                            <SelectTrigger className="w-full">
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="low">Low</SelectItem>
+                                                <SelectItem value="medium">Medium</SelectItem>
+                                                <SelectItem value="high">High</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={form.control}
+                            name="due_date"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Due Date</FormLabel>
+                                    <FormControl>
+                                        <Popover>
+                                            <PopoverTrigger>
+                                                <Button type="button" className={cn("flex items-center justify-center w-full", field.value ? "text-gray-900" : "text-gray-500")}>
+                                                    {field.value ? format(field.value, 'MMM d, yyyy') : 'Select Due Date'}
+                                                </Button>
+                                            </PopoverTrigger>
+                                            <PopoverContent>
+                                                <Calendar
+                                                    value={field.value}
+                                                    onChange={field.onChange}
+                                                    className="max-w-sm"
+                                                />
+                                            </PopoverContent>
+                                        </Popover>
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={form.control}
+                            name="start_date"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Start Date</FormLabel>
+                                    <FormControl>
+                                        <Popover>
+                                            <PopoverTrigger>
+                                                <Button type="button" className={cn("flex items-center justify-center w-full", field.value ? "text-gray-900" : "text-gray-500")}>
+                                                    {field.value ? format(field.value, 'MMM d, yyyy') : 'Select Start Date'}
+                                                </Button>
+                                            </PopoverTrigger>
+                                            <PopoverContent>
+                                                <Calendar
+                                                    value={field.value}
+                                                    onChange={field.onChange}
+                                                    className="max-w-sm"
+                                                />
+                                            </PopoverContent>
+                                        </Popover>
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={form.control}
+                            name="stage"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Stage</FormLabel>
+                                    <FormControl>
+                                        <Input {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={form.control}
+                            name="template_id"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Template</FormLabel>
+                                    <FormControl>
+                                        <Input {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <FormItem>
+                            <Button type="submit">Create Project</Button>
+                        </FormItem>
+                    </form>
+                </Form>
+            </DialogContent>
+        </Dialog>
+    )
+}

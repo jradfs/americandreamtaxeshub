@@ -40,6 +40,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '
 import { Label } from '@/components/ui/label';
 import { Database } from '@/types/database.types';
 import { taxReturns, teamMembers } from '@/lib/data';
+import { ClientCombobox } from '@/components/clients/client-combobox'
 
 interface ProjectTemplate {
   id: string
@@ -207,21 +208,10 @@ export function ProjectForm({ project, onSuccess }: ProjectFormProps) {
                   <FormItem>
                     <FormLabel>Client</FormLabel>
                     <FormControl>
-                      <Select
-                        onValueChange={field.onChange}
-                        value={field.value}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select a client" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {clients?.map((client) => (
-                            <SelectItem key={client.id} value={client.id}>
-                              {client.full_name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <ClientCombobox 
+                        value={field.value} 
+                        onChange={field.onChange}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

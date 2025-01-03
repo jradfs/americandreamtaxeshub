@@ -1,6 +1,7 @@
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
 import { ProjectCard } from '@/components/projects/ProjectCard'
 import { ProjectWithRelations } from '@/types/projects'
+import { Json } from '@/types/database.types'
 
 describe('ProjectCard', () => {
   const mockProject: ProjectWithRelations = {
@@ -11,24 +12,35 @@ describe('ProjectCard', () => {
     priority: 'high',
     due_date: '2024-12-31',
     client_id: '1',
+    service_type: 'tax_return',
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
-    category: {
-      service: 'tax_returns',
-      tax_info: {
-        return_type: '1040',
-        tax_year: 2023,
-        filing_deadline: '2024-04-15',
-        extension_filed: false,
-        review_status: 'not_started'
-      }
-    },
+    template_id: null,
+    creation_type: 'custom',
+    tax_info: {
+      return_type: '1040',
+      tax_year: 2023,
+      filing_deadline: '2024-04-15',
+      extension_filed: false,
+      review_status: 'not_started'
+    } as Json,
+    accounting_info: null,
+    payroll_info: null,
+    activity_log: [] as Json,
+    checklist: [] as Json,
+    dependencies: [],
+    assignee_id: null,
+    team_members: [],
     tasks: [
       { 
         id: '1', 
         title: 'Task 1',
         status: 'completed',
         priority: 'high',
+        dependencies: [],
+        order_index: 0,
+        description: null,
+        assignee_id: null,
         due_date: '2024-01-15',
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
@@ -38,6 +50,10 @@ describe('ProjectCard', () => {
         title: 'Task 2',
         status: 'in_progress',
         priority: 'medium',
+        dependencies: [],
+        order_index: 1,
+        description: null,
+        assignee_id: null,
         due_date: '2024-02-15',
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
@@ -47,6 +63,10 @@ describe('ProjectCard', () => {
         title: 'Task 3',
         status: 'not_started',
         priority: 'low',
+        dependencies: [],
+        order_index: 2,
+        description: null,
+        assignee_id: null,
         due_date: '2024-03-15',
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
@@ -56,18 +76,11 @@ describe('ProjectCard', () => {
       id: '1',
       company_name: 'Test Company',
       full_name: 'John Doe',
-      contact_info: {
-        email: 'john@testcompany.com',
-        phone: '555-0123',
-        address: '123 Test St'
-      }
-    },
-    tax_info: {
-      return_type: '1040',
-      tax_year: 2023,
-      filing_deadline: '2024-04-15',
-      extension_filed: false,
-      review_status: 'not_started'
+      email: 'john@testcompany.com',
+      phone: '555-0123',
+      address: '123 Test St',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
     }
   }
 
@@ -81,30 +94,29 @@ describe('ProjectCard', () => {
     
     // Basic project info
     expect(screen.getByText(mockProject.name)).toBeInTheDocument()
-    expect(screen.getByText(mockProject.description)).toBeInTheDocument()
+    expect(screen.getByText(mockProject.description as string)).toBeInTheDocument()
     expect(screen.getByText(mockProject.status.replace('_', ' '))).toBeInTheDocument()
     expect(screen.getByText(mockProject.priority)).toBeInTheDocument()
     
     // Client info
-    expect(screen.getByText(mockProject.client.company_name)).toBeInTheDocument()
+    expect(screen.getByText(mockProject.client.company_name as string)).toBeInTheDocument()
     expect(screen.getByText(mockProject.client.full_name)).toBeInTheDocument()
     
-    // Service category
-    expect(screen.getByText('Tax Returns')).toBeInTheDocument()
+    // Service type
+    expect(screen.getByText('Tax Return')).toBeInTheDocument()
     
     // Tax info
-    if (mockProject.tax_info) {
-      expect(screen.getByText(`${mockProject.tax_info.return_type} - ${mockProject.tax_info.tax_year}`)).toBeInTheDocument()
-      expect(screen.getByText(mockProject.tax_info.review_status.replace('_', ' '))).toBeInTheDocument()
-    }
+    const taxInfo = mockProject.tax_info as { return_type: string; tax_year: number; review_status: string }
+    expect(screen.getByText(`${taxInfo.return_type} - ${taxInfo.tax_year}`)).toBeInTheDocument()
+    expect(screen.getByText(taxInfo.review_status.replace('_', ' '))).toBeInTheDocument()
   })
 
   it('calculates and displays progress correctly', () => {
     render(<ProjectCard project={mockProject} />)
     
-    const completedTasks = mockProject.tasks.filter(t => t.status === 'completed').length
-    const totalTasks = mockProject.tasks.length
-    const progress = Math.round((completedTasks / totalTasks) * 100)
+    const completedTasks = mockProject.tasks?.filter(t => t.status === 'completed').length || 0
+    const totalTasks = mockProject.tasks?.length || 0
+    const progress = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0
     
     expect(screen.getByText(`${progress}%`)).toBeInTheDocument()
     const progressBar = screen.getByTestId('progress-bar')
@@ -115,14 +127,16 @@ describe('ProjectCard', () => {
     render(<ProjectCard project={mockProject} />)
     
     // Format the due date for display
-    const dueDate = new Date(mockProject.due_date)
-    const formattedDueDate = dueDate.toLocaleDateString()
-    
-    expect(screen.getByText(formattedDueDate)).toBeInTheDocument()
+    if (mockProject.due_date) {
+      const dueDate = new Date(mockProject.due_date)
+      const formattedDueDate = dueDate.toLocaleDateString()
+      expect(screen.getByText(formattedDueDate)).toBeInTheDocument()
+    }
     
     // If it's a tax return, also check the filing deadline
     if (mockProject.tax_info) {
-      const filingDeadline = new Date(mockProject.tax_info.filing_deadline)
+      const taxInfo = mockProject.tax_info as { filing_deadline: string }
+      const filingDeadline = new Date(taxInfo.filing_deadline)
       const formattedFilingDeadline = filingDeadline.toLocaleDateString()
       expect(screen.getByText(formattedFilingDeadline)).toBeInTheDocument()
     }
@@ -132,7 +146,8 @@ describe('ProjectCard', () => {
     render(<ProjectCard project={mockProject} />)
     
     if (mockProject.tax_info) {
-      const extensionStatus = mockProject.tax_info.extension_filed ? 'Extended' : 'No Extension'
+      const taxInfo = mockProject.tax_info as { extension_filed: boolean }
+      const extensionStatus = taxInfo.extension_filed ? 'Extended' : 'No Extension'
       expect(screen.getByText(extensionStatus)).toBeInTheDocument()
     }
   })

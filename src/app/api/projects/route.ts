@@ -18,7 +18,7 @@ interface CreateProjectRequest {
   template_id?: string
   name: string
   description?: string
-  client_id?: string
+  client_id: string
   status: ProjectStatus
   priority: Priority
   due_date?: string
@@ -47,6 +47,9 @@ class APIError extends Error {
 const validateProjectData = (data: CreateProjectRequest) => {
   if (!data.name?.trim()) {
     throw new APIError('Project name is required', 400, 'INVALID_NAME')
+  }
+  if (!data.client_id) {
+    throw new APIError('Client is required', 400, 'INVALID_CLIENT')
   }
   if (!data.service_type) {
     throw new APIError('Service type is required', 400, 'INVALID_SERVICE_TYPE')
@@ -90,7 +93,8 @@ export async function POST(request: Request) {
       tax_return_id,
       tax_info,
       accounting_info,
-      payroll_info
+      payroll_info,
+      team_members
     } = body;
 
     const { data: project, error: projectError } = await supabase
@@ -113,6 +117,20 @@ export async function POST(request: Request) {
       .single();
 
     if (projectError) throw projectError;
+
+    // Insert project team members if specified
+    if (team_members?.length) {
+      const teamMembers = team_members.map(memberId => ({
+        project_id: project.id,
+        user_id: memberId
+      }));
+
+      const { error: teamError } = await supabase
+        .from('project_team_members')
+        .insert(teamMembers);
+
+      if (teamError) throw teamError;
+    }
 
     if (tasks && tasks.length > 0) {
       const projectTasks = tasks.map((task: any) => ({
