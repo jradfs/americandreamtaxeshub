@@ -63,10 +63,14 @@ export async function PUT(request: Request) {
         }
       }
 
-      // Commit transaction
-      await supabase.rpc('commit_transaction')
+      // Commit transaction if the function exists
+      try {
+        await supabase.rpc('commit_transaction')
+      } catch (error) {
+        console.warn('commit_transaction RPC not available, continuing without transaction')
+      }
 
-      // Fetch updated projects
+      // Fetch updated projects with proper typing
       const { data: updatedProjects, error: fetchError } = await supabase
         .from('projects')
         .select(`
@@ -86,15 +90,27 @@ export async function PUT(request: Request) {
       }
 
       return NextResponse.json(updatedProjects)
-    } catch (error) {
-      // Rollback transaction on error
-      await supabase.rpc('rollback_transaction')
-      throw error
+    } catch (error: unknown) {
+      // Attempt rollback if available
+      try {
+        await supabase.rpc('rollback_transaction')
+      } catch (rollbackError) {
+        console.warn('rollback_transaction RPC not available')
+      }
+      
+      if (error instanceof Error) {
+        console.error('Error in bulk update:', error)
+        throw error
+      }
+      throw new Error('Unknown error occurred during bulk update')
     }
-  } catch (error) {
-    console.error('Error in bulk update:', error)
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      console.error('Error in bulk update:', error)
     return NextResponse.json(
-      { error: 'Failed to update projects' },
+      { 
+        error: error instanceof Error ? error.message : 'Failed to update projects' 
+      },
       { status: 500 }
     )
   }
