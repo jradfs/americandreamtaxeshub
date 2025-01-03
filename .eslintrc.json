@@ -1,4 +1,11 @@
 {
+  "extends": [
+    "next/core-web-vitals",
+    "eslint:recommended",
+    "plugin:@typescript-eslint/recommended"
+  ],
+  "parser": "@typescript-eslint/parser",
+  "plugins": ["@typescript-eslint"],
   "rules": {
     "no-restricted-syntax": [
       "error",
@@ -6,7 +13,9 @@
         "selector": "Property[key.name='fontFamily']",
         "message": "Use Tailwind font utilities instead of direct font-family declarations"
       }
-    ]
+    ],
+    "@typescript-eslint/no-explicit-any": "warn",
+    "import/no-anonymous-default-export": "off"
   },
   "overrides": [
     {

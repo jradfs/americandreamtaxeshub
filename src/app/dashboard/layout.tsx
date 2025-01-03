@@ -1,18 +1,19 @@
-'use client'
-
-import { useAuth } from 'src/components/providers/auth-provider.tsx';
-import { redirect } from "next/navigation"
-import { Button } from 'src/components/ui/button.tsx';
+import { useAuth } from '@/components/providers/auth-provider'
+import { Button } from '@/components/ui/button'
 import Link from "next/link"
+import { cookies } from 'next/headers'
+import { createServerComponentClient } from '@supabase/auth-helpers-nextjs'
+import { redirect } from 'next/navigation'
 
-export default function DashboardLayout({
+export default async function DashboardLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
-  const { user } = useAuth()
+  const supabase = createServerComponentClient({ cookies })
+  const { data: { session } } = await supabase.auth.getSession()
 
-  if (!user) {
+  if (!session) {
     redirect('/login')
   }
 

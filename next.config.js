@@ -12,14 +12,6 @@ const nextConfig = {
     };
     return config;
   },
-  logging: {
-    fetches: {
-      fullUrl: true,
-    },
-  },
-  experimental: {
-    optimizePackageImports: ['@supabase/auth-helpers-nextjs'],
-  },
   poweredByHeader: false,
   generateEtags: false,
 };

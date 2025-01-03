@@ -1,6 +1,7 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
+import { z } from 'zod'
 import { Database } from '@/types/database.types'
 import { 
   NewProject, 
@@ -14,6 +15,18 @@ import {
 import { TaskFormData, TaskStatus } from '@/types/tasks'
 import { FilterState } from '@/types/hooks'
 import { projectSchema } from '@/lib/validations/project'
+
+// Example placeholder if you haven't defined it elsewhere
+const projectSchema = z.object({
+  name: z.string(),
+  description: z.string().optional(),
+  client_id: z.string(),
+  status: z.string(),
+  priority: z.string(),
+  due_date: z.string().optional(),
+  service_type: z.string(),
+  // ...any other fields you need...
+});
 
 interface CreateProjectRequest {
   template_id?: string

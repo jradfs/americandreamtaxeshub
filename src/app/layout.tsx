@@ -1,14 +1,14 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import { ThemeProvider } from "@/components/theme-provider";
-import { AuthProvider } from "@/components/providers/auth-provider";
-import { SidebarProvider } from "@/components/providers/sidebar-provider";
-import SupabaseProvider from "@/lib/supabase/supabase-provider";
-import { Sidebar } from "@/components/layout/sidebar";
-import { cn } from "@/lib/utils";
-import { Toaster } from "@/components/ui/toaster";
-import { ThemeToggle } from "@/components/theme-toggle";
-import { MainContentWrapper } from "@/components/layout/main-content-wrapper";
+import { ThemeProvider } from "src/components/theme-provider";
+import { AuthProvider } from "src/components/providers/auth-provider";
+import { SidebarProvider } from "src/components/providers/sidebar-provider";
+import { SupabaseProvider } from "src/lib/supabase/supabase-provider";
+import { Sidebar } from "src/components/layout/sidebar";
+import { cn } from "src/lib/utils";
+import { Toaster } from "src/components/ui/toaster";
+import { ThemeToggle } from "src/components/theme-toggle";
+import { MainContentWrapper } from "src/components/layout/main-content-wrapper";
 
 export const metadata: Metadata = {
   title: "American Dream Taxes Hub",
@@ -29,13 +29,12 @@ export default function RootLayout({ children }: RootLayoutProps) {
           "font-sans", // Explicitly set sans font family
           "dark:bg-background" // Use the CSS variable for dark mode
         )}
-        suppressHydrationWarning
       >
         <ThemeProvider>
           <SupabaseProvider>
             <AuthProvider>
               <SidebarProvider>
-                <div className="relative flex min-h-screen">
+                <div className="relative flex min-h-screen" suppressHydrationWarning>
                   <Sidebar />
                   <MainContentWrapper>
                     {children}

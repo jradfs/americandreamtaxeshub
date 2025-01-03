@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
 // Public routes that don't require authentication
-const publicRoutes = ['/login', '/auth/callback']
+const publicRoutes = ['/login', '/auth/callback', '/']
 
 // Routes that require authentication
 const protectedRoutes = ['/dashboard', '/clients', '/projects', '/tasks', '/templates']
@@ -32,7 +32,7 @@ export async function middleware(req: NextRequest) {
 
   // If we have a session but we're on a public route (like /login),
   // redirect to dashboard
-  if (session && isPublicRoute) {
+  if (session && isPublicRoute && req.nextUrl.pathname === '/login') {
     return NextResponse.redirect(new URL('/dashboard', req.url))
   }
 
@@ -42,7 +42,6 @@ export async function middleware(req: NextRequest) {
     return NextResponse.redirect(new URL('/login', req.url))
   }
 
-  // Return the response with the session
   return res
 }
 
