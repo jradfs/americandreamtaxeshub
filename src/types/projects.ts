@@ -150,6 +150,23 @@ export interface ConsultingInfo {
 }
 
 // Client and related interfaces
+/**
+ * Represents a client in the system
+ * 
+ * @property {string} id - Unique identifier for the client
+ * @property {string} contact_email - Primary contact email address
+ * @property {string | null} full_name - Full name of the client (individual)
+ * @property {string | null} company_name - Company name (if business client)
+ * @property {string | null} business_tax_id - Business tax ID (EIN)
+ * @property {string | null} individual_tax_id - Individual tax ID (SSN)
+ * @property {Json} contact_info - Additional contact information
+ * @property {string | null} created_at - Timestamp when client was created
+ * @property {string | null} updated_at - Timestamp of last update
+ * @property {string | null} user_id - Associated user account ID
+ * @property {'active' | 'inactive' | 'pending' | 'archived'} status - Current status
+ * @property {'business' | 'individual' | null} type - Client type
+ * @property {Json} tax_info - Additional tax-related information
+ */
 export interface Client {
   id: string;
   contact_email: string;

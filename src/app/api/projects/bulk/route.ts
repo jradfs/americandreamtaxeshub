@@ -163,21 +163,26 @@ export async function PUT(request: Request) {
   } catch (error: unknown) {
     if (error instanceof Error) {
       console.error('Error in bulk update:', error)
-    const errorMessage = error instanceof Error ? error.message : 'Failed to update projects'
-    console.error('Bulk update error:', errorMessage)
-    
-    return NextResponse.json<{ 
-      error: string,
-      details?: string 
-    }>(
-      { 
-        error: errorMessage,
-        details: error instanceof Error ? error.stack : undefined
-      },
+      const errorMessage = error.message
+      console.error('Bulk update error:', errorMessage)
+      
+      return NextResponse.json<{ 
+        error: string,
+        details?: string 
+      }>(
+        { 
+          error: errorMessage,
+          details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+        },
+        { status: 500 }
+      )
+    }
+    return NextResponse.json<{ error: string }>(
+      { error: 'An unknown error occurred' },
       { status: 500 }
     )
   }
-} // Add this brace
+}
 }
 
 export const dynamic = 'force-dynamic'
