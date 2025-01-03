@@ -191,6 +191,12 @@ export interface Document {
 }
 
 // Project with all relations
+/**
+ * Represents service-specific information for a project
+ * 
+ * @property {ServiceCategory} type - The category of service being provided
+ * @property {TaxInfo | AccountingInfo | PayrollInfo | BusinessServicesInfo | IRSNoticeInfo | ConsultingInfo} info - Service-specific details
+ */
 export type ServiceInfo = {
   type: ServiceCategory
   info: TaxInfo | AccountingInfo | PayrollInfo | BusinessServicesInfo | IRSNoticeInfo | ConsultingInfo

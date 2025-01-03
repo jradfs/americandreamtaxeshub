@@ -24,6 +24,24 @@ export async function PUT(request: Request) {
       updates: Partial<ProjectWithRelations> 
     } = await request.json()
 
+    // Validate status if provided
+    if (updates.status && ![
+      'not_started',
+      'on_hold', 
+      'cancelled',
+      'todo',
+      'in_progress',
+      'review',
+      'blocked',
+      'completed',
+      'archived'
+    ].includes(updates.status)) {
+      return NextResponse.json(
+        { error: 'Invalid project status' },
+        { status: 400 }
+      )
+    }
+
     if (!projectIds?.length) {
       return NextResponse.json(
         { error: 'No project IDs provided' },
