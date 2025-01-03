@@ -216,7 +216,7 @@ export type ServiceInfo = {
 
 export interface ProjectWithRelations extends Project {
   client?: Client | null
-  tasks?: Task[]
+  tasks?: Database['public']['Tables']['tasks']['Row'][]
   tax_return?: Database['public']['Tables']['tax_returns']['Row'] | null
   service_info?: ServiceInfo
 }
