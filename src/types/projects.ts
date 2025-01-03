@@ -152,23 +152,18 @@ export interface ConsultingInfo {
 // Client and related interfaces
 export interface Client {
   id: string;
-  email: string;
+  contact_email: string;
   full_name: string | null;
   company_name: string | null;
   business_tax_id: string | null;
   individual_tax_id: string | null;
   contact_info: Json;
-  client_since: string | null;
-  type: 'business' | 'individual';
-  phone?: string;
-  address?: string;
   created_at: string | null;
   updated_at: string | null;
   user_id: string | null;
-  status?: 'active' | 'inactive' | 'pending';
-  contact_email?: string;
-  formation_date?: string;
-  year_end?: string;
+  status: 'active' | 'inactive' | 'pending' | 'archived';
+  type: 'business' | 'individual' | null;
+  tax_info: Json;
 }
 
 export interface Owner {
