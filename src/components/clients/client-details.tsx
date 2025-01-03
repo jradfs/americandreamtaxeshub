@@ -36,6 +36,7 @@ export function ClientDetails({ clientId }: { clientId: string }) {
   const [client, setClient] = useState<Client | null>(null)
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('dashboard')
+  const supabase = createClientComponentClient()
 
   useEffect(() => {
     const fetchClient = async () => {
