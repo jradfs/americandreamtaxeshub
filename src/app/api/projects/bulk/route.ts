@@ -31,8 +31,8 @@ export async function PUT(request: Request) {
       )
     }
 
-    // Start transaction
-    await supabase.rpc('begin_transaction')
+    // Start transaction (if needed)
+    // await supabase.rpc('your_valid_rpc_function')
 
     try {
       // Update projects
