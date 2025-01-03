@@ -7,31 +7,6 @@ export type Json =
   | Json[]
 
 export type Database = {
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          operationName?: string
-          query?: string
-          variables?: Json
-          extensions?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
-  }
   public: {
     Tables: {
       client_documents: {
@@ -885,7 +860,7 @@ export type Database = {
           full_name: string
           id: string
           projects_managed: string[] | null
-          role: Database['public']['Enums']['user_role']
+          role: Database["public"]["Enums"]["user_role"]
           updated_at: string | null
         }
         Insert: {
@@ -894,7 +869,7 @@ export type Database = {
           full_name: string
           id: string
           projects_managed?: string[] | null
-          role?: Database['public']['Enums']['user_role']
+          role: Database["public"]["Enums"]["user_role"]
           updated_at?: string | null
         }
         Update: {
@@ -903,7 +878,7 @@ export type Database = {
           full_name?: string
           id?: string
           projects_managed?: string[] | null
-          role?: Database['public']['Enums']['user_role']
+          role?: Database["public"]["Enums"]["user_role"]
           updated_at?: string | null
         }
         Relationships: []
@@ -1490,7 +1465,6 @@ export type Database = {
       service_type: "tax_return" | "bookkeeping" | "payroll" | "advisory"
       task_priority: "low" | "medium" | "high" | "urgent"
       task_status: "todo" | "in_progress" | "review" | "completed"
-      user_role: "admin" | "team_member"
       tax_return_status:
         | "not_started"
         | "gathering_documents"
@@ -1498,6 +1472,7 @@ export type Database = {
         | "review"
         | "filed"
         | "amended"
+      user_role: "admin" | "team_member"
     }
     CompositeTypes: {
       [_ in never]: never
