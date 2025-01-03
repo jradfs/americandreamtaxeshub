@@ -10,14 +10,7 @@ export type UpdateProject = Database['public']['Tables']['projects']['Update']
 export type ServiceType = Database['public']['Tables']['projects']['Row']['service_type']
 
 // Enum types
-export type ServiceCategory = 
-  | 'tax_preparation'
-  | 'accounting'
-  | 'payroll'
-  | 'business_services'
-  | 'consulting'
-  | 'irs_resolution'
-  | 'other'
+export type ServiceCategory = Database['public']['Enums']['service_type']
 
 export type TaxReturnType = Database['public']['Enums']['tax_return_type']
 /**
@@ -33,18 +26,9 @@ export type TaxReturnType = Database['public']['Enums']['tax_return_type']
  * - completed: Project work is finished
  * - archived: Project is archived for historical purposes
  */
-export type ProjectStatus = 
-  | 'not_started'
-  | 'on_hold'
-  | 'cancelled'
-  | 'todo'
-  | 'in_progress'
-  | 'review'
-  | 'blocked'
-  | 'completed'
-  | 'archived';
+export type ProjectStatus = Database['public']['Enums']['project_status'];
 export type ReviewStatus = Database['public']['Enums']['review_status']
-export type Priority = Database['public']['Enums']['priority']
+export type Priority = Database['public']['Enums']['priority_level']
 
 // Project metadata interface
 export interface ProjectMetadata {
