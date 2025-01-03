@@ -110,8 +110,11 @@ export async function POST(request: Request) {
       .select()
       .single()
 
-    if (error || !insertedProject) {
-      throw new APIError(error?.message || 'Failed to create project', error?.status || 500, error?.code)
+    if (error) {
+      throw new APIError(error.message || 'Failed to create project', 500, error.code || 'UNKNOWN_ERROR')
+    }
+    if (!insertedProject) {
+      throw new APIError('Failed to create project', 500, 'NO_PROJECT_CREATED')
     }
 
     // Handle tasks if any
@@ -131,7 +134,7 @@ export async function POST(request: Request) {
         .insert(tasksToInsert)
 
       if (tasksError) {
-        throw new APIError(tasksError.message, tasksError.status || 500, tasksError.code)
+        throw new APIError(tasksError.message, 500, tasksError.code || 'UNKNOWN_ERROR')
       }
     }
 
@@ -147,7 +150,7 @@ export async function POST(request: Request) {
         .insert(teamAssignments)
 
       if (teamError) {
-        throw new APIError(teamError.message, teamError.status || 500, teamError.code)
+        throw new APIError(teamError.message, 500, teamError.code || 'UNKNOWN_ERROR')
       }
     }
 
@@ -278,7 +281,7 @@ export async function GET(request: Request) {
 
     if (error) {
       console.error('Error fetching projects:', error)
-      throw new APIError(error.message, error.code === '42501' ? 403 : 500)
+      throw new APIError(error.message, error.code === '42501' ? 403 : 500, error.code || 'UNKNOWN_ERROR')
     }
 
     return NextResponse.json(data)
