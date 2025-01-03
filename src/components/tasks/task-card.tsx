@@ -1,8 +1,10 @@
-import { Tables } from 'src/types/database.types';
-import { Badge } from 'src/components/ui/badge';
+import { Task } from '@/types/tasks';
+import { Badge } from '@/components/ui/badge';
 
 interface TaskCardProps {
-  task: Tables<'tasks'>;
+  task: Task;
+  onStatusChange?: (status: Task['status']) => void;
+  onDelete?: () => void;
 }
 
 export default function TaskCard({ task }: TaskCardProps) {

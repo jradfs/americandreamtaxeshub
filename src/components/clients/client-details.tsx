@@ -25,8 +25,28 @@ interface ClientDetailsProps {
 }
 
 export function ClientDetails({ clientId }: { clientId: string }) {
-  const [client, setClient] = useState<Client | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [client, setClient] = useState<Client | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+
+  if (error) {
+    return (
+      <div className="p-4 text-red-600">
+        <h3>Error loading client data</h3>
+        <p>{error.message}</p>
+        <Button 
+          variant="outline" 
+          onClick={() => {
+            setError(null);
+            setLoading(true);
+            fetchClient();
+          }}
+        >
+          Retry
+        </Button>
+      </div>
+    );
+  }
   const [activeTab, setActiveTab] = useState('dashboard')
   const supabase = createClientComponentClient()
 

@@ -20,7 +20,7 @@ export type ServiceCategory =
   | 'other'
 
 export type TaxReturnType = Database['public']['Enums']['tax_return_type']
-export type ProjectStatus = Database['public']['Enums']['project_status']
+export type ProjectStatus = 'not_started' | 'in_progress' | 'waiting_for_info' | 'needs_review' | 'completed' | 'archived';
 export type ReviewStatus = Database['public']['Enums']['review_status']
 export type Priority = Database['public']['Enums']['priority']
 
@@ -137,10 +137,16 @@ export interface Client {
   individual_tax_id: string | null;
   contact_info: Json;
   client_since: string | null;
-  client_type: string;
+  type: 'business' | 'individual';
+  phone?: string;
+  address?: string;
   created_at: string | null;
   updated_at: string | null;
   user_id: string | null;
+  status?: 'active' | 'inactive' | 'pending';
+  contact_email?: string;
+  formation_date?: string;
+  year_end?: string;
 }
 
 export interface Owner {

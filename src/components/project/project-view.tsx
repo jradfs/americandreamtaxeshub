@@ -16,6 +16,11 @@ interface ProjectViewProps {
   clientTasks: Task[];
   teamTasks: Task[];
   clientName: string;
+  onStatusChange?: (status: ProjectStatus) => void;
+  onTaskComplete?: (taskId: string) => void;
+  onTaskDelete?: (taskId: string) => void;
+  onTaskUpdate?: (task: Task) => void;
+  onProjectUpdate?: (updates: Partial<Project>) => void;
 }
 
 export default function ProjectView({ project, clientTasks, teamTasks, clientName }: ProjectViewProps) {
