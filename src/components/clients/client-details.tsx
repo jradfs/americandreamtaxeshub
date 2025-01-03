@@ -1,6 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import type { Client } from '@/types/projects';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -57,7 +59,7 @@ export function ClientDetails({ clientId }: { clientId: string }) {
     }
 
     fetchClient()
-  }, [clientId])
+  }, [clientId, supabase])
 
   const { tasks, updateTask, deleteTask } = useTasks({
     clientId: client?.id || '',

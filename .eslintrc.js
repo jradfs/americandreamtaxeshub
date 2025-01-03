@@ -8,6 +8,9 @@ module.exports = {
     'react-hooks/exhaustive-deps': 'warn',
     'react/no-unescaped-entities': 'off',
     'no-case-declarations': 'off',
-    '@typescript-eslint/no-shadow': 'error'
+    '@typescript-eslint/no-shadow': 'error',
+    'no-console': ['warn', { allow: ['error', 'warn', 'info'] }],
+    '@typescript-eslint/no-explicit-any': 'warn',
+    'react-hooks/rules-of-hooks': 'error'
   }
 }
