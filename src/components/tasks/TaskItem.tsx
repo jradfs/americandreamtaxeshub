@@ -21,16 +21,26 @@ type Task = Database['public']['Tables']['tasks']['Row'] & {
   due_date: Date | null
 }
 
-const STATUS_COLORS = {
+const STATUS_COLORS: Record<Task['status'], string> = {
   todo: "bg-gray-100 text-gray-800",
   in_progress: "bg-blue-100 text-blue-800",
-  completed: "bg-green-100 text-green-800"
+  review: "bg-yellow-100 text-yellow-800",
+  completed: "bg-green-100 text-green-800",
+  blocked: "bg-red-100 text-red-800"
+}
+
+function isTaskStatus(status: string): status is Task['status'] {
+  return ['todo', 'in_progress', 'review', 'completed', 'blocked'].includes(status)
 }
 
 export function TaskItem({ task }: { task: Task }) {
   const [localTask, setLocalTask] = useState(task)
 
-  const handleStatusChange = async (newStatus: Task['status']) => {
+  const handleStatusChange = async (newStatus: string) => {
+    if (!isTaskStatus(newStatus)) {
+      console.error('Invalid task status:', newStatus)
+      return
+    }
     try {
       await updateTask(task.id, { status: newStatus })
       setLocalTask(prev => ({ ...prev, status: newStatus }))
