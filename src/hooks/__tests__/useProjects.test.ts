@@ -9,6 +9,22 @@ jest.mock('@supabase/auth-helpers-nextjs', () => ({
   createClientComponentClient: jest.fn()
 }))
 
+interface MockSupabaseClient {
+  from: jest.Mock;
+  select: jest.Mock;
+  in: jest.Mock;
+  eq: jest.Mock;
+  or: jest.Mock;
+  gte: jest.Mock;
+  lte: jest.Mock;
+  order: jest.Mock;
+  range: jest.Mock;
+  single: jest.Mock;
+  insert: jest.Mock;
+  update: jest.Mock;
+  delete: jest.Mock;
+}
+
 describe('useProjects', () => {
   const mockSupabase = {
     from: jest.fn(() => mockSupabase),
@@ -24,7 +40,7 @@ describe('useProjects', () => {
     insert: jest.fn(() => mockSupabase),
     update: jest.fn(() => mockSupabase),
     delete: jest.fn(() => mockSupabase)
-  }
+  } as MockSupabaseClient
 
   const mockProjects: Partial<ProjectWithRelations>[] = [
     {

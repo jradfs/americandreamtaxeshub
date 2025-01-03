@@ -1,6 +1,5 @@
-import { jest } from '@jest/globals';
-import '@testing-library/jest-dom';
-import 'whatwg-fetch';
+require('@testing-library/jest-dom');
+require('whatwg-fetch');
 
 // Add custom matchers
 expect.extend({

@@ -13,6 +13,7 @@ import {
 } from '@/types/projects'
 import { TaskFormData, TaskStatus } from '@/types/tasks'
 import { FilterState } from '@/types/hooks'
+import { projectSchema } from '@/lib/validations/project'
 
 interface CreateProjectRequest {
   template_id?: string
@@ -29,6 +30,7 @@ interface CreateProjectRequest {
   tasks?: TaskFormData[]
   team_members?: string[]
   tax_return_id?: number
+  project_defaults?: Record<string, unknown>
 }
 
 // Error handling utility
@@ -45,121 +47,98 @@ class APIError extends Error {
 
 // Validation utilities
 const validateProjectData = (data: CreateProjectRequest) => {
-  if (!data.name?.trim()) {
-    throw new APIError('Project name is required', 400, 'INVALID_NAME')
-  }
-  if (!data.client_id) {
-    throw new APIError('Client is required', 400, 'INVALID_CLIENT')
-  }
-  if (!data.service_type) {
-    throw new APIError('Service type is required', 400, 'INVALID_SERVICE_TYPE')
-  }
-  if (data.tasks?.some(task => !task.title?.trim())) {
-    throw new APIError('All tasks must have a title', 400, 'INVALID_TASK_TITLE')
+  try {
+    projectSchema.parse(data)
+  } catch (err) {
+    if (err instanceof z.ZodError) {
+      throw new APIError(err.errors.map(e => e.message).join(', '), 400, 'VALIDATION_ERROR')
+    }
+    throw new APIError('Unknown validation error', 400, 'UNKNOWN_VALIDATION_ERROR')
   }
 }
 
 export async function POST(request: Request) {
-  const cookieStore = await cookies()
-  const supabase = createServerClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        get(name: string) {
-          return cookieStore.get(name)?.value
-        },
-      },
-    }
-  )
-
   try {
-    const { data: { user } } = await supabase.auth.getUser();
+    const supabase = createServerClient<Database>(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      { cookies: cookies(request) }
+    )
 
-    if (!user) {
-      return new Response('Unauthorized', { status: 401 });
+    const data: CreateProjectRequest = await request.json()
+
+    // Validate incoming data
+    validateProjectData(data)
+
+    let projectData: NewProject = {
+      name: data.name,
+      description: data.description,
+      client_id: data.client_id,
+      status: data.status,
+      priority: data.priority,
+      due_date: data.due_date ? new Date(data.due_date).toISOString() : null,
+      service_type: data.service_type,
+      tax_info: data.tax_info || {},
+      accounting_info: data.accounting_info || {},
+      payroll_info: data.payroll_info || {},
+      tax_return_id: data.tax_return_id || null,
+      project_defaults: data.project_defaults || {}
     }
 
-    const body: CreateProjectRequest = await request.json()
-    const { 
-      name,
-      description,
-      client_id,
-      service_type,
-      priority,
-      due_date,
-      status,
-      tasks,
-      tax_return_id,
-      tax_info,
-      accounting_info,
-      payroll_info,
-      team_members
-    } = body;
-
-    const { data: project, error: projectError } = await supabase
+    // Insert project
+    const { data: insertedProject, error } = await supabase
       .from('projects')
-      .insert({
-        name: name.trim(),
-        description: description?.trim(),
-        client_id,
-        service_type,
-        priority,
-        due_date,
-        status,
-        tax_return_id,
-        tax_info,
-        accounting_info,
-        payroll_info,
-        created_by: user.id // Add creator information
-      })
+      .insert([projectData])
       .select()
-      .single();
+      .single()
 
-    if (projectError) throw projectError;
-
-    // Insert project team members if specified
-    if (team_members?.length) {
-      const teamMembers = team_members.map(memberId => ({
-        project_id: project.id,
-        user_id: memberId
-      }));
-
-      const { error: teamError } = await supabase
-        .from('project_team_members')
-        .insert(teamMembers);
-
-      if (teamError) throw teamError;
+    if (error || !insertedProject) {
+      throw new APIError(error?.message || 'Failed to create project', error?.status || 500, error?.code)
     }
 
-    if (tasks && tasks.length > 0) {
-      const projectTasks = tasks.map((task: any) => ({
-        ...task,
-        project_id: project.id,
-        status: 'not_started',
-        assignee_id: task.assignee_id || user.id // Use specified assignee or default to creator
-      }));
+    // Handle tasks if any
+    if (data.tasks && data.tasks.length > 0) {
+      const tasksToInsert = data.tasks.map(task => ({
+        project_id: insertedProject.id,
+        title: task.title,
+        description: task.description,
+        priority: task.priority,
+        dependencies: task.dependencies,
+        order_index: task.order_index || 0,
+        assignee_id: task.assignee_id || null
+      }))
 
       const { error: tasksError } = await supabase
         .from('tasks')
-        .insert(projectTasks);
+        .insert(tasksToInsert)
 
-      if (tasksError) throw tasksError;
+      if (tasksError) {
+        throw new APIError(tasksError.message, tasksError.status || 500, tasksError.code)
+      }
     }
 
-    return NextResponse.json(project, { status: 201 });
-  } catch (error) {
-    console.error('Error creating project:', error);
-    if (error instanceof APIError) {
-      return NextResponse.json(
-        { message: error.message },
-        { status: error.status }
-      )
+    // Assign team members if any
+    if (data.team_members && data.team_members.length > 0) {
+      const teamAssignments = data.team_members.map(member_id => ({
+        project_id: insertedProject.id,
+        user_id: member_id
+      }))
+
+      const { error: teamError } = await supabase
+        .from('project_team_members')
+        .insert(teamAssignments)
+
+      if (teamError) {
+        throw new APIError(teamError.message, teamError.status || 500, teamError.code)
+      }
     }
-    return NextResponse.json(
-      { message: 'Internal server error' },
-      { status: 500 }
-    )
+
+    return NextResponse.json(insertedProject, { status: 201 })
+  } catch (err) {
+    if (err instanceof APIError) {
+      return NextResponse.json({ error: err.message }, { status: err.status })
+    }
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
   }
 }
 
@@ -299,5 +278,5 @@ export async function GET(request: Request) {
     )
   }
 }
-
 export const dynamic = 'force-dynamic'
+

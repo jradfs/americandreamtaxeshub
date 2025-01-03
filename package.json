@@ -12,8 +12,9 @@
     "type-check": "tsc --noEmit",
     "update-types": "npx supabase gen types typescript --project-id \"fnjkkmwmpxqvezqextxg\" > src/types/supabase.types.ts",
     "db:pull": "npx supabase db pull",
-    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
-    "test:watch": "node --experimental-vm-modules node_modules/jest/bin/jest.js --watch"
+    "test": "jest",
+    "test:single": "jest --runInBand --detectOpenHandles",
+    "test:watch": "jest --watchAll --runInBand --detectOpenHandles"
   },
   "dependencies": {
     "@hello-pangea/dnd": "^17.0.0",

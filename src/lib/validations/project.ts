@@ -32,7 +32,7 @@ export const taskSchema = z.object({
   assignee_id: z.string().optional()
 }).refine(data => {
   // Validate assigned team member if specified
-  return !data.assignee_id || data.assignee_id.length > 0;
+  return !data.assignee_id || data.assignee_id.trim().length > 0;
 }, {
   message: "Invalid team member assignment",
   path: ["assignee_id"]
@@ -67,6 +67,7 @@ export const projectSchema = z.object({
   tasks: z.array(taskSchema).optional(),
   team_members: z.array(z.string()).optional(),
   tax_return_id: z.number().optional().nullable(),
+  project_defaults: z.record(z.unknown()).optional().nullable()
 }).refine(data => {
   // If creation type is template, template_id must be provided
   if (data.creation_type === 'template' && !data.template_id) {
@@ -79,13 +80,13 @@ export const projectSchema = z.object({
 }).refine(data => {
   // Validate service-specific fields
   if (data.service_type === 'tax_return') {
-    return data.tax_info !== undefined;
+    return data.tax_info !== undefined && Object.keys(data.tax_info).length > 0;
   }
   if (data.service_type === 'accounting') {
-    return data.accounting_info !== undefined;
+    return data.accounting_info !== undefined && Object.keys(data.accounting_info).length > 0;
   }
   if (data.service_type === 'payroll') {
-    return data.payroll_info !== undefined;
+    return data.payroll_info !== undefined && Object.keys(data.payroll_info).length > 0;
   }
   return true;
 }, {

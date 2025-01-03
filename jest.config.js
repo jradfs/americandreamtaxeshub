@@ -1,28 +1,28 @@
-export default {
+/** @type {import('ts-jest').JestConfigWithTsJest} */
+const config = {
   preset: 'ts-jest',
   testEnvironment: 'jsdom',
-  setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
-  moduleNameMapper: {
-    '^@/(.*)$': '<rootDir>/src/$1',
-    '\\.(css|less|scss|sass)$': 'identity-obj-proxy',
-  },
+  setupFilesAfterEnv: ['./jest.setup.js'],
+  moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json'],
   transform: {
     '^.+\\.(ts|tsx)$': ['ts-jest', {
-      tsconfig: 'tsconfig.jest.json',
-      useESM: true,
-    }],
+      tsconfig: 'tsconfig.json',
+      jsx: 'react'
+    }]
   },
+  moduleNameMapper: {
+    '^@/(.*)$': '<rootDir>/src/$1',
+    '\\.(css|less|scss|sass)$': 'identity-obj-proxy'
+  },
+  testPathIgnorePatterns: ['<rootDir>/node_modules/'],
   extensionsToTreatAsEsm: ['.ts', '.tsx'],
-  testMatch: ['**/__tests__/**/*.test.(ts|tsx)'],
-  moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
-  testPathIgnorePatterns: ['<rootDir>/.next/', '<rootDir>/node_modules/'],
   globals: {
     'ts-jest': {
-      useESM: true,
-      tsconfig: 'tsconfig.jest.json'
+      useESM: true
     }
   },
-  testEnvironmentOptions: {
-    customExportConditions: [''],
-  }
+  watchPathIgnorePatterns: ['node_modules'],
+  testTimeout: 10000
 };
+
+export default config;

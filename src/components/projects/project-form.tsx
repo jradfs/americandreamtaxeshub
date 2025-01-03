@@ -66,6 +66,8 @@ interface ProjectFormProps {
 }
 
 export function ProjectForm({ project, onSuccess }: ProjectFormProps) {
+  const { submitProject, isSubmitting: isSubmittingForm } = useProjectSubmission(onSuccess);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const form = useForm<ProjectFormValues>({
     resolver: zodResolver(projectSchema),
     defaultValues: project || {
@@ -109,7 +111,6 @@ export function ProjectForm({ project, onSuccess }: ProjectFormProps) {
     initialData: project
   });
 
-  const { submitProject, isSubmitting } = useProjectSubmission(onSuccess);
   const watchedServiceType = form.watch('service_type');
   const watchedTasks = form.watch('tasks') || [];
   const [activeTab, setActiveTab] = useState('basic-info');
@@ -168,22 +169,59 @@ export function ProjectForm({ project, onSuccess }: ProjectFormProps) {
   };
 
   const onSubmit = async (values: ProjectFormValues) => {
-    if (!validateServiceSpecificFields()) {
-      toast.error('Please fill in all required fields for the selected service type');
-      return;
+    setIsSubmitting(true);
+    try {
+      if (!validateServiceSpecificFields()) {
+        toast.error('Please fill in all required fields');
+        setIsSubmitting(false);
+        return;
+      }
+
+      // Format the data before sending
+      const formattedData = {
+        ...values,
+        due_date: values.due_date ? values.due_date.toISOString() : null,
+        tax_info: values.tax_info || {},
+        accounting_info: values.accounting_info || {},
+        payroll_info: values.payroll_info || {},
+        status: 'not_started' as const,
+      };
+
+      const response = await fetch('/api/projects', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formattedData)
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to create project');
+      }
+
+      const result = await response.json();
+      toast.success('Project created successfully');
+      
+      // Navigate to the new project
+      window.location.href = `/projects/${result.id}`;
+    } catch (err) {
+      console.error('Error creating project:', err);
+      toast.error(err instanceof Error ? err.message : 'Failed to create project');
+    } finally {
+      setIsSubmitting(false);
     }
-    await submitProject(values);
   };
 
   return (
-    <Form {...form}>
+    <Form {...form} onSubmit={form.handleSubmit(onSubmit)}>
       <div className="space-y-8">
         <div className="flex justify-between items-center">
           <h2 className="text-2xl font-bold">Create New Project</h2>
           <div className="flex items-center gap-4">
             <Progress value={formProgress} className="w-[100px]" />
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? (
+            <Button type="submit" disabled={isSubmitting || isSubmittingForm}>
+              {isSubmitting || isSubmittingForm ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Creating...

@@ -112,8 +112,8 @@ export function useProjects(initialFilters?: ProjectFilters) {
       // Combine the data
       const enrichedProjects = projectsData?.map(project => ({
         ...project,
-        tax_return: project.tax_return_id ? taxReturnsMap.get(project.tax_return_id) || null : null
-      })) || [];
+        tax_return: taxReturnsMap[project.tax_return_id ?? '']
+      })) as ProjectWithRelations[];
 
       setProjects(enrichedProjects);
       if (count !== null) setTotalCount(count);
