@@ -162,7 +162,7 @@ export async function PUT(request: Request) {
             updated_at,
             user_id
           ),
-          tasks:tasks (*)
+          tasks:tasks!tasks_project_id_fkey (*)
         `)
         .in('id', projectIds)
 
