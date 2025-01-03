@@ -79,6 +79,17 @@ export async function POST(request: Request) {
     // Validate incoming data
     validateProjectData(data)
 
+    // Utility function to safely convert to Json type
+    const toJson = (value: unknown): Json | null => {
+      try {
+        if (value === null || value === undefined) return null;
+        if (typeof value === 'string') return JSON.parse(value);
+        return JSON.parse(JSON.stringify(value));
+      } catch {
+        return null;
+      }
+    };
+
     const projectData: NewProject = {
       name: data.name,
       description: data.description,
@@ -87,11 +98,11 @@ export async function POST(request: Request) {
       priority: data.priority,
       due_date: data.due_date ? new Date(data.due_date).toISOString() : null,
       service_type: data.service_type,
-      tax_info: data.tax_info || null,
-      accounting_info: data.accounting_info || null,
-      payroll_info: data.payroll_info || null,
+      tax_info: toJson(data.tax_info),
+      accounting_info: toJson(data.accounting_info),
+      payroll_info: toJson(data.payroll_info),
       tax_return_id: data.tax_return_id || null,
-      project_defaults: data.project_defaults || {}
+      project_defaults: toJson(data.project_defaults) || {}
     }
 
     // Insert project
