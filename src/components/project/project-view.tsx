@@ -1,7 +1,7 @@
 'use client';
 
-import { Project } from "@/types/database.types";
-import { Task } from "@/types/task-management";
+import type { Project } from "@/types/database.types";
+import type { Task } from "@/types/task-management";
 import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";

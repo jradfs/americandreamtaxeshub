@@ -1,4 +1,4 @@
-import { Task } from '@/types/tasks';
+import type { Task } from '@/types/tasks';
 import { Badge } from '@/components/ui/badge';
 
 interface TaskCardProps {

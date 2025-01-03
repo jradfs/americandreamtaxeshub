@@ -98,9 +98,13 @@ export function useProjectFilters() {
 
       setProjects(processedData);
       setError(null);
-    } catch (err) {
-      console.error('Error fetching projects:', err);
-      setError(err instanceof Error ? err.message : 'Failed to fetch projects');
+    } catch (error: unknown) {
+      console.error('Error fetching projects:', error);
+      if (error instanceof Error) {
+        setError(error.message);
+      } else {
+        setError('Failed to fetch projects');
+      }
       setProjects([]);
     } finally {
       setLoading(false);

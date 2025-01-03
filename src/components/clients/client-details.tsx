@@ -61,8 +61,11 @@ export function ClientDetails({ clientId }: { clientId: string }) {
 
         if (error) throw error
         setClient(data)
-      } catch (error) {
+      } catch (error: unknown) {
         console.error('Error fetching client:', error)
+        if (error instanceof Error) {
+          setError(error)
+        }
       } finally {
         setLoading(false)
       }
