@@ -450,6 +450,7 @@ export type Database = {
           name: string
           parent_project_id?: string | null
           payroll_info?: Json | null
+          primary_manager?: string | null
           priority?: string
           service_type?: string | null
           stage?: string | null
@@ -474,6 +475,7 @@ export type Database = {
           name?: string
           parent_project_id?: string | null
           payroll_info?: Json | null
+          primary_manager?: string | null
           priority?: string
           service_type?: string | null
           stage?: string | null
@@ -526,6 +528,20 @@ export type Database = {
             columns: ["parent_project_id"]
             isOneToOne: false
             referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "projects_primary_manager_fkey"
+            columns: ["primary_manager"]
+            isOneToOne: false
+            referencedRelation: "user_task_load"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "projects_primary_manager_fkey"
+            columns: ["primary_manager"]
+            isOneToOne: false
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
           {
@@ -600,8 +616,8 @@ export type Database = {
       tasks: {
         Row: {
           activity_log: Json | null
-          assignee_id: string | null
           assigned_team: string[] | null
+          assignee_id: string | null
           category: string | null
           checklist: Json | null
           created_at: string | null
@@ -624,6 +640,7 @@ export type Database = {
         }
         Insert: {
           activity_log?: Json | null
+          assigned_team?: string[] | null
           assignee_id?: string | null
           category?: string | null
           checklist?: Json | null
@@ -647,6 +664,7 @@ export type Database = {
         }
         Update: {
           activity_log?: Json | null
+          assigned_team?: string[] | null
           assignee_id?: string | null
           category?: string | null
           checklist?: Json | null
@@ -866,27 +884,27 @@ export type Database = {
           email: string
           full_name: string
           id: string
-          role: 'admin' | 'team_member'
-          updated_at: string | null
           projects_managed: string[] | null
+          role: string
+          updated_at: string | null
         }
         Insert: {
           created_at?: string | null
           email: string
           full_name: string
           id: string
-          role?: 'admin' | 'team_member'
-          updated_at?: string | null
           projects_managed?: string[] | null
+          role: string
+          updated_at?: string | null
         }
         Update: {
           created_at?: string | null
           email?: string
           full_name?: string
           id?: string
-          role?: 'admin' | 'team_member'
-          updated_at?: string | null
           projects_managed?: string[] | null
+          role?: string
+          updated_at?: string | null
         }
         Relationships: []
       }
