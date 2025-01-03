@@ -59,7 +59,7 @@ export function ClientDetails({ clientId }: { clientId: string }) {
   }, [clientId])
 
   const { tasks, updateTask, deleteTask } = useTasks({
-    clientId: client?.id,
+    clientId: client?.id || '',
     assignedUserId: undefined // We'll add user context later
   });
 
