@@ -122,7 +122,10 @@ export async function PUT(request: Request) {
             individual_tax_id,
             status,
             type,
-            tax_info
+            tax_info,
+            created_at,
+            updated_at,
+            user_id
           ),
           tasks:tasks (*)
         `)
@@ -139,11 +142,22 @@ export async function PUT(request: Request) {
         )
       }
 
+      // Map the response to match ProjectWithRelations type
+      const mappedProjects = updatedProjects.map(project => ({
+        ...project,
+        client: project.client ? {
+          ...project.client,
+          created_at: project.client.created_at || null,
+          updated_at: project.client.updated_at || null,
+          user_id: project.client.user_id || null
+        } : null
+      }))
+
       return NextResponse.json<{
         data: ProjectWithRelations[],
         message: string
       }>({
-        data: updatedProjects,
+        data: mappedProjects,
         message: `Successfully updated ${projectIds.length} projects`
       })
     } catch (error: unknown) {
