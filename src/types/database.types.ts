@@ -407,7 +407,7 @@ export type Database = {
           start_date: string | null
           status: Database["public"]["Enums"]["project_status"]
           task_count: number | null
-          tax_info: Json | null
+          tax_info: TaxInfo | null
           tax_return_id: number | null
           template_id: string | null
           updated_at: string | null

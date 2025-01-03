@@ -54,7 +54,7 @@ export interface ProjectBase extends ProjectMetadata {
 }
 
 // Service-specific information interfaces
-export interface TaxInfo {
+export interface TaxInfo extends Json {
   return_type: TaxReturnType
   tax_year: number
   filing_deadline?: string
@@ -199,6 +199,8 @@ export type ServiceInfo = {
   created_at?: string
   updated_at?: string
   version?: number
+  metadata?: Json
+  audit_log?: Json
 }
 
 export interface ProjectWithRelations extends Project {
