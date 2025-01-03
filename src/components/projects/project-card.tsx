@@ -72,6 +72,7 @@ const STATUS_STYLES = {
 
 export function ProjectCard({ project, onProjectUpdated, selected, showHover, onProjectClick, isLoading = false }: ProjectCardProps) {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const supabase = createClientComponentClient();
 
   if (isLoading) {
     return (
