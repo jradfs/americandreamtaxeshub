@@ -1,4 +1,10 @@
 import { useState } from 'react';
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent
+} from '../ui/card';
 import { Tables } from 'src/types/database.types';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
@@ -141,7 +147,7 @@ export default function TemplateForm({
     }
   };
 
-  const updateTask = (index: number, field: string, value: any) => {
+  const updateTask = (index: number, field: keyof TemplateTask, value: string | number | string[]) => {
     const updatedTasks = [...formData.tasks];
     updatedTasks[index] = {
       ...updatedTasks[index],

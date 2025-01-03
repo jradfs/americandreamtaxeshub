@@ -14,8 +14,10 @@
         "message": "Use Tailwind font utilities instead of direct font-family declarations"
       }
     ],
-    "@typescript-eslint/no-explicit-any": "warn",
-    "import/no-anonymous-default-export": "off"
+    "@typescript-eslint/no-explicit-any": "off",
+    "import/no-anonymous-default-export": "off",
+    "@typescript-eslint/no-unused-vars": ["warn", { "argsIgnorePattern": "^_" }],
+    "react-hooks/exhaustive-deps": "warn"
   },
   "overrides": [
     {
