@@ -49,7 +49,7 @@ export async function PUT(request: Request) {
       }
 
       // If updating status to archived, also archive related tasks
-      if (updates.status === 'archived') {
+      if (updates.status === 'archived' as const) {
         const { error: tasksError } = await supabase
           .from('tasks')
           .update({
