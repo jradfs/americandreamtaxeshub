@@ -107,7 +107,7 @@ export async function PUT(request: Request) {
         throw fetchError
       }
 
-      return NextResponse.json(updatedProjects)
+      return NextResponse.json<ProjectWithRelations[]>(updatedProjects)
     } catch (error: unknown) {
       // Attempt rollback if available
       try {
