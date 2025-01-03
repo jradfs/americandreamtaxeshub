@@ -216,6 +216,18 @@ export interface ProjectFilters {
     end: Date
   }
   clientId?: string
+  stage?: string
+  isArchived?: boolean
+  sortBy?: string
+  sortOrder?: 'asc' | 'desc'
+  dueThisWeek?: boolean
+  dueThisMonth?: boolean
+  dueThisQuarter?: boolean
+  missingInfo?: boolean
+  needsReview?: boolean
+  readyToFile?: boolean
+  returnType?: TaxReturnType[]
+  reviewStatus?: ReviewStatus[]
   teamMemberId?: string
   tags?: string[]
   hasDocuments?: boolean
