@@ -29,7 +29,9 @@ interface CreateProjectRequest {
   tax_info?: Record<string, unknown>
   accounting_info?: Record<string, unknown>
   payroll_info?: Record<string, unknown>
-  tasks?: TaskFormData[]
+  tasks?: Array<TaskFormData & {
+    order_index?: number
+  }>
   team_members?: string[]
   tax_return_id?: number
 }
