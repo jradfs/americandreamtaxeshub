@@ -425,6 +425,7 @@ export type Database = {
           name: string
           parent_project_id: string | null
           payroll_info: Json | null
+          primary_manager: string | null
           priority: string
           service_type: string | null
           stage: string | null
@@ -600,6 +601,7 @@ export type Database = {
         Row: {
           activity_log: Json | null
           assignee_id: string | null
+          assigned_team: string[] | null
           category: string | null
           checklist: Json | null
           created_at: string | null
@@ -864,24 +866,27 @@ export type Database = {
           email: string
           full_name: string
           id: string
-          role: string
+          role: 'admin' | 'team_member'
           updated_at: string | null
+          projects_managed: string[] | null
         }
         Insert: {
           created_at?: string | null
           email: string
           full_name: string
           id: string
-          role: string
+          role?: 'admin' | 'team_member'
           updated_at?: string | null
+          projects_managed?: string[] | null
         }
         Update: {
           created_at?: string | null
           email?: string
           full_name?: string
           id?: string
-          role?: string
+          role?: 'admin' | 'team_member'
           updated_at?: string | null
+          projects_managed?: string[] | null
         }
         Relationships: []
       }
