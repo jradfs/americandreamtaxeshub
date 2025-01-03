@@ -21,19 +21,6 @@ export type ServiceCategory =
 
 export type TaxReturnType = Database['public']['Enums']['tax_return_type']
 /**
- * Represents the possible statuses a project can be in.
- * 
- * - not_started: Project has been created but work hasn't started
- * - on_hold: Project is temporarily paused
- * - cancelled: Project has been cancelled
- * - todo: Project is ready to start
- * - in_progress: Work is actively being done on the project
- * - review: Project is under review
- * - blocked: Project is blocked waiting on external dependencies
- * - completed: Project work is finished
- * - archived: Project is archived for historical purposes
- */
-/**
  * Represents the lifecycle status of a project
  * 
  * - not_started: Project has been created but work hasn't started

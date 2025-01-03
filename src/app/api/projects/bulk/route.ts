@@ -42,9 +42,18 @@ export async function PUT(request: Request) {
       )
     }
 
-    if (!projectIds?.length) {
-      return NextResponse.json(
-        { error: 'No project IDs provided' },
+    if (!projectIds?.length || !Array.isArray(projectIds)) {
+      return NextResponse.json<{ error: string }>(
+        { error: 'No project IDs provided or invalid format' },
+        { status: 400 }
+      )
+    }
+
+    // Validate project IDs are UUIDs
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (projectIds.some(id => !uuidRegex.test(id))) {
+      return NextResponse.json<{ error: string }>(
+        { error: 'Invalid project ID format' },
         { status: 400 }
       )
     }
@@ -125,7 +134,7 @@ export async function PUT(request: Request) {
   } catch (error: unknown) {
     if (error instanceof Error) {
       console.error('Error in bulk update:', error)
-    return NextResponse.json(
+    return NextResponse.json<{ error: string }>(
       { 
         error: error instanceof Error ? error.message : 'Failed to update projects' 
       },
