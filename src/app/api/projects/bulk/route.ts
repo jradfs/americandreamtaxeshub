@@ -114,6 +114,7 @@ export async function PUT(request: Request) {
       { status: 500 }
     )
   }
+} // Add this brace
 }
 
 export const dynamic = 'force-dynamic'
