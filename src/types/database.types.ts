@@ -7,6 +7,31 @@ export type Json =
   | Json[]
 
 export type Database = {
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          operationName?: string
+          query?: string
+          variables?: Json
+          extensions?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       client_documents: {
@@ -151,51 +176,14 @@ export type Database = {
             foreignKeyName: "document_tracking_project_id_fkey"
             columns: ["project_id"]
             isOneToOne: false
-            referencedRelation: "projects"
-            referencedColumns: ["id"]
+            referencedRelation: "project_progress"
+            referencedColumns: ["project_id"]
           },
-        ]
-      }
-      documents: {
-        Row: {
-          client_id: string | null
-          file_name: string
-          file_type: string
-          folder_path: string | null
-          id: number
-          project_id: number | null
-          storage_path: string
-          uploaded_at: string | null
-          uploaded_by: string | null
-        }
-        Insert: {
-          client_id?: string | null
-          file_name: string
-          file_type: string
-          folder_path?: string | null
-          id?: never
-          project_id?: number | null
-          storage_path: string
-          uploaded_at?: string | null
-          uploaded_by?: string | null
-        }
-        Update: {
-          client_id?: string | null
-          file_name?: string
-          file_type?: string
-          folder_path?: string | null
-          id?: never
-          project_id?: number | null
-          storage_path?: string
-          uploaded_at?: string | null
-          uploaded_by?: string | null
-        }
-        Relationships: [
           {
-            foreignKeyName: "documents_client_id_fkey"
-            columns: ["client_id"]
+            foreignKeyName: "document_tracking_project_id_fkey"
+            columns: ["project_id"]
             isOneToOne: false
-            referencedRelation: "clients"
+            referencedRelation: "projects"
             referencedColumns: ["id"]
           },
         ]
@@ -529,6 +517,13 @@ export type Database = {
             foreignKeyName: "projects_parent_project_id_fkey"
             columns: ["parent_project_id"]
             isOneToOne: false
+            referencedRelation: "project_progress"
+            referencedColumns: ["project_id"]
+          },
+          {
+            foreignKeyName: "projects_parent_project_id_fkey"
+            columns: ["parent_project_id"]
+            isOneToOne: false
             referencedRelation: "projects"
             referencedColumns: ["id"]
           },
@@ -690,6 +685,13 @@ export type Database = {
             foreignKeyName: "fk_tasks_project_id"
             columns: ["project_id"]
             isOneToOne: false
+            referencedRelation: "project_progress"
+            referencedColumns: ["project_id"]
+          },
+          {
+            foreignKeyName: "fk_tasks_project_id"
+            columns: ["project_id"]
+            isOneToOne: false
             referencedRelation: "projects"
             referencedColumns: ["id"]
           },
@@ -713,6 +715,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "project_dashboard"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "project_progress"
+            referencedColumns: ["project_id"]
           },
           {
             foreignKeyName: "tasks_project_id_fkey"
@@ -918,6 +927,17 @@ export type Database = {
         }
         Relationships: []
       }
+      project_progress: {
+        Row: {
+          completed_tasks: number | null
+          completion_percentage: number | null
+          project_id: string | null
+          project_name: string | null
+          project_status: Database["public"]["Enums"]["project_status"] | null
+          total_tasks: number | null
+        }
+        Relationships: []
+      }
       tax_return_deadlines: {
         Row: {
           assigned_to_email: string | null
@@ -933,6 +953,17 @@ export type Database = {
         }
         Relationships: []
       }
+      user_task_load: {
+        Row: {
+          completed_tasks: number | null
+          full_name: string | null
+          in_progress_tasks: number | null
+          overdue_tasks: number | null
+          total_tasks: number | null
+          user_id: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       _ltree_compress: {
@@ -944,6 +975,12 @@ export type Database = {
       _ltree_gist_options: {
         Args: {
           "": unknown
+        }
+        Returns: undefined
+      }
+      archive_project: {
+        Args: {
+          project_id: string
         }
         Returns: undefined
       }
@@ -973,6 +1010,10 @@ export type Database = {
           new_tax_year: number
         }
         Returns: string
+      }
+      commit_transaction: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
       }
       create_project_tasks: {
         Args: {
@@ -1022,6 +1063,19 @@ export type Database = {
       get_current_user_id: {
         Args: Record<PropertyKey, never>
         Returns: number
+      }
+      get_project_tasks: {
+        Args: {
+          project_id: string
+        }
+        Returns: {
+          id: string
+          title: string
+          status: string
+          priority: string
+          due_date: string
+          assignee_id: string
+        }[]
       }
       get_workspace_data: {
         Args: Record<PropertyKey, never>
@@ -1293,6 +1347,10 @@ export type Database = {
           "": unknown
         }
         Returns: number
+      }
+      rollback_transaction: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
       }
       sparsevec_out: {
         Args: {
