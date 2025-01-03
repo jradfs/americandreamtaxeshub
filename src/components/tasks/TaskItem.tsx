@@ -15,13 +15,10 @@ import { updateTask } from '@/lib/supabase/tasks'
 import { cn } from "@/lib/utils"
 import { format } from "date-fns"
 
-type Task = {
-  id: string
-  title: string
-  status: 'todo' | 'in_progress' | 'completed'
+type Task = Database['public']['Tables']['tasks']['Row'] & {
+  status: Database['public']['Enums']['task_status']
+  priority?: Database['public']['Enums']['task_priority']
   due_date: Date | null
-  priority?: 'low' | 'medium' | 'high'
-  description?: string
 }
 
 const STATUS_COLORS = {

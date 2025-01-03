@@ -4,7 +4,17 @@ import { User } from './hooks'
 import { ProjectStatus, Priority, ServiceCategory, TaxReturnType } from './projects'
 
 // Base types from database
-export type Task = Database['public']['Tables']['tasks']['Row']
+export type Task = Database['public']['Tables']['tasks']['Row'] & {
+  assignee?: User
+  project?: {
+    id: string
+    title: string
+    service_type: ServiceCategory
+    client_id: string
+    status: ProjectStatus
+    priority: Priority
+  }
+}
 export type NewTask = Database['public']['Tables']['tasks']['Insert']
 export type UpdateTask = Database['public']['Tables']['tasks']['Update']
 

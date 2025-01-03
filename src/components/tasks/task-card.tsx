@@ -1,10 +1,14 @@
-import type { Task } from '@/types/tasks';
+import type { Task } from '@/types/tasks'
+import type { Database } from '@/types/database.types'
 import { Badge } from '@/components/ui/badge';
 
 interface TaskCardProps {
-  task: Task;
-  onStatusChange?: (status: Task['status']) => void;
-  onDelete?: () => void;
+  task: Database['public']['Tables']['tasks']['Row'] & {
+    status: Database['public']['Enums']['task_status']
+    priority?: Database['public']['Enums']['task_priority']
+  }
+  onStatusChange?: (status: Database['public']['Enums']['task_status']) => void
+  onDelete?: () => void
 }
 
 export default function TaskCard({ task }: TaskCardProps) {
