@@ -1,10 +1,10 @@
-'use client'
+"use client"
 
 import { createContext, useContext, useEffect, useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
+import { createClient } from 'lib/supabase/client'
 import { User, Session } from '@supabase/supabase-js'
 import { useRouter } from 'next/navigation'
-import { useToast } from '@/hooks/use-toast'
+import { useToast } from 'hooks/use-toast'
 
 type AuthContextType = {
   user: User | null
@@ -27,9 +27,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const initializeAuth = async () => {
-      // Ensure we're running in the browser
-      if (typeof window === 'undefined' || typeof document === 'undefined') return;
-      
       try {
         const { data: { session: initialSession } } = await supabaseClient.auth.getSession()
         
