@@ -32,7 +32,6 @@ interface CreateProjectRequest {
   tasks?: TaskFormData[]
   team_members?: string[]
   tax_return_id?: number
-  project_defaults?: Record<string, unknown>
 }
 
 // Error handling utility
@@ -101,8 +100,7 @@ export async function POST(request: Request) {
       tax_info: toJson(data.tax_info),
       accounting_info: toJson(data.accounting_info),
       payroll_info: toJson(data.payroll_info),
-      tax_return_id: data.tax_return_id || null,
-      project_defaults: toJson(data.project_defaults) || {}
+      tax_return_id: data.tax_return_id || null
     }
 
     // Insert project
