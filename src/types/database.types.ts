@@ -885,7 +885,7 @@ export type Database = {
           full_name: string
           id: string
           projects_managed: string[] | null
-          role: string
+          role: Database['public']['Enums']['user_role']
           updated_at: string | null
         }
         Insert: {
@@ -894,7 +894,7 @@ export type Database = {
           full_name: string
           id: string
           projects_managed?: string[] | null
-          role: string
+          role?: Database['public']['Enums']['user_role']
           updated_at?: string | null
         }
         Update: {
@@ -903,7 +903,7 @@ export type Database = {
           full_name?: string
           id?: string
           projects_managed?: string[] | null
-          role?: string
+          role?: Database['public']['Enums']['user_role']
           updated_at?: string | null
         }
         Relationships: []
@@ -1490,6 +1490,7 @@ export type Database = {
       service_type: "tax_return" | "bookkeeping" | "payroll" | "advisory"
       task_priority: "low" | "medium" | "high" | "urgent"
       task_status: "todo" | "in_progress" | "review" | "completed"
+      user_role: "admin" | "team_member"
       tax_return_status:
         | "not_started"
         | "gathering_documents"
