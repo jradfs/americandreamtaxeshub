@@ -14,30 +14,7 @@ import { useProjects } from './useProjects'
 
 export type ProjectView = 'service' | 'deadline' | 'status' | 'client' | 'return_type' | 'review_status' | 'priority'
 
-interface ProjectFilters {
-  search: string
-  service?: ServiceCategory[]
-  status?: ProjectStatus[]
-  priority?: Priority[]
-  dueThisWeek?: boolean
-  dueThisMonth?: boolean
-  dueThisQuarter?: boolean
-  missingInfo?: boolean
-  needsReview?: boolean
-  readyToFile?: boolean
-  returnType?: TaxReturnType[]
-  reviewStatus?: ReviewStatus[]
-  clientId?: string
-  teamMemberId?: string
-  dateRange?: {
-    start: Date
-    end: Date
-  }
-  tags?: string[]
-  hasDocuments?: boolean
-  hasNotes?: boolean
-  hasTimeEntries?: boolean
-}
+import { ProjectFilters } from '@/types/projects';
 
 const defaultFilters: ProjectFilters = {
   search: ''
