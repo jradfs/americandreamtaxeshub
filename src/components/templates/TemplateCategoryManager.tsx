@@ -33,7 +33,7 @@ export function TemplateCategoryManager() {
         return true;
     };
 
-    const fetchCategories = async () => {
+    const fetchCategories = useCallback(async () => {
         setIsLoading(true);
         try {
             const { data, error } = await supabase
@@ -49,7 +49,7 @@ export function TemplateCategoryManager() {
         } finally {
             setIsLoading(false);
         }
-    };
+    }, [supabase]);
 
     const createCategory = async () => {
         if (!validateCategory(newCategory)) return;
@@ -129,7 +129,7 @@ export function TemplateCategoryManager() {
 
     useEffect(() => {
         fetchCategories();
-    }, []);
+    }, [fetchCategories]);
 
     return (
         <div className="space-y-4">
