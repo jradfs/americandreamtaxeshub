@@ -21,8 +21,18 @@ export async function PUT(request: Request) {
 
     const { projectIds, updates }: { 
       projectIds: string[], 
-      updates: Partial<ProjectWithRelations> 
+      updates: Partial<Pick<ProjectWithRelations, 
+        'status' | 'priority' | 'due_date' | 'description' | 'service_info'
+      >> 
     } = await request.json()
+
+    // Validate updates structure
+    if (!updates || typeof updates !== 'object' || Array.isArray(updates)) {
+      return NextResponse.json<{ error: string }>(
+        { error: 'Invalid updates format' },
+        { status: 400 }
+      )
+    }
 
     // Validate status if provided
     if (updates.status && ![
@@ -116,7 +126,20 @@ export async function PUT(request: Request) {
         throw fetchError
       }
 
-      return NextResponse.json<ProjectWithRelations[]>(updatedProjects)
+      if (!updatedProjects) {
+        return NextResponse.json<{ error: string }>(
+          { error: 'Failed to fetch updated projects' },
+          { status: 500 }
+        )
+      }
+
+      return NextResponse.json<{
+        data: ProjectWithRelations[],
+        message: string
+      }>({
+        data: updatedProjects,
+        message: `Successfully updated ${projectIds.length} projects`
+      })
     } catch (error: unknown) {
       // Attempt rollback if available
       try {
@@ -134,9 +157,16 @@ export async function PUT(request: Request) {
   } catch (error: unknown) {
     if (error instanceof Error) {
       console.error('Error in bulk update:', error)
-    return NextResponse.json<{ error: string }>(
+    const errorMessage = error instanceof Error ? error.message : 'Failed to update projects'
+    console.error('Bulk update error:', errorMessage)
+    
+    return NextResponse.json<{ 
+      error: string,
+      details?: string 
+    }>(
       { 
-        error: error instanceof Error ? error.message : 'Failed to update projects' 
+        error: errorMessage,
+        details: error instanceof Error ? error.stack : undefined
       },
       { status: 500 }
     )
