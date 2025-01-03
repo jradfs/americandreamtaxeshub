@@ -63,7 +63,7 @@ export function ClientDetails({ clientId }: { clientId: string }) {
 
   const { tasks, updateTask, deleteTask } = useTasks({
     clientId: client?.id || '',
-    assignedUserId: undefined // We'll add user context later
+    assignedUserId: undefined
   });
 
   if (loading) return <div>Loading client details...</div>

@@ -129,7 +129,7 @@ export function TemplateCategoryManager() {
 
     useEffect(() => {
         fetchCategories();
-    }, [fetchCategories]);
+    }, [fetchCategories, supabase]);
 
     return (
         <div className="space-y-4">
