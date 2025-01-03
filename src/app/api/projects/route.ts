@@ -218,13 +218,16 @@ export async function GET(request: Request) {
             full_name
           )
         ),
-        team_members:project_team_members (
+        primary_manager:users!projects_primary_manager_fkey (
           id,
-          user:users (
-            id,
-            email,
-            full_name
-          )
+          email,
+          full_name
+        ),
+        users:users!projects_primary_manager_fkey (
+          id,
+          email,
+          full_name,
+          projects_managed
         ),
         documents (
           id,
