@@ -34,6 +34,14 @@ export async function PUT(request: Request) {
       )
     }
 
+    // Validate updates structure
+    if (!updates || typeof updates !== 'object' || Array.isArray(updates)) {
+      return NextResponse.json<{ error: string }>(
+        { error: 'Invalid updates format' },
+        { status: 400 }
+      )
+    }
+
     // Validate status if provided
     if (updates.status && ![
       'not_started',
