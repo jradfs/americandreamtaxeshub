@@ -6,7 +6,6 @@
       "esnext"
     ],
     "allowJs": false,
-    "skipLibCheck": false,
     "strict": true,
     "strictNullChecks": true,
     "noImplicitAny": true,
