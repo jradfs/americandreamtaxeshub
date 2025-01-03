@@ -26,9 +26,9 @@ interface CreateProjectRequest {
   priority: Priority
   due_date?: string
   service_type: ServiceCategory
-  tax_info?: Record<string, unknown>
-  accounting_info?: Record<string, unknown>
-  payroll_info?: Record<string, unknown>
+  tax_info?: TaxInfo
+  accounting_info?: AccountingInfo
+  payroll_info?: PayrollInfo
   tasks?: Array<TaskFormData & {
     order_index?: number
   }>
@@ -99,9 +99,9 @@ export async function POST(request: Request) {
       priority: data.priority,
       due_date: data.due_date ? new Date(data.due_date).toISOString() : null,
       service_type: data.service_type,
-      tax_info: toJson(data.tax_info),
-      accounting_info: toJson(data.accounting_info),
-      payroll_info: toJson(data.payroll_info),
+      tax_info: data.tax_info ? JSON.stringify(data.tax_info) : null,
+      accounting_info: data.accounting_info ? JSON.stringify(data.accounting_info) : null,
+      payroll_info: data.payroll_info ? JSON.stringify(data.payroll_info) : null,
       tax_return_id: data.tax_return_id || null
     }
 
