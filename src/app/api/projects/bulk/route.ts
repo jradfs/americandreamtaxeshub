@@ -90,17 +90,34 @@ export async function PUT(request: Request) {
     // await supabase.rpc('your_valid_rpc_function')
 
     try {
-      // Update projects
+      // Validate updates object
+      const validUpdates = Object.fromEntries(
+        Object.entries(updates).filter(([key, value]) => 
+          value !== undefined && 
+          value !== null &&
+          ['status', 'priority', 'due_date', 'description', 'service_info'].includes(key)
+        )
+      );
+
+      if (Object.keys(validUpdates).length === 0) {
+        return NextResponse.json(
+          { error: 'No valid updates provided' },
+          { status: 400 }
+        );
+      }
+
+      // Update projects with validated updates
       const { error: projectError } = await supabase
         .from('projects')
         .update({
-          ...updates,
+          ...validUpdates,
           updated_at: new Date().toISOString()
         })
-        .in('id', projectIds)
+        .in('id', projectIds);
 
       if (projectError) {
-        throw projectError
+        console.error('Project update error:', projectError);
+        throw new Error(`Failed to update projects: ${projectError.message}`);
       }
 
       // If updating status to archived, also archive related tasks

@@ -4,9 +4,19 @@ import { User } from './hooks'
 import { ProjectStatus, Priority, ServiceCategory, TaxReturnType } from './projects'
 
 // Base types from database
-export type Task = Database['public']['Tables']['tasks']['Row'] & {
+export type Task = {
+  id: string
+  title: string
+  description?: string | null
   status: Database['public']['Enums']['task_status']
   priority?: Database['public']['Enums']['task_priority']
+  project_id: string
+  assignee_id?: string | null
+  category?: Database['public']['Enums']['service_type'] | null
+  due_date?: string | null
+  start_date?: string | null
+  created_at?: string | null
+  updated_at?: string | null
   assignee?: User
   project?: {
     id: string
@@ -16,8 +26,12 @@ export type Task = Database['public']['Tables']['tasks']['Row'] & {
     status: ProjectStatus
     priority: Priority
   }
-  category?: Database['public']['Enums']['service_type'] | null
-  due_date?: string | null
+  dependencies?: string[]
+  checklist?: Array<{
+    title: string
+    completed: boolean
+  }>
+  metadata?: Json
 }
 export type NewTask = Database['public']['Tables']['tasks']['Insert']
 export type UpdateTask = Database['public']['Tables']['tasks']['Update']

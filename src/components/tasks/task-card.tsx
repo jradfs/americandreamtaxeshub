@@ -3,14 +3,21 @@ import type { Database } from '@/types/database.types'
 import { Badge } from '@/components/ui/badge';
 
 interface TaskCardProps {
-  task: Database['public']['Tables']['tasks']['Row'] & {
+  task: {
+    id: string
+    title: string
+    description?: string | null
     status: Database['public']['Enums']['task_status']
     priority?: Database['public']['Enums']['task_priority']
     category?: Database['public']['Enums']['service_type'] | null
     due_date?: string | null
+    created_at?: string | null
+    updated_at?: string | null
+    project_id?: string | null
   }
   onStatusChange?: (status: Database['public']['Enums']['task_status']) => void
   onDelete?: () => void
+  onEdit?: () => void
 }
 
 export default function TaskCard({ task }: TaskCardProps) {

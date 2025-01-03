@@ -39,25 +39,34 @@ export function TaskItem({ task }: { task: Task }) {
 
   const handleStatusChange = async (newStatus: string) => {
     if (!isTaskStatus(newStatus)) {
-      console.error('Invalid task status:', newStatus)
-      return NextResponse.json(
-        { error: 'Invalid task status' },
-        { status: 400 }
-      );
+      console.error('Invalid task status:', newStatus);
+      return;
     }
 
-    // Validate task exists
     if (!task?.id) {
-      return NextResponse.json(
-        { error: 'Invalid task ID' },
-        { status: 400 }
-      );
+      console.error('Task ID is missing');
+      return;
     }
+
     try {
-      await updateTask(task.id, { status: newStatus })
-      setLocalTask(prev => ({ ...prev, status: newStatus }))
+      const { error } = await updateTask(task.id, { 
+        status: newStatus,
+        updated_at: new Date().toISOString()
+      });
+
+      if (error) {
+        throw new Error(`Failed to update task status: ${error.message}`);
+      }
+
+      setLocalTask(prev => ({
+        ...prev,
+        status: newStatus,
+        updated_at: new Date().toISOString()
+      }));
     } catch (error) {
-      console.error('Failed to update task status', error)
+      console.error('Task status update failed:', error);
+      // Show user-friendly error message
+      toast.error('Failed to update task status. Please try again.');
     }
   }
 
