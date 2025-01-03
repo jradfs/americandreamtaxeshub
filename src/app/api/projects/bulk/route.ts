@@ -178,15 +178,25 @@ export async function PUT(request: Request) {
       }
 
       // Map the response to match ProjectWithRelations type
-      const mappedProjects = updatedProjects.map(project => ({
-        ...project,
-        client: project.client ? {
-          ...project.client,
-          created_at: project.client.created_at || null,
-          updated_at: project.client.updated_at || null,
-          user_id: project.client.user_id || null
-        } : null
-      }))
+      const mappedProjects = updatedProjects.map(project => {
+        const tasks = project.tasks?.map(task => ({
+          ...task,
+          status: task.status as Database['public']['Enums']['task_status'],
+          priority: task.priority as Database['public']['Enums']['task_priority'] | undefined,
+          category: task.category as Database['public']['Enums']['service_type'] | null | undefined
+        }))
+        
+        return {
+          ...project,
+          client: project.client ? {
+            ...project.client,
+            created_at: project.client.created_at || null,
+            updated_at: project.client.updated_at || null,
+            user_id: project.client.user_id || null
+          } : null,
+          tasks
+        }
+      }) as ProjectWithRelations[]
 
       return NextResponse.json<{
         data: ProjectWithRelations[],
