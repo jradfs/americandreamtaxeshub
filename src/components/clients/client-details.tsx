@@ -21,17 +21,7 @@ import {
 } from "lucide-react";
 
 interface ClientDetailsProps {
-  client: {
-    id: string;
-    name: string;
-    email: string;
-    phone?: string;
-    address?: string;
-    type?: string;
-    formation_date?: string;
-    year_end?: string;
-    resources?: Array<{ id: string; name: string; url: string; type: string }>;
-  };
+  clientId: string;
 }
 
 export function ClientDetails({ clientId }: { clientId: string }) {
