@@ -130,6 +130,12 @@ export const getStatusColor = (status: TaskStatus): string => {
     'completed': 'bg-green-500',
     'blocked': 'bg-red-500',
   }
+  
+  if (!status || !(status in colors)) {
+    console.warn('Invalid task status:', status);
+    return 'bg-gray-500'; // Default color
+  }
+  
   return colors[status]
 }
 

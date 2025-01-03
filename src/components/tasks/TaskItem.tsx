@@ -40,7 +40,18 @@ export function TaskItem({ task }: { task: Task }) {
   const handleStatusChange = async (newStatus: string) => {
     if (!isTaskStatus(newStatus)) {
       console.error('Invalid task status:', newStatus)
-      return
+      return NextResponse.json(
+        { error: 'Invalid task status' },
+        { status: 400 }
+      );
+    }
+
+    // Validate task exists
+    if (!task?.id) {
+      return NextResponse.json(
+        { error: 'Invalid task ID' },
+        { status: 400 }
+      );
     }
     try {
       await updateTask(task.id, { status: newStatus })

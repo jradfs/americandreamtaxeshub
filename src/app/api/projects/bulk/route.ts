@@ -19,12 +19,30 @@ export async function PUT(request: Request) {
       }
     )
 
-    const { projectIds, updates }: { 
+    const body = await request.json();
+    
+    // Validate request body structure
+    if (!body || typeof body !== 'object' || Array.isArray(body)) {
+      return NextResponse.json(
+        { error: 'Invalid request body format' },
+        { status: 400 }
+      );
+    }
+
+    const { projectIds, updates } = body as { 
       projectIds: string[], 
       updates: Partial<Pick<ProjectWithRelations, 
         'status' | 'priority' | 'due_date' | 'description' | 'service_info'
       >> 
-    } = await request.json()
+    };
+
+    // Validate required fields
+    if (!projectIds || !updates) {
+      return NextResponse.json(
+        { error: 'Missing required fields: projectIds and updates' },
+        { status: 400 }
+      );
+    }
 
     // Validate updates structure
     if (!updates || typeof updates !== 'object' || Array.isArray(updates)) {
