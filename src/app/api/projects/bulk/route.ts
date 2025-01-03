@@ -124,7 +124,15 @@ export async function PUT(request: Request) {
             id,
             full_name,
             company_name,
-            contact_info
+            contact_info,
+            email,
+            business_tax_id,
+            individual_tax_id,
+            client_since,
+            phone,
+            notes,
+            created_at,
+            updated_at
           ),
           tasks:tasks (*)
         `)
