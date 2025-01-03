@@ -212,6 +212,9 @@ export interface Document {
 export type ServiceInfo = {
   type: ServiceCategory
   info: TaxInfo | AccountingInfo | PayrollInfo | BusinessServicesInfo | IRSNoticeInfo | ConsultingInfo
+  created_at?: string
+  updated_at?: string
+  version?: number
 }
 
 export interface ProjectWithRelations extends Project {
@@ -222,7 +225,10 @@ export interface ProjectWithRelations extends Project {
     category?: Database['public']['Enums']['service_type'] | string | null
   })[]
   tax_return?: Database['public']['Tables']['tax_returns']['Row'] | null
-  service_info?: ServiceInfo
+  service_info?: ServiceInfo & {
+    metadata?: Json
+    audit_log?: Json
+  }
 }
 
 export interface Note {
