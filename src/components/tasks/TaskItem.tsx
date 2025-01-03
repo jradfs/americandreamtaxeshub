@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { Database } from '@/types/database.types'
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { 

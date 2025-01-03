@@ -5,6 +5,8 @@ import { ProjectStatus, Priority, ServiceCategory, TaxReturnType } from './proje
 
 // Base types from database
 export type Task = Database['public']['Tables']['tasks']['Row'] & {
+  status: Database['public']['Enums']['task_status']
+  priority?: Database['public']['Enums']['task_priority']
   assignee?: User
   project?: {
     id: string
@@ -14,6 +16,8 @@ export type Task = Database['public']['Tables']['tasks']['Row'] & {
     status: ProjectStatus
     priority: Priority
   }
+  category?: Database['public']['Enums']['service_type'] | null
+  due_date?: string | null
 }
 export type NewTask = Database['public']['Tables']['tasks']['Insert']
 export type UpdateTask = Database['public']['Tables']['tasks']['Update']

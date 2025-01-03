@@ -6,6 +6,8 @@ interface TaskCardProps {
   task: Database['public']['Tables']['tasks']['Row'] & {
     status: Database['public']['Enums']['task_status']
     priority?: Database['public']['Enums']['task_priority']
+    category?: Database['public']['Enums']['service_type'] | null
+    due_date?: string | null
   }
   onStatusChange?: (status: Database['public']['Enums']['task_status']) => void
   onDelete?: () => void

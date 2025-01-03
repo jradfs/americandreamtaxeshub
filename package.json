@@ -1,4 +1,5 @@
 {
+  "type": "module",
   "name": "american-dream-taxes-hub",
   "version": "0.1.0",
   "private": true,
