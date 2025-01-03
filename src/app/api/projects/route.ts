@@ -87,9 +87,9 @@ export async function POST(request: Request) {
       priority: data.priority,
       due_date: data.due_date ? new Date(data.due_date).toISOString() : null,
       service_type: data.service_type,
-      tax_info: data.tax_info || {},
-      accounting_info: data.accounting_info || {},
-      payroll_info: data.payroll_info || {},
+      tax_info: data.tax_info || null,
+      accounting_info: data.accounting_info || null,
+      payroll_info: data.payroll_info || null,
       tax_return_id: data.tax_return_id || null,
       project_defaults: data.project_defaults || {}
     }
