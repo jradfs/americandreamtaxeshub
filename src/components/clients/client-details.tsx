@@ -58,12 +58,13 @@ export function ClientDetails({ clientId }: { clientId: string }) {
     fetchClient()
   }, [clientId])
 
-  if (loading) return <div>Loading client details...</div>
-  if (!client) return <div>Client not found</div>
   const { tasks, updateTask, deleteTask } = useTasks({
-    clientId: client.id,
+    clientId: client?.id,
     assignedUserId: undefined // We'll add user context later
   });
+
+  if (loading) return <div>Loading client details...</div>
+  if (!client) return <div>Client not found</div>
 
   return (
     <div className="h-full flex flex-col">

@@ -71,6 +71,8 @@ const STATUS_STYLES = {
 } as const;
 
 export function ProjectCard({ project, onProjectUpdated, selected, showHover, onProjectClick, isLoading = false }: ProjectCardProps) {
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+
   if (isLoading) {
     return (
       <Card className="h-[160px] p-4">
@@ -88,7 +90,6 @@ export function ProjectCard({ project, onProjectUpdated, selected, showHover, on
       </Card>
     );
   }
-  const [editDialogOpen, setEditDialogOpen] = useState(false);
 
   const handleEditClick = (e: React.MouseEvent) => {
     e.preventDefault();

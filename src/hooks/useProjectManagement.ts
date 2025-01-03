@@ -285,9 +285,10 @@ export function useProjectManagement(initialFilters?: ProjectFilters) {
         case 'service':
           key = project.service_type || 'uncategorized'
           break
-        case 'status':
+        case 'status': {
           key = project.status
           break
+        }
         case 'priority':
           key = project.priority
           break

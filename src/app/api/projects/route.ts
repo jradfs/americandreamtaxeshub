@@ -83,7 +83,7 @@ export async function POST(request: Request) {
     // Validate incoming data
     validateProjectData(data)
 
-    let projectData: NewProject = {
+    const projectData: NewProject = {
       name: data.name,
       description: data.description,
       client_id: data.client_id,

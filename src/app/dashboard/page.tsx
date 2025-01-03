@@ -37,7 +37,7 @@ export default function DashboardPage() {
         {/* Welcome Section */}
         <div className="space-y-2">
           <h1 className="text-2xl font-medium">Welcome back</h1>
-          <p className="text-muted-foreground">Here's what's happening today.</p>
+          <p className="text-muted-foreground">Here&apos;s what&apos;s happening today.</p>
         </div>
 
         {/* Quick Stats */}
