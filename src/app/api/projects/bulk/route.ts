@@ -34,18 +34,10 @@ export async function PUT(request: Request) {
       )
     }
 
-    // Validate updates structure
-    if (!updates || typeof updates !== 'object' || Array.isArray(updates)) {
-      return NextResponse.json<{ error: string }>(
-        { error: 'Invalid updates format' },
-        { status: 400 }
-      )
-    }
-
     // Validate status if provided
     if (updates.status && ![
       'not_started',
-      'on_hold', 
+      'on_hold',
       'cancelled',
       'todo',
       'in_progress',
@@ -129,7 +121,8 @@ export async function PUT(request: Request) {
             business_tax_id,
             individual_tax_id,
             status,
-            type
+            type,
+            tax_info
           ),
           tasks:tasks (*)
         `)
