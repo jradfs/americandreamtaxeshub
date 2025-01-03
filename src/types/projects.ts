@@ -169,14 +169,16 @@ export interface Document {
 }
 
 // Project with all relations
+export type ServiceInfo = {
+  type: ServiceCategory
+  info: TaxInfo | AccountingInfo | PayrollInfo | BusinessServicesInfo | IRSNoticeInfo | ConsultingInfo
+}
+
 export interface ProjectWithRelations extends Project {
   client?: Client | null
   tasks?: Task[]
   tax_return?: Database['public']['Tables']['tax_returns']['Row'] | null
-  service_info?: {
-    type: ServiceCategory
-    info: TaxInfo | AccountingInfo | PayrollInfo | BusinessServicesInfo | IRSNoticeInfo | ConsultingInfo
-  }
+  service_info?: ServiceInfo
 }
 
 export interface Note {
