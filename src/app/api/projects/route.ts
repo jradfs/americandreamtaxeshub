@@ -246,8 +246,8 @@ export async function GET(request: Request) {
 
     // Apply filters with type safety
     const filters: Partial<FilterState> = {
-      status: searchParams.get('status') as ProjectStatus || undefined,
-      priority: searchParams.get('priority') as Priority || undefined,
+      status: searchParams.get('status') ? [searchParams.get('status') as ProjectStatus] : undefined,
+      priority: searchParams.get('priority') ? [searchParams.get('priority') as Priority] : undefined,
       client: searchParams.get('clientId') || undefined,
       search: searchParams.get('search') || undefined,
       service: searchParams.getAll('service_type').filter(Boolean) as ServiceCategory[],
@@ -260,10 +260,10 @@ export async function GET(request: Request) {
 
     // Apply filters
     if (filters.status) {
-      query = query.eq('status', filters.status)
+      query = query.in('status', filters.status)
     }
     if (filters.priority) {
-      query = query.eq('priority', filters.priority)
+      query = query.in('priority', filters.priority)
     }
     if (filters.client) {
       query = query.eq('client_id', filters.client)
