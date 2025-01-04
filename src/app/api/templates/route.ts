@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr'
 
+// Helper function to calculate template metadata
 function calculateTemplateMetadata(tasks: TemplateTask[] = []) {
   const totalEstimatedTime = tasks.reduce((total, task) => 
     total + (task.estimated_minutes || 0), 0) || 0;
@@ -100,6 +101,7 @@ export async function GET(request: Request) {
     query = query.order(sortBy, { ascending: sortOrder === 'asc' })
 
     const { data: templates, error } = await query
+      .returns<TemplateResponse[]>()
 
     if (error) throw error
 
@@ -197,9 +199,10 @@ export async function POST(request: Request) {
         .from('project_templates')
         .select(`
           *,
-          category:template_category_id (*),
+          category:template_categories (*),
           tasks:template_tasks (*)
         `)
+        .returns<TemplateResponse>()
         .eq('id', template.id)
         .single()
 
