@@ -10,7 +10,9 @@ import {
   Priority,
   ServiceCategory,
   ProjectMetadata,
-  ServiceInfo 
+  ServiceInfo,
+  TaxInfo,
+  AccountingInfo
 } from '@/types/projects'
 import { TaskFormData, TaskStatus } from '@/types/tasks'
 import { FilterState } from '@/types/hooks'

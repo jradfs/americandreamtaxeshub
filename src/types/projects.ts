@@ -193,6 +193,17 @@ export interface Document {
  * @property {ServiceCategory} type - The category of service being provided
  * @property {TaxInfo | AccountingInfo | PayrollInfo | BusinessServicesInfo | IRSNoticeInfo | ConsultingInfo} info - Service-specific details
  */
+/**
+ * Represents service-specific information for a project
+ * 
+ * @property {ServiceCategory} type - The category of service being provided
+ * @property {TaxInfo | AccountingInfo | PayrollInfo | BusinessServicesInfo | IRSNoticeInfo | ConsultingInfo} info - Service-specific details
+ * @property {string} [created_at] - Timestamp when service info was created
+ * @property {string} [updated_at] - Timestamp when service info was last updated
+ * @property {number} [version] - Version number for tracking changes
+ * @property {Json} [metadata] - Additional metadata
+ * @property {Json} [audit_log] - Audit log of changes
+ */
 export type ServiceInfo = {
   type: ServiceCategory
   info: TaxInfo | AccountingInfo | PayrollInfo | BusinessServicesInfo | IRSNoticeInfo | ConsultingInfo
