@@ -206,23 +206,23 @@ export async function PUT(request: Request) {
           start_date: task.start_date || null,
           created_at: task.created_at || null,
           updated_at: task.updated_at || null,
-          assignee: task.assignee ? {
-            id: task.assignee.id,
-            email: task.assignee.email,
-            full_name: task.assignee.full_name,
-            role: task.assignee.role as Database['public']['Enums']['user_role'],
-            created_at: task.assignee.created_at || null,
-            updated_at: task.assignee.updated_at || null,
-            projects_managed: task.assignee.projects_managed || null
+          assignee: task.assignee_id ? {
+            id: task.assignee_id,
+            email: '',
+            full_name: '',
+            role: 'team_member' as Database['public']['Enums']['user_role'],
+            created_at: null,
+            updated_at: null,
+            projects_managed: null
           } : null,
-          assigned_team: task.assigned_team ? task.assigned_team.map(user => ({
-            id: user.id,
-            email: user.email,
-            full_name: user.full_name,
-            role: user.role as Database['public']['Enums']['user_role'],
-            created_at: user.created_at || null,
-            updated_at: user.updated_at || null,
-            projects_managed: user.projects_managed || null
+          assigned_team: task.assigned_team ? task.assigned_team.map(userId => ({
+            id: userId,
+            email: '',
+            full_name: '',
+            role: 'team_member' as Database['public']['Enums']['user_role'],
+            created_at: null,
+            updated_at: null,
+            projects_managed: null
           })) : null
         }))
         
