@@ -96,7 +96,7 @@ export async function PUT(request: Request) {
         priority: updates.priority,
         due_date: updates.due_date,
         description: updates.description,
-        service_info: updates.service_info ? JSON.stringify(updates.service_info) : null,
+        service_info: updates.service_info ? updates.service_info : null,
         updated_at: new Date().toISOString()
       };
 
