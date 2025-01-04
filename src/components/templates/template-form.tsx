@@ -57,7 +57,7 @@ export default function TemplateForm({
     title: template?.title || '',
     description: template?.description || '',
     categoryId: template?.category_id || '',
-    priority: template?.priority || 'medium',
+    priority: template?.priority || 'medium' as Database['public']['Enums']['task_priority'],
     version: template?.version || 1,
     is_archived: template?.is_archived || false,
     tasks: template?.tasks || [] as TemplateTask[],
