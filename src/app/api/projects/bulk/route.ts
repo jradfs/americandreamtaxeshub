@@ -197,20 +197,59 @@ export async function PUT(request: Request) {
           ...task,
           status: task.status as Database['public']['Enums']['task_status'],
           priority: task.priority as Database['public']['Enums']['task_priority'] | undefined,
-          category: task.category as Database['public']['Enums']['service_type'] | null | undefined
+          category: task.category as Database['public']['Enums']['service_type'] | null | undefined,
+          assignee: task.assignee ? {
+            id: task.assignee.id,
+            email: task.assignee.email,
+            full_name: task.assignee.full_name,
+            role: task.assignee.role as Database['public']['Enums']['user_role'],
+            created_at: task.assignee.created_at || null,
+            updated_at: task.assignee.updated_at || null,
+            projects_managed: task.assignee.projects_managed || null
+          } : null,
+          assigned_team: task.assigned_team ? task.assigned_team.map(user => ({
+            id: user.id,
+            email: user.email,
+            full_name: user.full_name,
+            role: user.role as Database['public']['Enums']['user_role'],
+            created_at: user.created_at || null,
+            updated_at: user.updated_at || null,
+            projects_managed: user.projects_managed || null
+          })) : null
         }))
         
         return {
           ...project,
           client: project.client ? {
-            ...project.client,
+            id: project.client.id,
+            contact_email: project.client.contact_email,
+            full_name: project.client.full_name,
+            company_name: project.client.company_name,
+            business_tax_id: project.client.business_tax_id,
+            individual_tax_id: project.client.individual_tax_id,
+            contact_info: project.client.contact_info,
             created_at: project.client.created_at || null,
             updated_at: project.client.updated_at || null,
-            user_id: project.client.user_id || null
+            user_id: project.client.user_id || null,
+            status: project.client.status as Database['public']['Enums']['client_status'],
+            type: project.client.type as Database['public']['Enums']['client_type'] | null,
+            tax_info: project.client.tax_info
           } : null,
-          tasks
+          tasks: tasks as (Database['public']['Tables']['tasks']['Row'] & {
+            assignee?: Database['public']['Tables']['users']['Row'] | null
+            assigned_team?: Database['public']['Tables']['users']['Row'][]
+          })[],
+          primary_manager: project.primary_manager ? {
+            id: project.primary_manager.id,
+            email: project.primary_manager.email,
+            full_name: project.primary_manager.full_name,
+            role: project.primary_manager.role as Database['public']['Enums']['user_role'],
+            created_at: project.primary_manager.created_at || null,
+            updated_at: project.primary_manager.updated_at || null,
+            projects_managed: project.primary_manager.projects_managed || null
+          } : null
         }
-      }) as ProjectWithRelations[]
+      }) as unknown as ProjectWithRelations[]
 
       return NextResponse.json<{
         data: ProjectWithRelations[],
