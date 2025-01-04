@@ -93,20 +93,21 @@ export async function GET(request: Request) {
 
     // Calculate metadata for each template
     const templatesWithMetadata = templates.map(template => {
-      const totalEstimatedTime = template.tasks?.reduce((total, task) => 
-        total + (task.estimated_minutes || 0), 0) || 0
+      const tasks = Array.isArray(template.tasks) ? template.tasks : [];
+      const totalEstimatedTime = tasks.reduce((total, task) => 
+        total + (task.estimated_minutes || 0), 0) || 0;
 
-      const categories = [...new Set(template.tasks?.map(task => task.category).filter(Boolean) || [])]
+      const categories = [...new Set(tasks.map(task => task.category).filter(Boolean) || [])];
 
       return {
         ...template,
-        metadata: {
+        meta {
           totalEstimatedTime,
           categories,
           requiredSkills: template.metadata?.requiredSkills || []
         }
-      }
-    })
+      };
+    });
 
     return NextResponse.json(templatesWithMetadata)
   } catch (error) {
