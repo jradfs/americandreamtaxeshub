@@ -147,7 +147,7 @@ export default function TemplateForm({
     }
   };
 
-  const updateTask = (index: number, field: keyof TemplateTask, value: string | number | string[]) => {
+  const updateTask = (index: number, field: keyof TemplateTask, value: string | number | string[] | undefined) => {
     const updatedTasks = [...formData.tasks];
     updatedTasks[index] = {
       ...updatedTasks[index],
