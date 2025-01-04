@@ -316,7 +316,7 @@ export async function PUT(request: Request) {
         .from('project_templates')
         .select(`
           *,
-          category:template_category_id (*),
+          category:template_categories (*),
           tasks:template_tasks (*)
         `)
         .eq('id', id)
