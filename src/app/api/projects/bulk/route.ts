@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { Database } from '@/types/database.types'
 import { ProjectWithRelations } from '@/types/projects'
+import type { Json } from '@/types/database.types'
 
 export async function PUT(request: Request) {
   try {
@@ -37,9 +38,18 @@ export async function PUT(request: Request) {
     };
 
     // Validate required fields
-    if (!projectIds || !updates) {
+    if (!projectIds || !updates || !Array.isArray(projectIds)) {
       return NextResponse.json(
-        { error: 'Missing required fields: projectIds and updates' },
+        { 
+          error: 'Invalid request body',
+          details: {
+            required: ['projectIds (array)', 'updates (object)'],
+            received: {
+              projectIds: projectIds ? 'array' : 'missing',
+              updates: updates ? 'object' : 'missing'
+            }
+          }
+        },
         { status: 400 }
       );
     }
