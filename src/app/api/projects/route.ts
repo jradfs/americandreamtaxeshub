@@ -274,11 +274,13 @@ export async function GET(request: Request) {
     if (filters.search) {
       query = query.ilike('name', `%${filters.search}%`)
     }
-    if (filters.dateRange.from) {
-      query = query.gte('due_date', filters.dateRange.from.toISOString())
-    }
-    if (filters.dateRange.to) {
-      query = query.lte('due_date', filters.dateRange.to.toISOString())
+    if (filters.dateRange) {
+      if (filters.dateRange.from) {
+        query = query.gte('due_date', filters.dateRange.from.toISOString())
+      }
+      if (filters.dateRange.to) {
+        query = query.lte('due_date', filters.dateRange.to.toISOString())
+      }
     }
     if (filters.isArchived !== undefined) {
       query = query.eq('is_archived', filters.isArchived)
