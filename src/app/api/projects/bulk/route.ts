@@ -248,13 +248,13 @@ export async function PUT(request: Request) {
             assigned_team?: Database['public']['Tables']['users']['Row'][]
           })[],
           primary_manager: project.primary_manager ? {
-            id: project.primary_manager.id,
-            email: project.primary_manager.email,
-            full_name: project.primary_manager.full_name,
-            role: project.primary_manager.role as Database['public']['Enums']['user_role'],
-            created_at: project.primary_manager.created_at || null,
-            updated_at: project.primary_manager.updated_at || null,
-            projects_managed: project.primary_manager.projects_managed || null
+            id: project.primary_manager,
+            email: '',
+            full_name: '',
+            role: 'team_member' as Database['public']['Enums']['user_role'],
+            created_at: null,
+            updated_at: null,
+            projects_managed: null
           } : null
         }
       }) as unknown as ProjectWithRelations[]
