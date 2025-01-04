@@ -214,25 +214,15 @@ export type ServiceInfo = {
   audit_log?: Json
 }
 
-export interface ProjectWithRelations extends Project {
-  client?: Client | null
-  primary_manager?: {
-    id: string
-    full_name: string
-    email: string
-  } | null
-  tasks?: (Omit<Database['public']['Tables']['tasks']['Row'], 'status'> & {
-    status: Database['public']['Enums']['task_status'] | string
-    priority?: Database['public']['Enums']['task_priority'] | string | null
-    category?: Database['public']['Enums']['service_type'] | string | null
-    assigned_team?: Array<{
-      id: string
-      full_name: string
-      email: string
-    }>
+export interface ProjectWithRelations extends Database['public']['Tables']['projects']['Row'] {
+  client?: Database['public']['Tables']['clients']['Row'] | null
+  primary_manager?: Database['public']['Tables']['users']['Row'] | null
+  tasks?: (Database['public']['Tables']['tasks']['Row'] & {
+    assignee?: Database['public']['Tables']['users']['Row'] | null
+    assigned_team?: Database['public']['Tables']['users']['Row'][]
   })[]
   tax_return?: Database['public']['Tables']['tax_returns']['Row'] | null
-  service_info?: ServiceInfo & {
+  service_info?: Database['public']['Tables']['projects']['Row']['service_info'] & {
     metadata?: Json
     audit_log?: Json
   }

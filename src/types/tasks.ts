@@ -164,16 +164,14 @@ export const getPriorityColor = (priority: TaskPriority): string => {
 }
 
 // Form data interface with enhanced type safety
-export interface TaskFormData extends Omit<TaskBase, 'id' | 'created_at' | 'updated_at' | 'version' | 'archived'> {
+export interface TaskFormData extends Omit<Database['public']['Tables']['tasks']['Insert'], 'id' | 'created_at' | 'updated_at'> {
   id?: string
-  checklist?: Array<{
-    title: string
-    completed: boolean
-  }>
-  tax_form_type?: TaxReturnType
+  checklist?: Json
+  tax_form_type?: Database['public']['Enums']['filing_type']
   tax_year?: number
   review_required?: boolean
   reviewer_id?: string
+  assigned_team?: string[]
 }
 
 // Task grouping interface

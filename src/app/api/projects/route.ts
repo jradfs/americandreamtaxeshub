@@ -24,14 +24,14 @@ interface CreateProjectRequest {
   name: string
   description?: string
   client_id: string
-  status: ProjectStatus
-  priority: Priority
+  status: Database['public']['Enums']['project_status']
+  priority: Database['public']['Enums']['priority_level']
   due_date?: string
-  service_type: ServiceCategory
-  tax_info?: TaxInfo
-  accounting_info?: AccountingInfo
-  payroll_info?: PayrollInfo
-  tasks?: Array<TaskFormData & {
+  service_type: Database['public']['Enums']['service_type']
+  tax_info?: Json
+  accounting_info?: Json
+  payroll_info?: Json
+  tasks?: Array<Database['public']['Tables']['tasks']['Insert'] & {
     order_index?: number
   }>
   team_members?: string[]
