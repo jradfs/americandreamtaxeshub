@@ -101,7 +101,7 @@ export async function GET(request: Request) {
 
       return {
         ...template,
-        meta {
+        metadata: {
           totalEstimatedTime,
           categories,
           requiredSkills: template.metadata?.requiredSkills || []
