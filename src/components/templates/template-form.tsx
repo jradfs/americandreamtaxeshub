@@ -22,7 +22,7 @@ interface TemplateTask {
   id?: string;
   title: string;
   description?: string;
-  priority: string;
+  priority: Database['public']['Enums']['task_priority'];
   dependencies: string[];
   order_index: number;
   estimated_hours?: number;
