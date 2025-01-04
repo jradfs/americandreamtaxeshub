@@ -91,13 +91,14 @@ export async function PUT(request: Request) {
 
     try {
       // Validate updates object
-      const validUpdates = Object.fromEntries(
-        Object.entries(updates).filter(([key, value]) => 
-          value !== undefined && 
-          value !== null &&
-          ['status', 'priority', 'due_date', 'description', 'service_info'].includes(key)
-        )
-      );
+      const validUpdates: Partial<Database['public']['Tables']['projects']['Update']> = {
+        status: updates.status,
+        priority: updates.priority,
+        due_date: updates.due_date,
+        description: updates.description,
+        service_info: updates.service_info ? JSON.stringify(updates.service_info) : null,
+        updated_at: new Date().toISOString()
+      };
 
       if (Object.keys(validUpdates).length === 0) {
         return NextResponse.json(

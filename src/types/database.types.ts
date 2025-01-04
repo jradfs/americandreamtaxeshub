@@ -428,7 +428,7 @@ export type Database = {
           payroll_info?: Json | null
           primary_manager?: string | null
           priority?: string
-          service_info?: Json | null
+          service_info?: ServiceInfo | null
           service_type?: string | null
           stage?: string | null
           start_date?: string | null

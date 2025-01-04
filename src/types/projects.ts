@@ -204,7 +204,7 @@ export interface Document {
  * @property {Json} [metadata] - Additional metadata
  * @property {Json} [audit_log] - Audit log of changes
  */
-export type ServiceInfo = {
+export type ServiceInfo = Json & {
   type: ServiceCategory
   info: TaxInfo | AccountingInfo | PayrollInfo | BusinessServicesInfo | IRSNoticeInfo | ConsultingInfo
   created_at?: string
