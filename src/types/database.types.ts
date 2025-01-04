@@ -402,12 +402,13 @@ export type Database = {
           payroll_info: Json | null
           primary_manager: string | null
           priority: string
+          service_info: Json | null
           service_type: string | null
           stage: string | null
           start_date: string | null
           status: Database["public"]["Enums"]["project_status"]
           task_count: number | null
-          tax_info: TaxInfo | null
+          tax_info: Json | null
           tax_return_id: number | null
           template_id: string | null
           updated_at: string | null
@@ -427,6 +428,7 @@ export type Database = {
           payroll_info?: Json | null
           primary_manager?: string | null
           priority?: string
+          service_info?: Json | null
           service_type?: string | null
           stage?: string | null
           start_date?: string | null
@@ -452,6 +454,7 @@ export type Database = {
           payroll_info?: Json | null
           primary_manager?: string | null
           priority?: string
+          service_info?: Json | null
           service_type?: string | null
           stage?: string | null
           start_date?: string | null
