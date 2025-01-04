@@ -30,11 +30,11 @@ export async function PUT(request: Request) {
       );
     }
 
-    const { projectIds, updates } = body as { 
-      projectIds: string[], 
-      updates: Partial<Pick<Database['public']['Tables']['projects']['Update'], 
-        'status' | 'priority' | 'due_date' | 'description' | 'service_info'
-      >> 
+    const { projectIds, updates } = body as {
+      projectIds: string[],
+      updates: Partial<Pick<Database['public']['Tables']['projects']['Update'],
+        'status' | 'priority' | 'due_date' | 'description' | 'service_info' | 'accounting_info' | 'payroll_info' | 'tax_info'
+      >>
     };
 
     // Validate required fields
@@ -102,11 +102,14 @@ export async function PUT(request: Request) {
     try {
       // Validate updates object
       const validUpdates: Partial<Database['public']['Tables']['projects']['Update']> = {
-        status: updates.status,
-        priority: updates.priority,
-        due_date: updates.due_date,
-        description: updates.description,
-        service_info: updates.service_info ? updates.service_info : null,
+        ...(updates.status && { status: updates.status }),
+        ...(updates.priority && { priority: updates.priority }),
+        ...(updates.due_date && { due_date: updates.due_date }),
+        ...(updates.description && { description: updates.description }),
+        ...(updates.service_info && { service_info: JSON.stringify(updates.service_info) }),
+        ...(updates.accounting_info && { accounting_info: JSON.stringify(updates.accounting_info) }),
+        ...(updates.payroll_info && { payroll_info: JSON.stringify(updates.payroll_info) }),
+        ...(updates.tax_info && { tax_info: JSON.stringify(updates.tax_info) }),
         updated_at: new Date().toISOString()
       };
 
