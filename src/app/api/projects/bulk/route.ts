@@ -31,7 +31,7 @@ export async function PUT(request: Request) {
 
     const { projectIds, updates } = body as { 
       projectIds: string[], 
-      updates: Partial<Pick<ProjectWithRelations, 
+      updates: Partial<Pick<Database['public']['Tables']['projects']['Update'], 
         'status' | 'priority' | 'due_date' | 'description' | 'service_info'
       >> 
     };
