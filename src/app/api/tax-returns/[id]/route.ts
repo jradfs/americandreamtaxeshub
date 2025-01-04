@@ -66,9 +66,6 @@ export async function PUT(
 
     const updates = await request.json()
 
-    // Start transaction
-    await supabase.rpc('begin_transaction')
-
     try {
       // Update tax return
       const { error: updateError } = await supabase
