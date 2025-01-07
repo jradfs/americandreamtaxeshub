@@ -2,25 +2,39 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
-import { Database } from '@/types/database.types'
-import { ProjectWithRelations, NewProject, UpdateProject, ProjectStatus, ServiceType } from '@/types/projects'
-import { Task } from '@/types/database.types'
+import type { Database } from '@/types/database.types'
+import type { 
+  Project, 
+  ProjectWithRelations, 
+  ProjectTemplate, 
+  ProjectStatus, 
+  ServiceType 
+} from '@/types/hooks'
+import type { Task } from '@/types/tasks'
 import { toast } from 'sonner'
-import { FilterState, PaginationState, SortingState } from '@/types/hooks'
+import { 
+  FilterState, 
+  PaginationState, 
+  SortingState, 
+  ProjectFilters 
+} from '@/types/hooks'
 
-import { ProjectFilters } from '@/types/projects';
+interface ProjectResponse<T> {
+  data: T | null
+  error: string | null
+}
 
 export function useProjects(initialFilters?: ProjectFilters) {
   const [projects, setProjects] = useState<ProjectWithRelations[]>([])
   const [loading, setLoading] = useState(true)
   const [filters, setFilters] = useState<ProjectFilters>(initialFilters || {})
   const [pagination, setPagination] = useState<PaginationState>({
-    pageIndex: 0,
+    page: 0,
     pageSize: 1000
   })
   const [sorting, setSorting] = useState<SortingState>({
-    id: 'created_at',
-    desc: true
+    column: 'created_at',
+    direction: 'desc'
   })
   const [totalCount, setTotalCount] = useState(0)
   const supabase = createClientComponentClient<Database>()
@@ -64,163 +78,163 @@ export function useProjects(initialFilters?: ProjectFilters) {
     return query
   }, [supabase, filters, pagination])
 
-  const fetchTaxReturns = useCallback(async (projectIds: string[]) => {
-    if (!projectIds.length) return new Map();
+  const fetchTaxReturns = useCallback(async (projectIds: string[]): Promise<Map<string, Database['public']['Tables']['tax_returns']['Row']>> => {
+    if (!projectIds.length) return new Map()
 
     try {
       const { data, error } = await supabase
         .from('tax_returns')
         .select('*')
-        .in('id', projectIds.map(id => Number(id)));
+        .in('id', projectIds.map(id => Number(id)))
 
       if (error) {
-        console.error('Error fetching tax returns:', error);
-        return new Map();
+        console.error('Error fetching tax returns:', error)
+        return new Map()
       }
 
-      return new Map(data?.map(tr => [tr.id, tr]) || []);
+      return new Map(data?.map(tr => [tr.id.toString(), tr]) || [])
     } catch (error) {
-      console.error('Error in fetchTaxReturns:', error);
-      return new Map();
+      console.error('Error in fetchTaxReturns:', error)
+      return new Map()
     }
-  }, [supabase]);
+  }, [supabase])
 
   const fetchProjects = useCallback(async () => {
     try {
-      setLoading(true);
-      const query = buildQuery();
-      const { data: projectsData, error: projectsError, count } = await query;
+      setLoading(true)
+      const query = buildQuery()
+      const { data: projectsData, error: projectsError, count } = await query
 
       if (projectsError) {
-        console.error('Error fetching projects:', projectsError);
-        toast.error('Failed to load projects');
-        throw projectsError;
+        console.error('Error fetching projects:', projectsError)
+        toast.error('Failed to load projects')
+        throw projectsError
       }
 
       // Fetch tax returns separately for projects that have tax_return_id
-      const projectsWithTaxReturns = projectsData?.filter(p => p.tax_return_id) || [];
-      const taxReturnsMap = await fetchTaxReturns(projectsWithTaxReturns.map(p => p.tax_return_id?.toString() || ''));
+      const projectsWithTaxReturns = projectsData?.filter(p => p.tax_return_id) || []
+      const taxReturnsMap = await fetchTaxReturns(projectsWithTaxReturns.map(p => p.tax_return_id?.toString() || ''))
 
       // Combine the data
       const enrichedProjects = projectsData?.map(project => ({
         ...project,
-        tax_return: taxReturnsMap[project.tax_return_id ?? '']
-      })) as ProjectWithRelations[];
+        tax_return: project.tax_return_id ? taxReturnsMap.get(project.tax_return_id.toString()) : undefined
+      })) as ProjectWithRelations[]
 
-      setProjects(enrichedProjects);
-      if (count !== null) setTotalCount(count);
+      setProjects(enrichedProjects)
+      if (count !== null) setTotalCount(count)
     } catch (error) {
-      console.error('Error in fetchProjects:', error);
-      setProjects([]);
-      toast.error('Failed to load projects');
+      console.error('Error in fetchProjects:', error)
+      setProjects([])
+      toast.error('Failed to load projects')
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  }, [buildQuery, fetchTaxReturns]);
+  }, [buildQuery, fetchTaxReturns])
 
-  const fetchTaxReturnForProject = async (projectId: string) => {
+  const fetchTaxReturnForProject = async (projectId: string): Promise<Database['public']['Tables']['tax_returns']['Row'] | null> => {
     try {
-      const project = projects.find(p => p.id === projectId);
-      if (!project?.tax_return_id) return null;
+      const project = projects.find(p => p.id === projectId)
+      if (!project?.tax_return_id) return null
 
       const { data, error } = await supabase
         .from('tax_returns')
         .select('*')
         .eq('id', project.tax_return_id)
-        .single();
+        .single()
 
       if (error) {
         if (error.code === '42501') { // Permission denied
-          return null;
+          return null
         }
-        throw error;
+        throw error
       }
 
-      return data;
+      return data
     } catch (error) {
-      console.error('Error fetching tax return:', error);
-      return null;
+      console.error('Error fetching tax return:', error)
+      return null
     }
-  };
+  }
 
-  const createProject = async (projectData: NewProject & { tasks?: Task[] }) => {
+  const createProject = async (projectData: NewProject & { tasks?: Task[] }): Promise<ProjectResponse<ProjectWithRelations>> => {
     try {
       const { data: project, error: projectError } = await supabase
         .from('projects')
         .insert(projectData)
         .select()
-        .single();
+        .single()
 
-      if (projectError) throw projectError;
+      if (projectError) throw projectError
 
       // Handle tasks
       if (projectData.tasks?.length) {
         const tasks = projectData.tasks.map(task => ({
           ...task,
           project_id: project.id
-        }));
+        }))
 
         const { error: tasksError } = await supabase
           .from('tasks')
-          .insert(tasks);
+          .insert(tasks)
 
-        if (tasksError) throw tasksError;
+        if (tasksError) throw tasksError
       }
 
-      await fetchProjects();
-      return { data: project, error: null };
+      await fetchProjects()
+      return { data: project, error: null }
     } catch (error) {
-      console.error('Error creating project:', error);
-      return { data: null, error: 'Failed to create project' };
+      console.error('Error creating project:', error)
+      return { data: null, error: 'Failed to create project' }
     }
-  };
+  }
 
-  const updateProject = async (projectId: string, updates: UpdateProject) => {
+  const updateProject = async (projectId: string, updates: UpdateProject): Promise<ProjectResponse<ProjectWithRelations>> => {
     try {
       const { data: project, error: projectError } = await supabase
         .from('projects')
         .update(updates)
         .eq('id', projectId)
         .select()
-        .single();
+        .single()
 
-      if (projectError) throw projectError;
+      if (projectError) throw projectError
 
-      await fetchProjects();
-      return { data: project, error: null };
+      await fetchProjects()
+      return { data: project, error: null }
     } catch (error) {
-      console.error('Error updating project:', error);
-      return { data: null, error: 'Failed to update project' };
+      console.error('Error updating project:', error)
+      return { data: null, error: 'Failed to update project' }
     }
-  };
+  }
 
-  const deleteProject = async (projectId: string) => {
+  const deleteProject = async (projectId: string): Promise<{ error: string | null }> => {
     try {
       // Delete related records first
       await Promise.all([
         supabase.from('tasks').delete().eq('project_id', projectId),
         supabase.from('notes').delete().eq('project_id', projectId),
         supabase.from('documents').delete().eq('project_id', projectId)
-      ]);
+      ])
 
       const { error } = await supabase
         .from('projects')
         .delete()
-        .eq('id', projectId);
+        .eq('id', projectId)
 
-      if (error) throw error;
+      if (error) throw error
 
-      await fetchProjects();
-      return { error: null };
+      await fetchProjects()
+      return { error: null }
     } catch (error) {
-      console.error('Error deleting project:', error);
-      return { error: 'Failed to delete project' };
+      console.error('Error deleting project:', error)
+      return { error: 'Failed to delete project' }
     }
-  };
+  }
 
   useEffect(() => {
-    fetchProjects();
-  }, [fetchProjects]);
+    fetchProjects()
+  }, [fetchProjects])
 
   return {
     projects,
@@ -235,6 +249,7 @@ export function useProjects(initialFilters?: ProjectFilters) {
     createProject,
     updateProject,
     deleteProject,
-    fetchTaxReturnForProject
-  };
+    fetchTaxReturnForProject,
+    fetchProjects
+  }
 }

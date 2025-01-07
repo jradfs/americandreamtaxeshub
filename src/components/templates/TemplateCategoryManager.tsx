@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
-import { TemplateCategory } from '@/types/database.types';
+import { TemplateCategory } from '@/types/templates';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { 

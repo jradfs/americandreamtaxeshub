@@ -57,12 +57,6 @@ export function TemplateTasks({ template }: TemplateTasksProps) {
                   {task.priority}
                 </Badge>
                 <span>{task.title}</span>
-                {task.estimated_minutes && (
-                  <div className="flex items-center text-sm text-muted-foreground">
-                    <Timer className="mr-1 h-4 w-4" />
-                    {task.estimated_minutes}m
-                  </div>
-                )}
               </div>
               <div className="flex items-center space-x-2">
                 <Button

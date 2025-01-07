@@ -1,13 +1,16 @@
-import { createClient } from '@supabase/ssr'
+import { createBrowserClient } from '@supabase/ssr'
 import { Database } from '@/types/database.types'
 import { toast } from "@/components/ui/use-toast"
+
+const supabase = createBrowserClient<Database>(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+)
 
 export async function updateTask(
   taskId: string, 
   updates: Partial<Database['public']['Tables']['tasks']['Row']>
 ) {
-  const supabase = createClientComponentClient<Database>()
-  
   // Prepare updates, removing any undefined or null values
   const filteredUpdates = Object.fromEntries(
     Object.entries(updates).filter(([_, v]) => v !== undefined && v !== null)
@@ -20,11 +23,10 @@ export async function updateTask(
       updated_at: new Date().toISOString()
     })
     .eq('id', taskId)
-    .select()
 
   if (error) {
     toast({
-      title: "Error Updating Task",
+      title: "Error updating task",
       description: error.message,
       variant: "destructive"
     })
@@ -35,16 +37,13 @@ export async function updateTask(
 }
 
 export async function getTasks() {
-  const supabase = createClientComponentClient<Database>()
-  
   const { data, error } = await supabase
     .from('tasks')
     .select('*')
-    .order('created_at', { ascending: false })
 
   if (error) {
     toast({
-      title: "Error Fetching Tasks",
+      title: "Error fetching tasks",
       description: error.message,
       variant: "destructive"
     })
@@ -57,8 +56,6 @@ export async function getTasks() {
 export async function createTask(
   taskData: Omit<Database['public']['Tables']['tasks']['Insert'], 'id' | 'created_at' | 'updated_at'>
 ) {
-  const supabase = createClientComponentClient<Database>()
-  
   const { data, error } = await supabase
     .from('tasks')
     .insert({
@@ -66,11 +63,10 @@ export async function createTask(
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     })
-    .select()
 
   if (error) {
     toast({
-      title: "Error Creating Task",
+      title: "Error creating task",
       description: error.message,
       variant: "destructive"
     })

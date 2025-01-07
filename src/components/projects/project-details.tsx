@@ -1,11 +1,11 @@
 'use client'
 
-import { ProjectWithRelations } from "@/types/projects"
+import type { ProjectWithRelations } from "@/types/projects"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { format } from "date-fns"
-import { Calendar, Clock, Mail, Phone, Building, FileText, Link as LinkIcon } from "lucide-react"
+import { Calendar, Clock, Mail, Phone, Building, FileText } from "lucide-react"
 import Link from "next/link"
 
 interface ProjectDetailsProps {
@@ -13,6 +13,8 @@ interface ProjectDetailsProps {
 }
 
 export function ProjectDetails({ project }: ProjectDetailsProps) {
+  if (!project) return <div>No project data available</div>
+
   return (
     <div className="grid gap-6 md:grid-cols-2">
       {/* Client Information */}
@@ -26,7 +28,9 @@ export function ProjectDetails({ project }: ProjectDetailsProps) {
             <div className="space-y-4">
               <div className="flex items-center gap-4">
                 <Avatar className="h-10 w-10">
-                  <AvatarImage src={project.client.avatar_url} />
+                  {project.client.avatar_url && (
+                    <AvatarImage src={project.client.avatar_url} />
+                  )}
                   <AvatarFallback>{project.client.full_name?.charAt(0) || 'C'}</AvatarFallback>
                 </Avatar>
                 <div>
@@ -38,7 +42,8 @@ export function ProjectDetails({ project }: ProjectDetailsProps) {
               </div>
 
               <div className="space-y-2">
-                {project.client.contact_info?.email && (
+                {project.client.contact_info && typeof project.client.contact_info === 'object' && 'email' in project.client.contact_info && 
+                  typeof project.client.contact_info.email === 'string' && (
                   <div className="flex items-center gap-2 text-sm">
                     <Mail className="h-4 w-4" />
                     <Link href={`mailto:${project.client.contact_info.email}`} className="text-primary hover:underline">
@@ -46,15 +51,15 @@ export function ProjectDetails({ project }: ProjectDetailsProps) {
                     </Link>
                   </div>
                 )}
-                {project.client.contact_info?.phone && (
+                {project.client.contact_info && typeof project.client.contact_info === 'object' && 'phone' in project.client.contact_info && 
+                  typeof project.client.contact_info.phone === 'string' && (
                   <div className="flex items-center gap-2 text-sm">
                     <Phone className="h-4 w-4" />
-                    <Link href={`tel:${project.client.contact_info.phone}`} className="text-primary hover:underline">
-                      {project.client.contact_info.phone}
-                    </Link>
+                    <span>{project.client.contact_info.phone}</span>
                   </div>
                 )}
-                {project.client.contact_info?.address && (
+                {project.client.contact_info && typeof project.client.contact_info === 'object' && 'address' in project.client.contact_info && 
+                  typeof project.client.contact_info.address === 'string' && (
                   <div className="flex items-center gap-2 text-sm">
                     <Building className="h-4 w-4" />
                     <span>{project.client.contact_info.address}</span>
@@ -113,22 +118,6 @@ export function ProjectDetails({ project }: ProjectDetailsProps) {
                 <p className="mt-1 text-sm text-muted-foreground">{project.description}</p>
               </div>
             )}
-
-            {project.links && (
-              <div className="pt-4">
-                <div className="text-sm font-medium mb-2">Related Links</div>
-                <div className="space-y-2">
-                  {project.links.map((link: any, index: number) => (
-                    <div key={index} className="flex items-center gap-2 text-sm">
-                      <LinkIcon className="h-4 w-4" />
-                      <Link href={link.url} target="_blank" className="text-primary hover:underline">
-                        {link.title || link.url}
-                      </Link>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
         </CardContent>
       </Card>
@@ -172,8 +161,8 @@ export function ProjectDetails({ project }: ProjectDetailsProps) {
                   <span>{project.tasks?.filter(t => t.status === 'todo').length || 0}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span>Blocked</span>
-                  <span>{project.tasks?.filter(t => t.status === 'blocked').length || 0}</span>
+                  <span>Review</span>
+                  <span>{project.tasks?.filter(t => t.status === 'review').length || 0}</span>
                 </div>
               </div>
             </div>
@@ -194,7 +183,9 @@ export function ProjectDetails({ project }: ProjectDetailsProps) {
               if (!task?.assignee) return null
               return (
                 <Avatar key={assigneeId} className="border-2 border-background">
-                  <AvatarImage src={task.assignee.avatar_url} />
+                  {task.assignee.avatar_url && (
+                    <AvatarImage src={task.assignee.avatar_url} />
+                  )}
                   <AvatarFallback>{task.assignee.full_name.charAt(0)}</AvatarFallback>
                 </Avatar>
               )

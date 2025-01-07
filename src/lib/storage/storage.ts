@@ -50,6 +50,8 @@ export class StorageService {
     try {
       await this.initialize();
       const supabase = getSupabase();
+      const { data: userData } = await supabase.auth.getUser()
+
       const { data, error } = await supabase.storage
         .from(StorageService.BUCKET_NAME)
         .upload(path, file, {
@@ -65,7 +67,45 @@ export class StorageService {
         throw error;
       }
 
-      return data;
+      // If data is just a path, fetch the full file details
+      if (data && typeof data === 'object' && 'path' in data) {
+        const { data: fileDetails, error: detailsError } = await supabase.storage
+          .from(StorageService.BUCKET_NAME)
+          .list(path.split('/').slice(0, -1).join('/'), { 
+            search: path.split('/').pop() 
+          });
+
+        if (detailsError) {
+          console.warn('Could not fetch file details:', detailsError);
+          return {
+            name: file.name,
+            bucket_id: StorageService.BUCKET_NAME,
+            owner: userData.user?.id || '',
+            id: path,
+            updated_at: new Date().toISOString(),
+            created_at: new Date().toISOString(),
+            last_accessed_at: new Date().toISOString(),
+            metadata: {},
+            path: path
+          };
+        }
+
+        const matchedFile = fileDetails.find(f => f.name === path.split('/').pop());
+        
+        return {
+          name: matchedFile?.name || file.name,
+          bucket_id: StorageService.BUCKET_NAME,
+          owner: userData.user?.id || '',
+          id: path,
+          updated_at: matchedFile?.updated_at || new Date().toISOString(),
+          created_at: matchedFile?.created_at || new Date().toISOString(),
+          last_accessed_at: new Date().toISOString(),
+          metadata: matchedFile?.metadata || {},
+          path: path
+        };
+      }
+
+      return null;
     } catch (error) {
       console.error('Error in uploadFile:', error);
       return null;

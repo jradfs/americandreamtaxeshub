@@ -23,7 +23,7 @@ export function QuickTaskCheckbox({
       // Update the task status
       await updateTask(taskId, { 
         status: checked ? 'completed' : 'todo',
-        completed_at: checked ? new Date().toISOString() : null
+        updated_at: new Date().toISOString()
       })
 
       // Update local state

@@ -1,4 +1,4 @@
-export type Json =
+﻿export type Json =
   | string
   | number
   | boolean
@@ -68,49 +68,112 @@ export type Database = {
       }
       clients: {
         Row: {
+          accounting_method: string | null
+          address: string | null
+          assigned_preparer_id: string | null
           business_tax_id: string | null
+          business_type: string | null
+          city: string | null
           company_name: string | null
           contact_email: string
           contact_info: Json
           created_at: string | null
+          document_deadline: string | null
+          email: string | null
+          filing_status: string | null
+          fiscal_year_end: string | null
           full_name: string | null
           id: string
           individual_tax_id: string | null
+          industry_code: string | null
+          last_contact_date: string | null
+          last_filed_date: string | null
+          next_appointment: string | null
+          notes: string | null
+          phone: string | null
+          primary_contact_name: string | null
+          state: string | null
           status: Database["public"]["Enums"]["client_status"]
+          tax_id: string | null
           tax_info: Json
+          tax_return_status: string | null
+          tax_year: number | null
           type: Database["public"]["Enums"]["client_type"] | null
           updated_at: string | null
           user_id: string | null
+          zip: string | null
         }
         Insert: {
+          accounting_method?: string | null
+          address?: string | null
+          assigned_preparer_id?: string | null
           business_tax_id?: string | null
+          business_type?: string | null
+          city?: string | null
           company_name?: string | null
           contact_email: string
           contact_info?: Json
           created_at?: string | null
+          document_deadline?: string | null
+          email?: string | null
+          filing_status?: string | null
+          fiscal_year_end?: string | null
           full_name?: string | null
           id: string
           individual_tax_id?: string | null
+          industry_code?: string | null
+          last_contact_date?: string | null
+          last_filed_date?: string | null
+          next_appointment?: string | null
+          notes?: string | null
+          phone?: string | null
+          primary_contact_name?: string | null
+          state?: string | null
           status: Database["public"]["Enums"]["client_status"]
+          tax_id?: string | null
           tax_info?: Json
+          tax_return_status?: string | null
+          tax_year?: number | null
           type?: Database["public"]["Enums"]["client_type"] | null
           updated_at?: string | null
           user_id?: string | null
+          zip?: string | null
         }
         Update: {
+          accounting_method?: string | null
+          address?: string | null
+          assigned_preparer_id?: string | null
           business_tax_id?: string | null
+          business_type?: string | null
+          city?: string | null
           company_name?: string | null
           contact_email?: string
           contact_info?: Json
           created_at?: string | null
+          document_deadline?: string | null
+          email?: string | null
+          filing_status?: string | null
+          fiscal_year_end?: string | null
           full_name?: string | null
           id?: string
           individual_tax_id?: string | null
+          industry_code?: string | null
+          last_contact_date?: string | null
+          last_filed_date?: string | null
+          next_appointment?: string | null
+          notes?: string | null
+          phone?: string | null
+          primary_contact_name?: string | null
+          state?: string | null
           status?: Database["public"]["Enums"]["client_status"]
+          tax_id?: string | null
           tax_info?: Json
+          tax_return_status?: string | null
+          tax_year?: number | null
           type?: Database["public"]["Enums"]["client_type"] | null
           updated_at?: string | null
           user_id?: string | null
+          zip?: string | null
         }
         Relationships: []
       }
@@ -336,6 +399,69 @@ export type Database = {
         }
         Relationships: []
       }
+      project_team_members: {
+        Row: {
+          created_at: string | null
+          id: string
+          project_id: string | null
+          role: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          project_id?: string | null
+          role?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          project_id?: string | null
+          role?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_team_members_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "project_dashboard"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_team_members_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "project_progress"
+            referencedColumns: ["project_id"]
+          },
+          {
+            foreignKeyName: "project_team_members_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_team_members_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_task_load"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "project_team_members_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       project_templates: {
         Row: {
           category: string
@@ -428,7 +554,7 @@ export type Database = {
           payroll_info?: Json | null
           primary_manager?: string | null
           priority?: string
-          service_info?: ServiceInfo | null
+          service_info?: Json | null
           service_type?: string | null
           stage?: string | null
           start_date?: string | null
@@ -1030,6 +1156,30 @@ export type Database = {
         }
         Returns: string
       }
+      create_template_with_tasks: {
+        Args: {
+          title: string
+          description: string
+          default_priority: Database["public"]["Enums"]["task_priority"]
+          project_defaults: Json
+          template_category_id: string
+          metadata: Json
+          tasks: Json
+        }
+        Returns: {
+          category: string
+          category_id: string | null
+          created_at: string | null
+          default_priority: string | null
+          description: string | null
+          id: string
+          project_defaults: Json | null
+          recurring_schedule: string | null
+          seasonal_priority: Json | null
+          title: string
+          updated_at: string | null
+        }
+      }
       delete_data: {
         Args: {
           table_name: string
@@ -1392,6 +1542,31 @@ export type Database = {
           p_description: string
         }
         Returns: boolean
+      }
+      update_template_with_tasks: {
+        Args: {
+          template_id: string
+          title: string
+          description: string
+          default_priority: Database["public"]["Enums"]["task_priority"]
+          project_defaults: Json
+          template_category_id: string
+          metadata: Json
+          tasks: Json
+        }
+        Returns: {
+          category: string
+          category_id: string | null
+          created_at: string | null
+          default_priority: string | null
+          description: string | null
+          id: string
+          project_defaults: Json | null
+          recurring_schedule: string | null
+          seasonal_priority: Json | null
+          title: string
+          updated_at: string | null
+        }
       }
       validate_json_data: {
         Args: {

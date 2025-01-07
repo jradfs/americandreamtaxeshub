@@ -1,6 +1,6 @@
 import React from 'react';
 import { render as rtlRender } from '@testing-library/react';
-import SupabaseProvider from '@/lib/supabase/supabase-provider';
+import { SupabaseProvider } from '@/lib/supabase/supabase-provider';
 import { type SupabaseClient } from '@supabase/supabase-js';
 import { type Database } from '@/types/database.types';
 

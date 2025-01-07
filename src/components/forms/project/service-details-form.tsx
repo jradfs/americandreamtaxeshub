@@ -3,7 +3,8 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { SelectField } from '../shared/select-field';
 import { UseFormReturn } from 'react-hook-form';
-import { ProjectFormValues, ServiceType } from '@/lib/validations/project';
+import { ProjectFormValues } from '@/lib/validations/project';
+import { ServiceType } from '@/types/projects';
 import { Tables } from '@/types/database.types';
 
 interface ServiceDetailsFormProps {
@@ -13,13 +14,10 @@ interface ServiceDetailsFormProps {
 }
 
 const SERVICE_OPTIONS: { value: ServiceType; label: string }[] = [
-  { value: 'tax_preparation', label: 'Tax Preparation' },
-  { value: 'accounting', label: 'Accounting' },
+  { value: 'tax_return', label: 'Tax Return' },
+  { value: 'bookkeeping', label: 'Bookkeeping' },
   { value: 'payroll', label: 'Payroll' },
-  { value: 'business_services', label: 'Business Services' },
-  { value: 'irs_resolution', label: 'IRS Resolution' },
-  { value: 'consulting', label: 'Consulting' },
-  { value: 'uncategorized', label: 'Uncategorized' }
+  { value: 'advisory', label: 'Advisory' }
 ];
 
 const TAX_RETURN_STATUS_OPTIONS = [
@@ -27,7 +25,7 @@ const TAX_RETURN_STATUS_OPTIONS = [
   { value: 'in_progress', label: 'In Progress' },
   { value: 'review_needed', label: 'Review Needed' },
   { value: 'completed', label: 'Completed' }
-] as const;
+];
 
 export function ServiceDetailsForm({ form, taxReturns = [], loading = false }: ServiceDetailsFormProps) {
   const watchedServiceType = form.watch('service_type') as ServiceType;
@@ -35,8 +33,8 @@ export function ServiceDetailsForm({ form, taxReturns = [], loading = false }: S
 
   const clientTaxReturns = taxReturns.filter(tr => tr.client_id === watchedClientId);
   const taxReturnOptions = clientTaxReturns.map(tr => ({
-    value: tr.id,
-    label: `${tr.tax_year} - ${tr.return_type}`
+    value: tr.id.toString(),
+    label: `${tr.tax_year || 'Unknown Year'} - ${tr.filing_type || 'Unspecified Type'}`
   }));
 
   return (
@@ -53,7 +51,7 @@ export function ServiceDetailsForm({ form, taxReturns = [], loading = false }: S
           placeholder="Select service type"
         />
 
-        {watchedServiceType === 'tax_returns' && (
+        {watchedServiceType === 'tax_return' && (
           <div className="space-y-4">
             <h3 className="text-sm font-medium">Tax Return Details</h3>
             <SelectField
@@ -75,9 +73,9 @@ export function ServiceDetailsForm({ form, taxReturns = [], loading = false }: S
           </div>
         )}
 
-        {watchedServiceType === 'accounting' && (
+        {watchedServiceType === 'bookkeeping' && (
           <div className="space-y-4">
-            <h3 className="text-sm font-medium">Accounting Details</h3>
+            <h3 className="text-sm font-medium">Bookkeeping Details</h3>
             <SelectField
               form={form}
               name="accounting_period"

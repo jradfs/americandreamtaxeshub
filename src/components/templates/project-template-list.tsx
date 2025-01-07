@@ -68,10 +68,10 @@ export function ProjectTemplateList() {
             <CardContent>
               <div className="space-y-4">
                 <div className="flex items-center space-x-4 text-sm text-muted-foreground">
-                  {template.estimated_total_minutes && (
+                  {template.project_defaults?.estimated_total_minutes && (
                     <div className="flex items-center">
                       <Clock className="mr-2 h-4 w-4" />
-                      {Math.floor(template.estimated_total_minutes / 60)}h {template.estimated_total_minutes % 60}m
+                      {Math.floor(template.project_defaults.estimated_total_minutes / 60)}h {template.project_defaults.estimated_total_minutes % 60}m
                     </div>
                   )}
                   {template.recurring_schedule && (

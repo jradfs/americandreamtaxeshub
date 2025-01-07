@@ -26,7 +26,18 @@ export function useClientOnboarding(clientId?: string) {
         .single()
 
       if (error && error.code !== 'PGRST116') throw error // PGRST116 is "no rows returned"
-      setWorkflow(data)
+      
+      // Transform the data to include steps if progress exists
+      if (data) {
+        const progressData = data.progress ? JSON.parse(data.progress) : null
+        const workflowData: ClientOnboardingWorkflow = {
+          ...data,
+          steps: progressData?.steps || []
+        }
+        setWorkflow(workflowData)
+      } else {
+        setWorkflow(null)
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred')
     } finally {
@@ -42,7 +53,18 @@ export function useClientOnboarding(clientId?: string) {
         .order('name')
 
       if (error) throw error
-      setTemplates(data || [])
+      
+      // Transform the templates data to parse steps JSON
+      const transformedTemplates = (data || []).map(template => ({
+        ...template,
+        steps: Array.isArray(template.steps) 
+          ? template.steps 
+          : typeof template.steps === 'string'
+            ? JSON.parse(template.steps)
+            : []
+      })) as WorkflowTemplate[]
+      
+      setTemplates(transformedTemplates)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred')
     }
@@ -65,8 +87,12 @@ export function useClientOnboarding(clientId?: string) {
         status: 'in_progress',
         progress: JSON.stringify({
           currentStep: 0,
-          totalSteps: template.steps?.length || 0,
-          completedSteps: []
+          totalSteps: template.steps.length,
+          completedSteps: [],
+          steps: template.steps.map(step => ({
+            ...step,
+            status: 'pending'
+          }))
         }),
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
@@ -79,8 +105,13 @@ export function useClientOnboarding(clientId?: string) {
 
       if (error) throw error
       if (data && data[0]) {
-        setWorkflow(data[0])
-        return data[0]
+        const progressData = JSON.parse(data[0].progress || '{}')
+        const workflowWithSteps: ClientOnboardingWorkflow = {
+          ...data[0],
+          steps: progressData.steps || []
+        }
+        setWorkflow(workflowWithSteps)
+        return workflowWithSteps
       }
       throw new Error('Failed to start workflow')
     } catch (err) {

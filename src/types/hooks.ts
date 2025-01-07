@@ -1,225 +1,114 @@
+import { Project, ProjectTemplate, ProjectFormValues } from './projects'
+import { Task, TaskStatus, ReviewStatus } from './tasks'
+import { Client } from './clients'
 import { Database } from './database.types'
-import { Json } from './database.types'
-import { 
-  ProjectStatus, 
-  Priority, 
-  ServiceCategory, 
-  TaxReturnType,
-  ReviewStatus
-} from './projects'
-import { TaskStatus, TaskCategory } from './tasks'
 
-// Base metadata interface
-export interface BaseMetadata {
-  readonly id: string
-  readonly created_at: string
-  readonly updated_at: string
-  version: number
-  archived: boolean
+// Re-export database enums
+export type ProjectStatus = Database['public']['Enums']['project_status']
+export type TaskPriority = Database['public']['Enums']['task_priority']
+export type ClientStatus = Database['public']['Enums']['client_status']
+export type ClientType = Database['public']['Enums']['client_type']
+export type ServiceType = Database['public']['Enums']['service_type']
+
+// Re-export all types to ensure they are available
+export type {
+  Project,
+  ProjectTemplate,
+  ProjectFormValues,
+  Task,
+  TaskStatus,
+  ReviewStatus,
+  Client,
+  Database
 }
 
-// Main table types
-export type Client = Database['public']['Tables']['clients']['Row']
-export type ClientInsert = Database['public']['Tables']['clients']['Insert']
-export type ClientUpdate = Database['public']['Tables']['clients']['Update']
-
-export type Project = Database['public']['Tables']['projects']['Row']
-export type ProjectInsert = Database['public']['Tables']['projects']['Insert']
-export type ProjectUpdate = Database['public']['Tables']['projects']['Update']
-
-// Task types moved to tasks.ts
-export type { Task, TaskInsert, TaskUpdate } from './tasks'
-
-
-export interface User extends BaseMetadata {
-  email: string
-  full_name: string
-  role: 'admin' | 'manager' | 'staff' | 'client'
-  status: 'active' | 'inactive' | 'pending'
-  preferences?: {
-    theme?: 'light' | 'dark' | 'system'
-    notifications?: {
-      email?: boolean
-      push?: boolean
-      desktop?: boolean
-    }
-    defaultView?: 'list' | 'board' | 'calendar'
-    timezone?: string
-  }
-  metadata?: Json
-}
-
-export type UserInsert = Omit<User, keyof BaseMetadata>
-export type UserUpdate = Partial<UserInsert>
-
-// Workflow and onboarding types
-export interface WorkflowTemplate extends BaseMetadata {
+export type WorkflowTemplate = {
+  id: number
   name: string
-  description?: string
-  service_type: ServiceCategory
-  tasks: TemplateTask[]
-  metadata?: {
-    totalEstimatedTime: number
-    categories: TaskCategory[]
-    requiredSkills: string[]
-    defaultAssignees?: string[]
-    automationRules?: Array<{
-      condition: string
-      action: string
-      parameters?: Record<string, unknown>
-    }>
-  }
-}
-
-export type WorkflowTemplateInsert = Omit<WorkflowTemplate, keyof BaseMetadata>
-export type WorkflowTemplateUpdate = Partial<WorkflowTemplateInsert>
-
-export interface ClientOnboardingWorkflow extends BaseMetadata {
-  client_id: string
-  template_id: string
-  status: 'pending' | 'in_progress' | 'completed' | 'cancelled'
-  due_date?: string
-  assigned_to?: string[]
-  progress: number
-  metadata?: {
-    completedSteps: string[]
-    nextActions: string[]
-    notes?: string
-  }
-}
-
-export type ClientOnboardingWorkflowInsert = Omit<ClientOnboardingWorkflow, keyof BaseMetadata>
-export type ClientOnboardingWorkflowUpdate = Partial<ClientOnboardingWorkflowInsert>
-
-// Settings and notifications
-export interface TimeTrackingSettings extends BaseMetadata {
-  user_id: string
-  default_billable: boolean
-  minimum_increment: number
-  round_to: 'nearest' | 'up' | 'down'
-  work_hours: {
-    monday?: [string, string]
-    tuesday?: [string, string]
-    wednesday?: [string, string]
-    thursday?: [string, string]
-    friday?: [string, string]
-    saturday?: [string, string]
-    sunday?: [string, string]
-  }
-  break_settings?: {
-    auto_break?: boolean
-    break_duration?: number
-    work_duration_before_break?: number
-  }
-}
-
-export interface Notification extends BaseMetadata {
-  user_id: string
-  type: 'task' | 'project' | 'message' | 'system'
-  title: string
-  content: string
-  read: boolean
-  action_url?: string
-  priority: 'low' | 'medium' | 'high'
-  metadata?: Json
-}
-
-
-// Template types with enhanced validation
-export interface TemplateTask extends BaseMetadata {
-  template_id: string
-  title: string
-  description?: string
-  status: TaskStatus
-  priority: Priority
-  estimated_minutes?: number
-  dependencies?: string[]
-  assignee_role?: 'admin' | 'manager' | 'staff'
-  required_skills?: string[]
-  checklist?: Array<{
+  description?: string | null
+  steps: Array<{
     title: string
-    required: boolean
-    estimated_minutes?: number
+    description?: string
+    status?: 'pending' | 'in_progress' | 'completed'
   }>
-  category?: TaskCategory
-  tags?: string[]
-  validation_rules?: Array<{
-    type: 'required' | 'dependency' | 'custom'
-    condition: string
-    message: string
-  }>
+  created_at?: string | null
 }
 
-// Hook return types with proper generics
-export interface UseQueryResult<T> {
-  data: T | null
-  error: Error | null
-  loading: boolean
-  refetch: () => Promise<void>
-}
-
-export interface UseMutationResult<T, V = any> {
-  data: T | null
-  error: Error | null
-  loading: boolean
-  mutate: (variables: V) => Promise<T>
-}
-
-export interface UseInfiniteQueryResult<T> extends UseQueryResult<T[]> {
-  hasMore: boolean
-  loadMore: () => Promise<void>
-  isFetchingMore: boolean
-}
-
-// Common hook options with enhanced typing
-export interface QueryOptions<T> {
-  enabled?: boolean
-  refetchInterval?: number
-  refetchOnWindowFocus?: boolean
-  retry?: number | boolean
-  retryDelay?: number
-  onSuccess?: (data: T) => void
-  onError?: (error: Error) => void
-  select?: (data: T) => T
-  suspense?: boolean
-}
-
-export interface MutationOptions<T, E = Error> {
-  onSuccess?: (data: T) => void | Promise<void>
-  onError?: (error: E) => void
-  onSettled?: (data: T | null, error: E | null) => void
-  throwOnError?: boolean
-}
-
-// Pagination and sorting with proper typing
-export interface PaginationState {
-  pageIndex: number
-  pageSize: number
-  total?: number
-}
-
-export interface SortingState {
+export type TemplateTask = {
   id: string
-  desc: boolean
+  title: string
+  description: string
+  order_index: number
+  priority: 'low' | 'medium' | 'high' | 'urgent'
+  template_id: string
+  dependencies: string[]
+  created_at: string
+  updated_at: string
 }
 
-// Enhanced filter types
-export interface DateRangeFilter {
-  from?: Date
-  to?: Date
+export type TaxReturn = {
+  id?: string
+  project_id?: string
+  tax_year: number
+  filing_type?: string
+  status?: string
+  filing_deadline?: string
+  extension_filed?: boolean
+  created_at?: string
+  updated_at?: string
 }
 
-export interface FilterState {
+export type WorkflowStatus = 'draft' | 'in_progress' | 'completed' | 'archived'
+export type WorkflowTask = Task & { workflow_id?: string }
+
+export type ClientOnboardingWorkflow = Database['public']['Tables']['client_onboarding_workflows']['Row'] & {
+  steps?: Array<{
+    title: string
+    description?: string
+    status: 'pending' | 'in_progress' | 'completed'
+  }>
+}
+
+export type Document = Database['public']['Tables']['client_documents']['Row'] & {
+  project?: Database['public']['Tables']['projects']['Row'] | null
+  client?: Database['public']['Tables']['clients']['Row'] | null
+}
+
+export type DocumentFormData = Omit<Document, 'id' | 'uploaded_at'>
+
+export type Note = Database['public']['Tables']['notes']['Row']
+
+export type PayrollService = Database['public']['Tables']['payroll_services']['Row']
+
+export type Priority = 'low' | 'medium' | 'high' | 'urgent'
+export type ServiceCategory = 'tax_returns' | 'payroll' | 'accounting' | 'tax_planning' | 'compliance' | 'uncategorized'
+
+export type ProjectFilters = {
   search?: string
-  status?: ProjectStatus[] | TaskStatus[]
-  priority?: Priority[]
-  assignee?: string[]
-  category?: ServiceCategory[] | TaskCategory[]
+  service?: string[]
+  serviceType?: string[]
+  service_category?: string[]
+  status?: string[]
+  priority?: string[]
+  dateRange?: { start: string; end: string }
+  dueDateRange?: { from: Date; to: Date }
+  clientId?: string
+  teamMemberId?: string
   tags?: string[]
-  dateRange?: DateRangeFilter
-  client?: string
-  service?: ServiceCategory[]
-  reviewStatus?: ReviewStatus[]
-  hasAttachments?: boolean
-  isArchived?: boolean
+  hasDocuments?: boolean
+  hasNotes?: boolean
+  hasTimeEntries?: boolean
+  returnType?: string[]
+  reviewStatus?: string[]
+  dueThisWeek?: boolean
+  dueThisMonth?: boolean
+  dueThisQuarter?: boolean
+}
+
+export type ProjectAnalytics = {
+  completionRate: number
+  riskLevel: string
+  predictedDelay: number
+  resourceUtilization: number
+  recommendations: string[]
 }

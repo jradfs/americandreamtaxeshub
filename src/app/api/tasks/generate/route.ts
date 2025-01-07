@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
-import { classifyTask } from 'src/lib/ai/tasks';
+import { classifyTask } from '@/lib/ai/tasks';
 
 interface TemplateTask {
   title: string;

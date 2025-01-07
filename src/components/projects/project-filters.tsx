@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Calendar } from "@/components/ui/calendar";
+import type { Priority, ServiceCategory, ProjectStatus } from "@/types/hooks";
 import {
   Select,
   SelectContent,
@@ -18,7 +19,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { DateRange } from "react-day-picker";
+import type { DateRange } from "react-day-picker";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { 
@@ -27,7 +28,8 @@ import {
   X,
   ArrowUpDown,
 } from "lucide-react";
-import { ProjectFilters as ProjectFiltersType, defaultFilters } from "@/hooks/useProjectFilters";
+import type { ProjectFilters as ProjectFiltersType } from "@/hooks/useProjectFilters";
+import { defaultFilters } from "@/hooks/useProjectFilters";
 import { Badge } from "@/components/ui/badge";
 import { ClientCombobox } from "@/components/clients/client-combobox";
 
@@ -55,9 +57,9 @@ export function ProjectFilters({ filters, onChange, clientOptions = [] }: Projec
 
   const hasActiveFilters = 
     filters.search !== "" || 
-    filters.status !== "all" ||
-    filters.priority !== "all" ||
-    filters.stage !== "all" ||
+    filters.status.length > 0 ||
+    filters.priority.length > 0 ||
+    filters.service_category.length > 0 ||
     filters.clientId !== "all" ||
     filters.dateRange !== undefined;
 
@@ -96,8 +98,11 @@ export function ProjectFilters({ filters, onChange, clientOptions = [] }: Projec
         <div className="flex flex-wrap gap-2 items-center">
           {/* Status Filter */}
           <Select
-            value={filters.status}
-            onValueChange={(value) => onChange({ ...filters, status: value })}
+            value={filters.status.length > 0 ? filters.status[0] : "all"}
+            onValueChange={(value) => onChange({ 
+              ...filters, 
+              status: value === "all" ? [] : [value as ProjectStatus] 
+            })}
           >
             <SelectTrigger className="w-[130px]">
               <SelectValue placeholder="Status" />
@@ -108,13 +113,21 @@ export function ProjectFilters({ filters, onChange, clientOptions = [] }: Projec
               <SelectItem value="in_progress">In Progress</SelectItem>
               <SelectItem value="completed">Completed</SelectItem>
               <SelectItem value="on_hold">On Hold</SelectItem>
+              <SelectItem value="blocked">Blocked</SelectItem>
+              <SelectItem value="review">Review</SelectItem>
+              <SelectItem value="not_started">Not Started</SelectItem>
+              <SelectItem value="cancelled">Cancelled</SelectItem>
+              <SelectItem value="archived">Archived</SelectItem>
             </SelectContent>
           </Select>
 
           {/* Priority Filter */}
           <Select
-            value={filters.priority}
-            onValueChange={(value) => onChange({ ...filters, priority: value })}
+            value={filters.priority.length > 0 ? filters.priority[0] : "all"}
+            onValueChange={(value) => onChange({ 
+              ...filters, 
+              priority: value === "all" ? [] : [value as Priority] 
+            })}
           >
             <SelectTrigger className="w-[130px]">
               <SelectValue placeholder="Priority" />
@@ -124,23 +137,29 @@ export function ProjectFilters({ filters, onChange, clientOptions = [] }: Projec
               <SelectItem value="low">Low</SelectItem>
               <SelectItem value="medium">Medium</SelectItem>
               <SelectItem value="high">High</SelectItem>
+              <SelectItem value="urgent">Urgent</SelectItem>
             </SelectContent>
           </Select>
 
           {/* Stage Filter */}
           <Select
-            value={filters.stage}
-            onValueChange={(value) => onChange({ ...filters, stage: value })}
+            value={filters.service_category.length > 0 ? filters.service_category[0] : "all"}
+            onValueChange={(value) => onChange({ 
+              ...filters, 
+              service_category: value === "all" ? [] : [value as ServiceCategory] 
+            })}
           >
             <SelectTrigger className="w-[130px]">
               <SelectValue placeholder="Stage" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Stages</SelectItem>
-              <SelectItem value="planning">Planning</SelectItem>
-              <SelectItem value="preparation">Preparation</SelectItem>
-              <SelectItem value="review">Review</SelectItem>
-              <SelectItem value="filing">Filing</SelectItem>
+              <SelectItem value="tax_returns">Tax Returns</SelectItem>
+              <SelectItem value="payroll">Payroll</SelectItem>
+              <SelectItem value="accounting">Accounting</SelectItem>
+              <SelectItem value="tax_planning">Tax Planning</SelectItem>
+              <SelectItem value="compliance">Compliance</SelectItem>
+              <SelectItem value="uncategorized">Uncategorized</SelectItem>
             </SelectContent>
           </Select>
 

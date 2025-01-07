@@ -1,226 +1,164 @@
-import { createServerClient } from '@supabase/ssr'
-import { NextResponse } from 'next/server'
-import { cookies } from 'next/headers'
-import { Database } from '@/types/database.types'
-import { TaskFormData, TaskWithRelations } from '@/types/tasks'
+import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
+import { cookies } from 'next/headers';
+import { NextResponse } from 'next/server';
+import { Database } from '@/types/database.types';
+import { taskSchema } from '@/types/validation';
+import type { z } from 'zod';
+
+type TaskInsert = Database['public']['Tables']['tasks']['Insert'];
+type ValidatedTask = z.infer<typeof taskSchema>;
 
 export async function GET(request: Request) {
   try {
-    const cookieStore = await cookies()
-    const supabase = createServerClient<Database>(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          get(name: string) {
-            return cookieStore.get(name)?.value
-          },
-        },
-      }
-    )
+    const { searchParams } = new URL(request.url);
+    const projectId = searchParams.get('projectId');
+    const clientId = searchParams.get('clientId');
+    const assigneeId = searchParams.get('assigneeId');
 
-    const { searchParams } = new URL(request.url)
-    const projectId = searchParams.get('projectId')
-    const assigneeId = searchParams.get('assigneeId')
+    const supabase = createRouteHandlerClient<Database>({ cookies });
 
     let query = supabase
       .from('tasks')
       .select(`
         *,
-        assignee:assignee_id (*),
-        project:project_id (
-          id,
-          title,
-          client_id
-        )
-      `)
-      .order('due_date', { ascending: true })
+        assignee:profiles(id, full_name, email),
+        project:projects(id, name),
+        parent_task:tasks(id, title)
+      `);
 
     if (projectId) {
-      query = query.eq('project_id', projectId)
+      query = query.eq('project_id', projectId);
     }
-
+    if (clientId) {
+      query = query.eq('client_id', clientId);
+    }
     if (assigneeId) {
-      query = query.eq('assignee_id', assigneeId)
+      query = query.eq('assignee_id', assigneeId);
     }
 
-    const { data: tasks, error } = await query
+    const { data, error } = await query;
 
     if (error) {
-      throw error
+      throw error;
     }
 
-    return NextResponse.json(tasks)
+    return NextResponse.json(data);
   } catch (error) {
-    console.error('Error fetching tasks:', error)
+    console.error('Error fetching tasks:', error);
     return NextResponse.json(
       { error: 'Failed to fetch tasks' },
       { status: 500 }
-    )
+    );
   }
 }
 
 export async function POST(request: Request) {
   try {
-    const cookieStore = await cookies()
-    const supabase = createServerClient<Database>(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          get(name: string) {
-            return cookieStore.get(name)?.value
-          },
-        },
-      }
-    )
+    const formData = await request.json();
+    const validatedData: ValidatedTask = taskSchema.parse(formData);
 
-    const body: TaskFormData = await request.json()
+    const supabase = createRouteHandlerClient<Database>({ cookies });
 
-    const { data: task, error: taskError } = await supabase
+    // Convert form data to database format
+    const taskData: TaskInsert = {
+      title: validatedData.title,
+      description: validatedData.description,
+      status: validatedData.status,
+      priority: validatedData.priority,
+      due_date: validatedData.due_date,
+      assignee_id: validatedData.assignee_id,
+      project_id: validatedData.project_id,
+    };
+
+    const { data, error } = await supabase
       .from('tasks')
-      .insert({
-        ...body,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      })
+      .insert([taskData])
       .select()
-      .single()
+      .single();
 
-    if (taskError) {
-      throw taskError
+    if (error) {
+      throw error;
     }
 
-    // Fetch the complete task with relations
-    const { data: fullTask, error: fetchError } = await supabase
-      .from('tasks')
-      .select(`
-        *,
-        assignee:assignee_id (*),
-        project:project_id (
-          id,
-          title,
-          client_id
-        )
-      `)
-      .eq('id', task.id)
-      .single()
-
-    if (fetchError) {
-      throw fetchError
-    }
-
-    return NextResponse.json(fullTask)
+    return NextResponse.json(data);
   } catch (error) {
-    console.error('Error creating task:', error)
+    console.error('Error creating task:', error);
     return NextResponse.json(
       { error: 'Failed to create task' },
       { status: 500 }
-    )
+    );
   }
 }
 
 export async function PUT(request: Request) {
   try {
-    const cookieStore = await cookies()
-    const supabase = createServerClient<Database>(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          get(name: string) {
-            return cookieStore.get(name)?.value
-          },
-        },
-      }
-    )
+    const { id, ...updates } = await request.json();
+    const validatedData: Partial<ValidatedTask> = taskSchema.partial().parse(updates);
 
-    const { id, ...updates }: TaskFormData & { id: string } = await request.json()
+    const supabase = createRouteHandlerClient<Database>({ cookies });
 
-    const { data: task, error: taskError } = await supabase
+    // Convert form data to database format
+    const taskData: Partial<TaskInsert> = {
+      title: validatedData.title,
+      description: validatedData.description,
+      status: validatedData.status,
+      priority: validatedData.priority,
+      due_date: validatedData.due_date,
+      assignee_id: validatedData.assignee_id,
+      project_id: validatedData.project_id,
+    };
+
+    const { data, error } = await supabase
       .from('tasks')
-      .update({
-        ...updates,
-        updated_at: new Date().toISOString()
-      })
+      .update(taskData)
       .eq('id', id)
       .select()
-      .single()
+      .single();
 
-    if (taskError) {
-      throw taskError
+    if (error) {
+      throw error;
     }
 
-    // Fetch the complete task with relations
-    const { data: updatedTask, error: fetchError } = await supabase
-      .from('tasks')
-      .select(`
-        *,
-        assignee:assignee_id (*),
-        project:project_id (
-          id,
-          title,
-          client_id
-        )
-      `)
-      .eq('id', id)
-      .single()
-
-    if (fetchError) {
-      throw fetchError
-    }
-
-    return NextResponse.json(updatedTask)
+    return NextResponse.json(data);
   } catch (error) {
-    console.error('Error updating task:', error)
+    console.error('Error updating task:', error);
     return NextResponse.json(
       { error: 'Failed to update task' },
       { status: 500 }
-    )
+    );
   }
 }
 
 export async function DELETE(request: Request) {
   try {
-    const cookieStore = await cookies()
-    const supabase = createServerClient<Database>(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          get(name: string) {
-            return cookieStore.get(name)?.value
-          },
-        },
-      }
-    )
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
 
-    const { searchParams } = new URL(request.url)
-    const taskId = searchParams.get('id')
-
-    if (!taskId) {
+    if (!id) {
       return NextResponse.json(
         { error: 'Task ID is required' },
         { status: 400 }
-      )
+      );
     }
+
+    const supabase = createRouteHandlerClient<Database>({ cookies });
 
     const { error } = await supabase
       .from('tasks')
       .delete()
-      .eq('id', taskId)
+      .eq('id', id);
 
     if (error) {
-      throw error
+      throw error;
     }
 
-    return NextResponse.json({ success: true })
+    return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Error deleting task:', error)
+    console.error('Error deleting task:', error);
     return NextResponse.json(
       { error: 'Failed to delete task' },
       { status: 500 }
-    )
+    );
   }
 }
 

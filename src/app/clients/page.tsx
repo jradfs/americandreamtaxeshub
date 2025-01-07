@@ -1,7 +1,7 @@
 'use client'
 
-import { ClientList } from 'src/components/clients/client-list.tsx';
-import { Toaster } from 'src/components/ui/toaster.tsx';
+import { ClientList } from '@/components/clients/client-list';
+import { Toaster } from '@/components/ui/toaster';
 
 export default function ClientsPage() {
   return (

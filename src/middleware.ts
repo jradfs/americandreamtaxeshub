@@ -1,61 +1,76 @@
-import { createMiddlewareClient } from '@supabase/ssr'
-import { NextResponse } from 'next/server'
-import type { NextRequest } from 'next/server'
+import { createServerClient, type CookieOptions } from '@supabase/ssr'
+import { NextResponse, type NextRequest } from 'next/server'
 
-// Public routes that don't require authentication
-const publicRoutes = ['/login', '/auth/callback', '/']
-
-// Routes that require authentication
-const protectedRoutes = ['/dashboard', '/clients', '/projects', '/tasks', '/templates']
-
-export async function middleware(req: NextRequest) {
-  const res = NextResponse.next()
-  const supabase = createMiddlewareClient({ req, res }, {
-    supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    supabaseKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+export async function middleware(request: NextRequest) {
+  let response = NextResponse.next({
+    request: {
+      headers: request.headers,
+    },
   })
 
-  // Get session - this will refresh the session if needed
-  const { data: { session }, error } = await supabase.auth.getSession()
-
-  // Check if the route is public
-  const isPublicRoute = publicRoutes.some(route => req.nextUrl.pathname === route)
-  
-  // Check if the route requires authentication
-  const requiresAuth = protectedRoutes.some(route => req.nextUrl.pathname.startsWith(route))
-
-  // Handle authentication errors
-  if (error) {
-    console.error('Auth error:', error)
-    if (requiresAuth) {
-      return NextResponse.redirect(new URL('/login', req.url))
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name: string) {
+          return request.cookies.get(name)?.value
+        },
+        set(name: string, value: string, options: CookieOptions) {
+          request.cookies.set({
+            name,
+            value,
+            ...options,
+          })
+          response = NextResponse.next({
+            request: {
+              headers: request.headers,
+            },
+          })
+          response.cookies.set({
+            name,
+            value,
+            ...options,
+          })
+        },
+        remove(name: string, options: CookieOptions) {
+          request.cookies.set({
+            name,
+            value: '',
+            ...options,
+          })
+          response = NextResponse.next({
+            request: {
+              headers: request.headers,
+            },
+          })
+          response.cookies.set({
+            name,
+            value: '',
+            ...options,
+          })
+        },
+      },
     }
-    return res
+  )
+
+  const { data: { user } } = await supabase.auth.getUser()
+
+  // If user is not signed in and the current path is not /auth/login,
+  // redirect the user to /auth/login
+  if (!user && !request.nextUrl.pathname.startsWith('/auth')) {
+    return NextResponse.redirect(new URL('/auth/login', request.url))
   }
 
-  // If we have a session but we're on a public route (like /login),
-  // redirect to dashboard
-  if (session && isPublicRoute && req.nextUrl.pathname === '/login') {
-    return NextResponse.redirect(new URL('/dashboard', req.url))
+  // If user is signed in and the current path is /auth/login,
+  // redirect the user to /dashboard
+  if (user && request.nextUrl.pathname.startsWith('/auth')) {
+    return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 
-  // If we don't have a session and the route requires auth,
-  // redirect to login
-  if (!session && requiresAuth) {
-    return NextResponse.redirect(new URL('/login', req.url))
-  }
-
-  return res
+  return response
 }
 
 export const config = {
-  matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     */
-    '/((?!_next/static|_next/image|favicon.ico).*)',
-  ],
+  matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
 }

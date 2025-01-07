@@ -1,45 +1,67 @@
 import { useState, useEffect } from 'react'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { Database } from '@/types/database.types'
-import { WorkflowTemplate, WorkflowStage, WorkflowTask } from '@/types/hooks'
+import { 
+  DbWorkflowTemplate,
+  DbWorkflowTemplateInsert,
+  WorkflowTemplateWithRelations,
+  WorkflowStep,
+  WorkflowStatus,
+  WORKFLOW_STATUS
+} from '@/types/workflows'
 
 interface CreateWorkflowRequest {
-  title: string
-  description?: string
-  stages: Array<{
-    title: string
-    description?: string
-    order_index: number
-    tasks: Array<{
-      title: string
-      description?: string
-      priority: Database['public']['Enums']['task_priority']
-      dependencies?: string[]
-    }>
-  }>
+  name: string
+  description?: string | null
+  steps: WorkflowStep[]
 }
 
-export function useWorkflows() {
-  const [workflows, setWorkflows] = useState<WorkflowTemplate[]>([])
+interface UseWorkflowsOptions {
+  initialFilters?: {
+    status?: WorkflowStatus
+    search?: string
+  }
+  pageSize?: number
+}
+
+export function useWorkflows(options: UseWorkflowsOptions = {}) {
+  const [workflows, setWorkflows] = useState<WorkflowTemplateWithRelations[]>([])
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useState<Error | null>(null)
+  const [filters, setFilters] = useState(options.initialFilters || {})
+  const [page, setPage] = useState(1)
+  const [pageSize] = useState(options.pageSize || 10)
+
   const supabase = createClientComponentClient<Database>()
 
   useEffect(() => {
     fetchWorkflows()
-  }, [])
+  }, [filters, page, pageSize])
 
   async function fetchWorkflows() {
     try {
-      const { data, error: fetchError } = await supabase
+      let query = supabase
         .from('workflow_templates')
         .select(`
           *,
-          stages:workflow_stages (
-            *,
-            tasks:workflow_tasks (*)
-          )
+          workflows:client_onboarding_workflows(*)
         `)
+
+      // Apply filters
+      if (filters.status) {
+        query = query.eq('status', filters.status)
+      }
+      if (filters.search) {
+        query = query.ilike('name', `%${filters.search}%`)
+      }
+
+      // Apply pagination
+      const from = (page - 1) * pageSize
+      const to = from + pageSize - 1
+      query = query.range(from, to)
+
+      // Execute query
+      const { data, error: fetchError } = await query
         .order('created_at', { ascending: false })
 
       if (fetchError) throw fetchError
@@ -48,109 +70,53 @@ export function useWorkflows() {
       setError(null)
     } catch (err) {
       console.error('Error fetching workflows:', err)
-      setError('Failed to fetch workflows')
+      setError(err instanceof Error ? err : new Error('Failed to fetch workflows'))
       setWorkflows([])
     } finally {
       setLoading(false)
     }
   }
 
-  async function createWorkflow(workflowData: CreateWorkflowRequest) {
+  async function createWorkflow(workflowData: CreateWorkflowRequest): Promise<{ data: WorkflowTemplateWithRelations | null, error: Error | null }> {
     try {
-      // Create workflow template
-      const { data: workflow, error: workflowError } = await supabase
+      const { data, error: createError } = await supabase
         .from('workflow_templates')
         .insert({
-          title: workflowData.title,
+          name: workflowData.name,
           description: workflowData.description,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        })
-        .select()
-        .single()
-
-      if (workflowError) throw workflowError
-
-      // Create stages
-      for (const stage of workflowData.stages) {
-        const { data: stageData, error: stageError } = await supabase
-          .from('workflow_stages')
-          .insert({
-            workflow_id: workflow.id,
-            title: stage.title,
-            description: stage.description,
-            order_index: stage.order_index
-          })
-          .select()
-          .single()
-
-        if (stageError) {
-          // If stage creation fails, delete the workflow to maintain consistency
-          await supabase.from('workflow_templates').delete().eq('id', workflow.id)
-          throw stageError
-        }
-
-        // Create tasks for this stage
-        if (stage.tasks && stage.tasks.length > 0) {
-          const { error: tasksError } = await supabase
-            .from('workflow_tasks')
-            .insert(
-              stage.tasks.map((task, index) => ({
-                ...task,
-                stage_id: stageData.id,
-                order_index: index
-              }))
-            )
-
-          if (tasksError) {
-            // If task creation fails, delete the workflow to maintain consistency
-            await supabase.from('workflow_templates').delete().eq('id', workflow.id)
-            throw tasksError
-          }
-        }
-      }
-
-      // Fetch the complete workflow with relations
-      const { data: fullWorkflow, error: fetchError } = await supabase
-        .from('workflow_templates')
+          steps: workflowData.steps
+        } satisfies DbWorkflowTemplateInsert)
         .select(`
           *,
-          stages:workflow_stages (
-            *,
-            tasks:workflow_tasks (*)
-          )
+          workflows:client_onboarding_workflows(*)
         `)
-        .eq('id', workflow.id)
         .single()
 
-      if (fetchError) throw fetchError
+      if (createError) throw createError
 
-      setWorkflows(prev => [fullWorkflow, ...prev])
-      return { data: fullWorkflow, error: null }
+      setWorkflows(prev => [data, ...prev])
+      return { data, error: null }
     } catch (err) {
       console.error('Error creating workflow:', err)
-      return { data: null, error: 'Failed to create workflow' }
+      return { 
+        data: null, 
+        error: err instanceof Error ? err : new Error('Failed to create workflow')
+      }
     }
   }
 
   async function updateWorkflow(
-    workflowId: string,
-    updates: Partial<WorkflowTemplate>
-  ) {
+    id: number,
+    updates: Partial<DbWorkflowTemplate>
+  ): Promise<{ data: WorkflowTemplateWithRelations | null, error: Error | null }> {
     try {
       const { data, error: updateError } = await supabase
         .from('workflow_templates')
-        .update({
-          ...updates,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', workflowId)
+        .update(updates)
+        .eq('id', id)
         .select(`
           *,
-          stages:workflow_stages (
-            *,
-            tasks:workflow_tasks (*)
-          )
+          workflows:client_onboarding_workflows(*)
         `)
         .single()
 
@@ -158,30 +124,35 @@ export function useWorkflows() {
 
       setWorkflows(prev =>
         prev.map(workflow =>
-          workflow.id === workflowId ? data : workflow
+          workflow.id === id ? data : workflow
         )
       )
       return { data, error: null }
     } catch (err) {
       console.error('Error updating workflow:', err)
-      return { data: null, error: 'Failed to update workflow' }
+      return { 
+        data: null, 
+        error: err instanceof Error ? err : new Error('Failed to update workflow')
+      }
     }
   }
 
-  async function deleteWorkflow(workflowId: string) {
+  async function deleteWorkflow(id: number): Promise<{ error: Error | null }> {
     try {
       const { error: deleteError } = await supabase
         .from('workflow_templates')
         .delete()
-        .eq('id', workflowId)
+        .eq('id', id)
 
       if (deleteError) throw deleteError
 
-      setWorkflows(prev => prev.filter(workflow => workflow.id !== workflowId))
+      setWorkflows(prev => prev.filter(workflow => workflow.id !== id))
       return { error: null }
     } catch (err) {
       console.error('Error deleting workflow:', err)
-      return { error: 'Failed to delete workflow' }
+      return { 
+        error: err instanceof Error ? err : new Error('Failed to delete workflow')
+      }
     }
   }
 
@@ -189,6 +160,11 @@ export function useWorkflows() {
     workflows,
     loading,
     error,
+    filters,
+    page,
+    pageSize,
+    setFilters,
+    setPage,
     fetchWorkflows,
     createWorkflow,
     updateWorkflow,

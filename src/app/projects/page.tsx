@@ -1,5 +1,5 @@
 import { Metadata } from "next";
-import { ProjectList } from "@/components/projects/project-list";
+import ProjectList from "@/components/projects/project-list";
 import { NewProjectButton } from "@/components/projects/new-project-button";
 
 export const metadata: Metadata = {

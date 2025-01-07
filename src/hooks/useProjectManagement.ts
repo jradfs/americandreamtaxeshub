@@ -1,177 +1,218 @@
-'use client'
-
-import { useState, useCallback, useMemo } from 'react'
-import { addDays, isAfter, isBefore, startOfDay, addMonths, isWithinInterval } from 'date-fns'
-import { 
+import { useState, useCallback, useMemo, useEffect } from 'react';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { format, startOfWeek, endOfWeek, addMonths } from 'date-fns';
+import type { 
   ProjectWithRelations, 
   ServiceCategory, 
   TaxReturnType, 
-  ProjectStatus,
-  Priority,
-  ReviewStatus
-} from '@/types/projects'
-import { useProjects } from './useProjects'
+  ProjectStatus, 
+  Priority 
+} from '@/types/projects';
+import type { ReviewStatus } from '@/types/tasks';
+import { useToast } from '@/components/ui/use-toast';
+import { useProjectFilters } from './useProjectFilters';
+import type { ProjectFilters } from './useProjectFilters';
 
-export type ProjectView = 'service' | 'deadline' | 'status' | 'client' | 'return_type' | 'review_status' | 'priority'
+export function useProjectManagement(): {
+  projects: ProjectWithRelations[];
+  loading: boolean;
+  error: Error | null;
+  filters: ProjectFilters;
+  updateFilters: (updates: Partial<ProjectFilters>) => void;
+  resetFilters: () => void;
+  filterProjects: (projects: ProjectWithRelations[]) => ProjectWithRelations[];
+  groupProjects: (projects: ProjectWithRelations[], groupBy: string) => { [key: string]: ProjectWithRelations[] };
+  refresh: () => Promise<void>;
+  bulkUpdateProjects: (projectIds: string[], updates: Partial<ProjectWithRelations>) => Promise<boolean>;
+  archiveProjects: (projectIds: string[]) => Promise<boolean>;
+} {
+  const [projects, setProjects] = useState<ProjectWithRelations[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+  const { toast } = useToast();
+  const supabase = createClientComponentClient();
+  const { filters, updateFilters, resetFilters, filterProjects: applyFilters } = useProjectFilters();
 
-import { ProjectFilters } from '@/types/projects';
+  const groupKeyMap = {
+    status: (project: ProjectWithRelations) => project.status || 'No Status',
+    service: (project: ProjectWithRelations) => project.service_category || 'Uncategorized',
+    deadline: (project: ProjectWithRelations) => {
+      if (!project.due_date) return 'No Due Date';
+      const dueDate = new Date(project.due_date);
+      const today = new Date();
+      const weekStart = startOfWeek(today);
+      const weekEnd = endOfWeek(today);
 
-const defaultFilters: ProjectFilters = {
-  search: ''
-}
+      if (dueDate < today) return 'Overdue';
+      if (dueDate <= weekEnd) return 'This Week';
+      if (dueDate <= addMonths(today, 1)) return 'Next Month';
+      return 'Later';
+    },
+    client: (project: ProjectWithRelations) => project.client?.name || 'No Client'
+  };
 
-// Tax-specific constants
-const TAX_DEADLINES: Record<TaxReturnType, { normal: string; extended: string }> = {
-  '1040': { normal: '04-15', extended: '10-15' },
-  '1120': { normal: '04-15', extended: '10-15' },
-  '1065': { normal: '03-15', extended: '09-15' },
-  '1120S': { normal: '03-15', extended: '09-15' },
-  '990': { normal: '05-15', extended: '11-15' },
-  '941': { normal: 'quarterly', extended: 'N/A' },
-  '940': { normal: '01-31', extended: 'N/A' },
-  'other': { normal: '04-15', extended: '10-15' }
-}
+  const fetchProjects = useCallback(async () => {
+    try {
+      setLoading(true);
+      const { data, error: fetchError } = await supabase
+        .from('projects')
+        .select(`
+          *,
+          client:clients(*),
+          tasks:project_tasks(*),
+          tax_return:tax_returns(*)
+        `);
 
-const ESTIMATED_TAX_DEADLINES = ['04-15', '06-15', '09-15', '01-15']
+      if (fetchError) throw fetchError;
 
-interface ProjectMetrics {
-  totalProjects: number
-  completedProjects: number
-  completionRate: number
-  averageTimeToComplete: number
-  projectsByService: Record<ServiceCategory, number>
-  projectsByStatus: Record<ProjectStatus, number>
-  projectsByPriority: Record<Priority, number>
-  upcomingDeadlines: Array<{
-    date: Date
-    count: number
-    projects: ProjectWithRelations[]
-  }>
-  clientDistribution: Array<{
-    clientId: string
-    clientName: string
-    projectCount: number
-  }>
-  teamWorkload: Array<{
-    userId: string
-    userName: string
-    projectCount: number
-    totalEstimatedHours: number
-  }>
-}
+      const processedProjects = data.map(project => ({
+        ...project,
+        completion_percentage: calculateCompletionPercentage(project)
+      }));
 
-// Helper functions
-const isWithinNextDays = (date: Date, days: number): boolean => {
-  const today = startOfDay(new Date())
-  const future = addDays(today, days)
-  return isWithinInterval(date, { start: today, end: future })
-}
+      setProjects(processedProjects);
+      setError(null);
+    } catch (err) {
+      console.error('Error fetching projects:', err);
+      setError(err instanceof Error ? err : new Error('Failed to fetch projects'));
+      toast({
+        title: 'Error',
+        description: 'Failed to fetch projects. Please try again.',
+        variant: 'destructive'
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, [supabase, toast]);
 
-export function useProjectManagement(initialFilters?: ProjectFilters) {
-  const { 
-    projects, 
-    loading, 
-    error, 
-    refresh,
-    filters: baseFilters,
-    setFilters: setBaseFilters,
-    pagination,
-    setPagination,
-    sorting,
-    setSorting
-  } = useProjects(initialFilters)
+  useEffect(() => {
+    fetchProjects();
 
-  const [view, setView] = useState<ProjectView>('service')
-  const [filters, setFilters] = useState<ProjectFilters>(initialFilters || defaultFilters)
-  const [selectedFilters, setSelectedFilters] = useState<string[]>([])
+    const projectsChannel = supabase
+      .channel('projects_changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'projects' },
+        fetchProjects
+      )
+      .subscribe();
 
-  // Tax-specific deadline calculations - Moved before getProjectDeadline
+    return () => {
+      projectsChannel.unsubscribe();
+    };
+  }, [fetchProjects, supabase]);
+
+  const calculateCompletionPercentage = (project: ProjectWithRelations): number => {
+    if (!project.tasks?.length) return 0;
+    const completedTasks = project.tasks.filter(task => task.status === 'completed').length;
+    return Math.round((completedTasks / project.tasks.length) * 100);
+  };
+
+  const groupProjects = useCallback((projects: ProjectWithRelations[], groupBy: string) => {
+    const groupedProjects: { [key: string]: ProjectWithRelations[] } = {};
+    const getGroupKey = groupKeyMap[groupBy as keyof typeof groupKeyMap] || groupKeyMap.status;
+
+    projects.forEach(project => {
+      const key = getGroupKey(project);
+      if (!groupedProjects[key]) {
+        groupedProjects[key] = [];
+      }
+      groupedProjects[key].push(project);
+    });
+
+    return groupedProjects;
+  }, []);
+
+  const bulkUpdateProjects = async (projectIds: string[], updates: Partial<ProjectWithRelations>) => {
+    try {
+      const { error: updateError } = await supabase
+        .from('projects')
+        .update(updates)
+        .in('id', projectIds);
+
+      if (updateError) throw updateError;
+
+      await fetchProjects();
+      return true;
+    } catch (err) {
+      console.error('Error updating projects:', err);
+      throw new Error('Failed to update projects');
+    }
+  };
+
+  const archiveProjects = async (projectIds: string[]) => {
+    return bulkUpdateProjects(projectIds, { 
+      status: 'archived',
+      updated_at: new Date().toISOString()
+    });
+  };
+
+  const TAX_DEADLINES: Record<TaxReturnType, { normal: string; extended: string }> = {
+    '1040': { normal: '04-15', extended: '10-15' },
+    '1120': { normal: '04-15', extended: '10-15' },
+    '1065': { normal: '03-15', extended: '09-15' },
+    '1120S': { normal: '03-15', extended: '09-15' },
+    '990': { normal: '05-15', extended: '11-15' },
+    '941': { normal: 'quarterly', extended: 'N/A' },
+    '940': { normal: '01-31', extended: 'N/A' },
+    'other': { normal: '04-15', extended: '10-15' }
+  };
+
+  const ESTIMATED_TAX_DEADLINES = ['04-15', '06-15', '09-15', '01-15'];
+
   const getDeadline = useCallback((returnType: TaxReturnType, isExtended: boolean = false): Date => {
-    const currentYear = new Date().getFullYear()
-    const deadlineType = isExtended ? 'extended' : 'normal'
-    const monthDay = TAX_DEADLINES[returnType]?.[deadlineType] || '04-15'
-    return new Date(`${currentYear}-${monthDay}`)
-  }, [])
+    const currentYear = new Date().getFullYear();
+    const deadlineType = isExtended ? 'extended' : 'normal';
+    const monthDay = TAX_DEADLINES[returnType]?.[deadlineType] || '04-15';
+    return new Date(`${currentYear}-${monthDay}`);
+  }, []);
 
   const getNextEstimatedTaxDeadline = useCallback(() => {
-    const today = startOfDay(new Date())
-    const currentYear = today.getFullYear()
+    const today = new Date();
+    const currentYear = today.getFullYear();
     
     for (const deadline of ESTIMATED_TAX_DEADLINES) {
-      const deadlineDate = new Date(`${currentYear}-${deadline}`)
-      if (isAfter(deadlineDate, today)) {
-        return deadlineDate
+      const deadlineDate = new Date(`${currentYear}-${deadline}`);
+      if (new Date(deadlineDate) > today) {
+        return deadlineDate;
       }
     }
     
-    return new Date(`${currentYear + 1}-${ESTIMATED_TAX_DEADLINES[0]}`)
-  }, [])
+    return new Date(`${currentYear + 1}-${ESTIMATED_TAX_DEADLINES[0]}`);
+  }, []);
 
-  // Helper function to get project deadline - Now getDeadline is defined before this
   const getProjectDeadline = useCallback((project: ProjectWithRelations): Date | null => {
     if (project.due_date) {
-      return new Date(project.due_date)
+      return new Date(project.due_date);
     }
     if (project.tax_info?.filing_deadline) {
-      return new Date(project.tax_info.filing_deadline)
+      return new Date(project.tax_info.filing_deadline);
     }
     if (project.payroll_info?.next_payroll_date) {
-      return new Date(project.payroll_info.next_payroll_date)
+      return new Date(project.payroll_info.next_payroll_date);
     }
     if (project.business_services_info?.due_date) {
-      return new Date(project.business_services_info.due_date)
+      return new Date(project.business_services_info.due_date);
     }
     if (project.tax_info?.return_type) {
-      const isExtended = project.tax_info.is_extended || false
-      return getDeadline(project.tax_info.return_type, isExtended)
+      const isExtended = project.tax_info.is_extended || false;
+      return getDeadline(project.tax_info.return_type, isExtended);
     }
-    return null
-  }, [getDeadline])
-
-  const updateFilters = useCallback((newFilters: Partial<ProjectFilters>, filterKey: string) => {
-    setFilters(current => {
-      const updatedFilters = { ...current }
-      
-      if (selectedFilters.includes(filterKey)) {
-        Object.keys(newFilters).forEach(key => {
-          delete updatedFilters[key as keyof ProjectFilters]
-        })
-        setSelectedFilters(prev => prev.filter(f => f !== filterKey))
-      } else {
-        Object.entries(newFilters).forEach(([key, value]) => {
-          updatedFilters[key as keyof ProjectFilters] = value
-        })
-        setSelectedFilters(prev => [...prev, filterKey])
-      }
-      
-      // Update base filters for pagination
-      setBaseFilters({
-        ...baseFilters,
-        ...updatedFilters
-      })
-      
-      return updatedFilters
-    })
-  }, [selectedFilters, baseFilters, setBaseFilters])
-
-  const clearFilters = useCallback(() => {
-    setFilters(defaultFilters)
-    setSelectedFilters([])
-    setBaseFilters({})
-  }, [setBaseFilters])
+    return null;
+  }, [getDeadline]);
 
   const filterProjects = useCallback((projects: ProjectWithRelations[]) => {
     if (!projects) return [];
     
     return projects.filter(project => {
-      const searchLower = (filters.search || '').toLowerCase()
+      const searchLower = (filters.search || '').toLowerCase();
       
       // Safely access potentially undefined properties
-      const projectTitle = project?.title || ''
-      const projectDesc = project?.description || ''
-      const clientCompany = project?.client?.company_name || ''
-      const clientName = project?.client?.full_name || ''
-      const returnType = project?.tax_info?.return_type || ''
+      const projectTitle = project?.title || '';
+      const projectDesc = project?.description || '';
+      const clientCompany = project?.client?.company_name || '';
+      const clientName = project?.client?.full_name || '';
+      const returnType = project?.tax_info?.return_type || '';
       
       const matchesSearch = !searchLower || (
         projectTitle.toLowerCase().includes(searchLower) ||
@@ -179,56 +220,53 @@ export function useProjectManagement(initialFilters?: ProjectFilters) {
         clientCompany.toLowerCase().includes(searchLower) ||
         clientName.toLowerCase().includes(searchLower) ||
         returnType.toLowerCase().includes(searchLower)
-      )
+      );
 
       const matchesService = !filters.service?.length || 
-        (project?.service_type && filters.service.includes(project.service_type))
+        (project?.service_category && filters.service.includes(project.service_category));
       
       const matchesStatus = !filters.status?.length || 
-        (project?.status && filters.status.includes(project.status))
+        (project?.status && filters.status.includes(project.status));
       
       const matchesPriority = !filters.priority?.length || 
-        (project?.priority && filters.priority.includes(project.priority))
+        (project?.priority && filters.priority.includes(project.priority));
       
       const matchesReturnType = !filters.returnType?.length || 
-        (project?.tax_info?.return_type && filters.returnType.includes(project.tax_info.return_type))
+        (project?.tax_info?.return_type && filters.returnType.includes(project.tax_info.return_type));
       
       const matchesReviewStatus = !filters.reviewStatus?.length || 
-        (project?.tax_info?.review_status && filters.reviewStatus.includes(project.tax_info.review_status))
+        (project?.tax_info?.review_status && filters.reviewStatus.includes(project.tax_info.review_status));
 
-      const deadline = getProjectDeadline(project)
+      const deadline = getProjectDeadline(project);
       const matchesDueThisWeek = !filters.dueThisWeek || 
-        (deadline && isWithinNextDays(deadline, 7))
+        (deadline && new Date(deadline) <= new Date(endOfWeek(new Date())));
 
       const matchesDueThisMonth = !filters.dueThisMonth || 
-        (deadline && isWithinNextDays(deadline, 30))
+        (deadline && new Date(deadline) <= new Date(addMonths(new Date(), 1)));
 
       const matchesDueThisQuarter = !filters.dueThisQuarter || 
-        (deadline && isWithinNextDays(deadline, 90))
+        (deadline && new Date(deadline) <= new Date(addMonths(new Date(), 3)));
 
       const matchesDateRange = !filters.dateRange || !deadline || 
-        isWithinInterval(deadline, {
-          start: filters.dateRange.start,
-          end: filters.dateRange.end
-        })
+        (new Date(deadline) >= new Date(filters.dateRange.start) && new Date(deadline) <= new Date(filters.dateRange.end));
 
       const matchesClient = !filters.clientId || 
-        project.client_id === filters.clientId
+        project.client_id === filters.clientId;
 
       const matchesTeamMember = !filters.teamMemberId || 
-        project.team_members?.some(member => member.user_id === filters.teamMemberId)
+        project.team_members?.some(member => member.user_id === filters.teamMemberId);
 
       const matchesTags = !filters.tags?.length ||
-        filters.tags.every(tag => project.tags?.includes(tag))
+        filters.tags.every(tag => project.tags?.includes(tag));
 
       const matchesDocuments = !filters.hasDocuments ||
-        (project.documents && project.documents.length > 0)
+        (project.documents && project.documents.length > 0);
 
       const matchesNotes = !filters.hasNotes ||
-        (project.notes && project.notes.length > 0)
+        (project.notes && project.notes.length > 0);
 
       const matchesTimeEntries = !filters.hasTimeEntries ||
-        (project.time_entries && project.time_entries.length > 0)
+        (project.time_entries && project.time_entries.length > 0);
 
       return (
         matchesSearch &&
@@ -247,12 +285,12 @@ export function useProjectManagement(initialFilters?: ProjectFilters) {
         matchesDocuments &&
         matchesNotes &&
         matchesTimeEntries
-      )
-    })
-  }, [filters, getProjectDeadline])
+      );
+    });
+  }, [filters, getProjectDeadline]);
 
-  const groupKeyMap: Record<ProjectView, (project: ProjectWithRelations) => string> = {
-    service: (p) => p.service_type || 'uncategorized',
+  const groupKeyMap: Record<string, (project: ProjectWithRelations) => string> = {
+    service_category: (p) => p.service_category || 'uncategorized',
     status: (p) => p.status,
     priority: (p) => p.priority,
     client: (p) => p.client?.company_name || p.client?.full_name || 'No Client',
@@ -261,18 +299,15 @@ export function useProjectManagement(initialFilters?: ProjectFilters) {
     deadline: (p) => {
       const deadline = getProjectDeadline(p);
       if (!deadline) return 'No Due Date';
-      const today = startOfDay(new Date());
-      if (isBefore(deadline, today)) return 'Overdue';
-      if (isWithinNextDays(deadline, 7)) return 'Due This Week';
-      if (isWithinNextDays(deadline, 30)) return 'Due This Month';
+      const today = new Date();
+      if (new Date(deadline) < today) return 'Overdue';
+      if (new Date(deadline) <= new Date(endOfWeek(today))) return 'Due This Week';
+      if (new Date(deadline) <= new Date(addMonths(today, 1))) return 'Due This Month';
       return 'Future';
     }
   };
 
-  const groupProjects = useCallback((
-    projects: ProjectWithRelations[],
-    groupBy: ProjectView
-  ): Record<string, ProjectWithRelations[]> => {
+  const groupProjects = useCallback((projects: ProjectWithRelations[], groupBy: string) => {
     return projects.reduce((groups, project) => {
       const key = groupKeyMap[groupBy](project);
       const formattedKey = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
@@ -280,40 +315,64 @@ export function useProjectManagement(initialFilters?: ProjectFilters) {
       groups[formattedKey].push(project);
       return groups;
     }, {} as Record<string, ProjectWithRelations[]>);
-  }, [getProjectDeadline])
+  }, [getProjectDeadline]);
 
-  const getProjectMetrics = useCallback((projects: ProjectWithRelations[]): ProjectMetrics => {
-    const totalProjects = projects.length
-    const completedProjects = projects.filter(p => p.status === 'completed').length
+  const getProjectMetrics = useCallback((projects: ProjectWithRelations[]): {
+    totalProjects: number;
+    completedProjects: number;
+    completionRate: number;
+    averageTimeToComplete: number;
+    projectsByService: Record<ServiceCategory, number>;
+    projectsByStatus: Record<ProjectStatus, number>;
+    projectsByPriority: Record<Priority, number>;
+    upcomingDeadlines: Array<{
+      date: Date;
+      count: number;
+      projects: ProjectWithRelations[];
+    }>;
+    clientDistribution: Array<{
+      clientId: string;
+      clientName: string;
+      projectCount: number;
+    }>;
+    teamWorkload: Array<{
+      userId: string;
+      userName: string;
+      projectCount: number;
+      totalEstimatedHours: number;
+    }>;
+  } => {
+    const totalProjects = projects.length;
+    const completedProjects = projects.filter(p => p.status === 'completed').length;
     
     const projectsByService = projects.reduce((acc, project) => {
-      if (project.service_type) {
-        acc[project.service_type] = (acc[project.service_type] || 0) + 1
+      if (project.service_category) {
+        acc[project.service_category] = (acc[project.service_category] || 0) + 1;
       }
-      return acc
-    }, {} as Record<ServiceCategory, number>)
+      return acc;
+    }, {} as Record<ServiceCategory, number>);
 
     const projectsByStatus = projects.reduce((acc, project) => {
-      acc[project.status] = (acc[project.status] || 0) + 1
-      return acc
-    }, {} as Record<ProjectStatus, number>)
+      acc[project.status] = (acc[project.status] || 0) + 1;
+      return acc;
+    }, {} as Record<ProjectStatus, number>);
 
     const projectsByPriority = projects.reduce((acc, project) => {
-      acc[project.priority] = (acc[project.priority] || 0) + 1
-      return acc
-    }, {} as Record<Priority, number>)
+      acc[project.priority] = (acc[project.priority] || 0) + 1;
+      return acc;
+    }, {} as Record<Priority, number>);
 
-    const deadlineGroups = new Map<string, ProjectWithRelations[]>()
+    const deadlineGroups = new Map<string, ProjectWithRelations[]>();
     projects.forEach(project => {
-      const deadline = getProjectDeadline(project)
+      const deadline = getProjectDeadline(project);
       if (deadline) {
-        const key = deadline.toISOString().split('T')[0]
+        const key = deadline.toISOString().split('T')[0];
         if (!deadlineGroups.has(key)) {
-          deadlineGroups.set(key, [])
+          deadlineGroups.set(key, []);
         }
-        deadlineGroups.get(key)?.push(project)
+        deadlineGroups.get(key)?.push(project);
       }
-    })
+    });
 
     const upcomingDeadlines = Array.from(deadlineGroups.entries())
       .map(([date, projects]) => ({
@@ -321,18 +380,18 @@ export function useProjectManagement(initialFilters?: ProjectFilters) {
         count: projects.length,
         projects
       }))
-      .sort((a, b) => a.date.getTime() - b.date.getTime())
+      .sort((a, b) => a.date.getTime() - b.date.getTime());
 
-    const clientGroups = new Map<string, { name: string; count: number }>()
+    const clientGroups = new Map<string, { name: string; count: number }>();
     projects.forEach(project => {
       if (project.client_id) {
-        const name = project.client?.company_name || project.client?.full_name || 'Unknown'
+        const name = project.client?.company_name || project.client?.full_name || 'Unknown';
         if (!clientGroups.has(project.client_id)) {
-          clientGroups.set(project.client_id, { name, count: 0 })
+          clientGroups.set(project.client_id, { name, count: 0 });
         }
-        clientGroups.get(project.client_id)!.count++
+        clientGroups.get(project.client_id)!.count++;
       }
-    })
+    });
 
     const clientDistribution = Array.from(clientGroups.entries())
       .map(([id, { name, count }]) => ({
@@ -340,13 +399,13 @@ export function useProjectManagement(initialFilters?: ProjectFilters) {
         clientName: name,
         projectCount: count
       }))
-      .sort((a, b) => b.projectCount - a.projectCount)
+      .sort((a, b) => b.projectCount - a.projectCount);
 
     const teamGroups = new Map<string, { 
-      name: string
-      projectCount: number
-      estimatedHours: number 
-    }>()
+      name: string;
+      projectCount: number;
+      estimatedHours: number;
+    }>();
     
     projects.forEach(project => {
       project.team_members?.forEach(member => {
@@ -355,19 +414,19 @@ export function useProjectManagement(initialFilters?: ProjectFilters) {
             name: member.user?.full_name || 'Unknown',
             projectCount: 0,
             estimatedHours: 0
-          })
+          });
         }
-        const group = teamGroups.get(member.user_id)!
-        group.projectCount++
+        const group = teamGroups.get(member.user_id)!;
+        group.projectCount++;
         
         // Sum estimated hours from tasks
         const estimatedMinutes = project.tasks
           ?.filter(task => task.assignee_id === member.user_id)
-          .reduce((sum, task) => sum + (task.estimated_minutes || 0), 0) || 0
+          .reduce((sum, task) => sum + (task.estimated_minutes || 0), 0) || 0;
         
-        group.estimatedHours += estimatedMinutes / 60
-      })
-    })
+        group.estimatedHours += estimatedMinutes / 60;
+      });
+    });
 
     const teamWorkload = Array.from(teamGroups.entries())
       .map(([id, { name, projectCount, estimatedHours }]) => ({
@@ -376,21 +435,21 @@ export function useProjectManagement(initialFilters?: ProjectFilters) {
         projectCount,
         totalEstimatedHours: Math.round(estimatedHours * 10) / 10
       }))
-      .sort((a, b) => b.projectCount - a.projectCount)
+      .sort((a, b) => b.projectCount - a.projectCount);
 
     // Calculate average time to complete
     const completedWithDuration = projects.filter(p => 
       p.status === 'completed' && p.completed_at && p.created_at
-    )
+    );
     
     const totalDuration = completedWithDuration.reduce((sum, p) => {
-      const duration = new Date(p.completed_at!).getTime() - new Date(p.created_at).getTime()
-      return sum + duration
-    }, 0)
+      const duration = new Date(p.completed_at!).getTime() - new Date(p.created_at).getTime();
+      return sum + duration;
+    }, 0);
 
     const averageTimeToComplete = completedWithDuration.length > 0
       ? totalDuration / completedWithDuration.length / (1000 * 60 * 60 * 24) // Convert to days
-      : 0
+      : 0;
 
     return {
       totalProjects,
@@ -403,37 +462,26 @@ export function useProjectManagement(initialFilters?: ProjectFilters) {
       upcomingDeadlines,
       clientDistribution,
       teamWorkload
-    }
-  }, [getProjectDeadline])
+    };
+  }, [getProjectDeadline]);
 
-  const filteredProjects = useMemo(() => filterProjects(projects || []), [filterProjects, projects])
-  const groupedProjects = useMemo(() => groupProjects(filteredProjects, view), [filteredProjects, groupProjects, view])
-  const metrics = useMemo(() => getProjectMetrics(filteredProjects), [filteredProjects, getProjectMetrics])
+  const filteredProjects = useMemo(() => filterProjects(projects || []), [filterProjects, projects]);
+  const groupedProjects = useMemo(() => groupProjects(filteredProjects, 'service_category'), [filteredProjects, groupProjects]);
+  const metrics = useMemo(() => getProjectMetrics(filteredProjects), [filteredProjects, getProjectMetrics]);
 
   return {
     projects: filteredProjects,
-    groupedProjects,
-    metrics,
     loading,
     error,
-    view,
-    setView,
     filters,
     updateFilters,
-    clearFilters,
-    selectedFilters,
-    pagination,
-    setPagination,
-    sorting,
-    setSorting,
-    refresh,
-    getProjectDeadline,
-    filterProjects,
+    resetFilters,
+    filterProjects: applyFilters,
     groupProjects,
-    groupProjectsByService: (projects: ProjectWithRelations[]) => groupProjects(projects, 'service'),
-    groupProjectsByStatus: (projects: ProjectWithRelations[]) => groupProjects(projects, 'status'),
-    groupProjectsByDeadline: (projects: ProjectWithRelations[]) => groupProjects(projects, 'deadline'),
-    groupProjectsByClient: (projects: ProjectWithRelations[]) => groupProjects(projects, 'client'),
+    refresh: fetchProjects,
+    bulkUpdateProjects,
+    archiveProjects,
+    metrics,
     getNextEstimatedTaxDeadline
-  }
+  };
 }

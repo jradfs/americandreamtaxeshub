@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useSupabase } from '@/lib/supabase/supabase-provider'
-import { ProjectTemplate } from '@/types/hooks'
+import { ProjectTemplate, ProjectTemplateInput } from '@/types/projects'
 
 export function useProjectTemplates() {
   const { supabase } = useSupabase()
@@ -13,7 +13,7 @@ export function useProjectTemplates() {
       setLoading(true)
       const { data, error } = await supabase
         .from('project_templates')
-        .select('*')
+        .select('*, template_tasks(*)')
         .order('created_at', { ascending: false })
 
       if (error) throw error
@@ -26,12 +26,12 @@ export function useProjectTemplates() {
     }
   }, [supabase])
 
-  const createTemplate = useCallback(async (template: Omit<ProjectTemplate, 'id' | 'created_at' | 'updated_at'>) => {
+  const createTemplate = useCallback(async (template: ProjectTemplateInput) => {
     try {
       const { data, error } = await supabase
         .from('project_templates')
         .insert(template)
-        .select()
+        .select('*, template_tasks(*)')
         .single()
 
       if (error) throw error
@@ -43,13 +43,13 @@ export function useProjectTemplates() {
     }
   }, [supabase])
 
-  const updateTemplate = useCallback(async (id: string, updates: Partial<ProjectTemplate>) => {
+  const updateTemplate = useCallback(async (id: string, updates: Partial<ProjectTemplateInput>) => {
     try {
       const { data, error } = await supabase
         .from('project_templates')
         .update(updates)
         .eq('id', id)
-        .select()
+        .select('*, template_tasks(*)')
         .single()
 
       if (error) throw error
@@ -87,6 +87,6 @@ export function useProjectTemplates() {
     createTemplate,
     updateTemplate,
     deleteTemplate,
-    refreshTemplates: fetchTemplates,
+    refetch: fetchTemplates
   }
 }

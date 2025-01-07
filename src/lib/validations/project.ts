@@ -1,170 +1,118 @@
 import { z } from 'zod';
+import type { Database } from '@/types/database.types';
 
-const projectStatus = ['not_started', 'in_progress', 'on_hold', 'completed', 'cancelled'] as const;
-const priorityLevels = ['low', 'medium', 'high', 'urgent'] as const;
-const serviceTypes = [
-  'tax_return', 
-  'accounting', 
-  'payroll', 
-  'tax_planning', 
-  'compliance'
-] as const;
+type DbEnums = Database['public']['Enums'];
 
-const taxReturnStatus = [
-  'not_started',
-  'in_progress',
-  'review_needed',
-  'completed'
-] as const;
+// Helper schemas
+const dateSchema = z.string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/, 'Invalid date format (YYYY-MM-DD)')
+  .nullable();
 
-const accountingPeriod = [
-  'monthly',
-  'quarterly',
-  'annual'
-] as const;
+const currencySchema = z.number()
+  .min(0, 'Amount must be non-negative')
+  .multipleOf(0.01, 'Amount must have at most 2 decimal places')
+  .nullable();
 
-export const taskSchema = z.object({
-  title: z.string().min(1, 'Task title is required').max(100, 'Task title is too long'),
-  description: z.string().max(500, 'Task description is too long').optional(),
-  priority: z.enum(priorityLevels).default('medium'),
-  dependencies: z.array(z.string()).optional(),
-  order_index: z.number().optional(),
-  assignee_id: z.string().optional()
-}).refine(data => {
-  // Validate assigned team member if specified
-  return !data.assignee_id || data.assignee_id.trim().length > 0;
-}, {
-  message: "Invalid team member assignment",
-  path: ["assignee_id"]
+// Define JSON field schemas
+const budgetSchema = z.object({
+  total: currencySchema,
+  hourly_rate: currencySchema,
+  estimated_hours: z.number().min(0).nullable(),
+  max_hours: z.number().min(0).nullable(),
+  billing_type: z.enum(['hourly', 'fixed', 'retainer']).nullable(),
+  currency: z.string().length(3, 'Currency code must be 3 letters').nullable(),
+  notes: z.string().nullable(),
+}).nullable();
+
+const timelineSchema = z.object({
+  start_date: dateSchema,
+  end_date: dateSchema,
+  estimated_completion: dateSchema,
+  actual_completion: dateSchema,
+  milestones: z.array(z.object({
+    title: z.string(),
+    due_date: dateSchema,
+    completed: z.boolean().nullable(),
+    notes: z.string().nullable(),
+  })).nullable(),
+}).nullable();
+
+const customFieldsSchema = z.record(z.string(), z.unknown()).nullable();
+
+// Main project form schema
+export const projectFormSchema = z.object({
+  // Required fields
+  name: z.string().min(1, 'Project name is required'),
+  status: z.enum(['active', 'completed', 'on_hold', 'cancelled'] as const satisfies readonly DbEnums['project_status']),
+  client_id: z.string().uuid('Invalid client ID'),
+  
+  // Optional fields with validation
+  id: z.string().uuid('Invalid UUID format').optional(),
+  description: z.string().nullable(),
+  priority: z.enum(['low', 'medium', 'high', 'urgent'] as const satisfies readonly DbEnums['priority_level']).nullable(),
+  type: z.enum(['tax_return', 'audit', 'advisory', 'bookkeeping', 'payroll', 'other'] as const satisfies readonly DbEnums['project_type']).nullable(),
+  due_date: dateSchema,
+  start_date: dateSchema,
+  end_date: dateSchema,
+  completion_date: dateSchema,
+  estimated_hours: z.number().min(0).nullable(),
+  actual_hours: z.number().min(0).nullable(),
+  assigned_team: z.array(z.string().uuid('Invalid team member ID')).nullable(),
+  manager_id: z.string().uuid('Invalid manager ID').nullable(),
+  notes: z.string().nullable(),
+  attachments: z.array(z.string().url('Invalid attachment URL')).nullable(),
+  billing_type: z.enum(['hourly', 'fixed', 'retainer']).nullable(),
+  hourly_rate: currencySchema,
+  fixed_price: currencySchema,
+  retainer_amount: currencySchema,
+  tax_year: z.number().min(1900).max(new Date().getFullYear() + 1).nullable(),
+  filing_deadline: dateSchema,
+  extension_deadline: dateSchema,
+  last_updated: dateSchema,
+  created_at: dateSchema,
+  updated_at: dateSchema,
+  
+  // JSON fields
+  budget: budgetSchema,
+  timeline: timelineSchema,
+  custom_fields: customFieldsSchema,
 });
 
-export const projectSchema = z.object({
-  creation_type: z.enum(['template', 'custom']),
-  template_id: z.string().optional().nullable(),
-  name: z.string()
-    .min(1, 'Project name is required')
-    .max(100, 'Project name is too long')
-    .refine(name => name.trim().length > 0, 'Project name cannot be only whitespace'),
-  description: z.string()
-    .max(1000, 'Project description is too long')
-    .optional().nullable(),
-  client_id: z.string().min(1, 'Client is required'),
-  status: z.enum(projectStatus).default('not_started'),
-  priority: z.enum(priorityLevels).default('medium'),
-  due_date: z.date()
-    .refine(date => {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      return date >= today;
-    }, {
-      message: 'Due date must not be in the past'
-    })
-    .optional().nullable(),
-  service_type: z.enum(serviceTypes).default('tax_return'),
-  tax_info: z.record(z.unknown()).optional().nullable(),
-  accounting_info: z.record(z.unknown()).optional().nullable(),
-  payroll_info: z.record(z.unknown()).optional().nullable(),
-  tasks: z.array(taskSchema).optional(),
-  team_members: z.array(z.string()).optional(),
-  tax_return_id: z.number().optional().nullable(),
-  project_defaults: z.record(z.unknown()).optional().nullable()
-}).refine(data => {
-  // If creation type is template, template_id must be provided
-  if (data.creation_type === 'template' && !data.template_id) {
-    return false;
-  }
-  return true;
-}, {
-  message: 'Please select a template',
-  path: ['template_id']
-}).refine(data => {
-  // Validate service-specific fields
-  if (data.service_type === 'tax_return') {
-    return data.tax_info !== undefined && Object.keys(data.tax_info).length > 0;
-  }
-  if (data.service_type === 'accounting') {
-    return data.accounting_info !== undefined && Object.keys(data.accounting_info).length > 0;
-  }
-  if (data.service_type === 'payroll') {
-    return data.payroll_info !== undefined && Object.keys(data.payroll_info).length > 0;
-  }
-  return true;
-}, {
-  message: "Service-specific information is required",
-  path: ["service_type"]
-}).refine(data => {
-  // Validate template and tasks
-  if (data.template_id && (!data.tasks?.length || data.tasks.length === 0)) {
-    return false;
-  }
-  return true;
-}, {
-  message: "Template tasks are required when using a template",
-  path: ["tasks"]
-}).refine(data => {
-  // Validate task titles and dependencies
-  if (data.tasks) {
-    const taskTitles = new Set();
-    for (const task of data.tasks) {
-      if (taskTitles.has(task.title)) {
-        return false;
-      }
-      taskTitles.add(task.title);
-    }
-    // Validate task dependencies
-    for (const task of data.tasks) {
-      if (task.dependencies) {
-        for (const dep of task.dependencies) {
-          if (!taskTitles.has(dep)) {
-            return false;
-          }
-        }
-      }
-    }
-  }
-  return true;
-}, {
-  message: "Tasks must have unique titles and valid dependencies",
-  path: ["tasks"]
-});
+// Export types
+export type ProjectFormSchema = z.infer<typeof projectFormSchema>;
 
-// Helper function to validate task dependencies
-export function validateTaskDependencies(tasks: z.infer<typeof taskSchema>[]): boolean {
-  const taskTitles = new Set(tasks.map(t => t.title));
-  return tasks.every(task => 
-    !task.dependencies?.length || 
-    task.dependencies.every(dep => taskTitles.has(dep))
-  );
+// Validation helpers
+export function validateProjectForm(data: unknown): { success: true; data: ProjectFormSchema } | { success: false; error: z.ZodError } {
+  const result = projectFormSchema.safeParse(data);
+  return result;
 }
 
-// Helper function to sort tasks based on dependencies
-export function sortTasksByDependencies(tasks: z.infer<typeof taskSchema>[]): z.infer<typeof taskSchema>[] {
-  const taskMap = new Map(tasks.map(task => [task.title, task]));
-  const visited = new Set<string>();
-  const sorted: z.infer<typeof taskSchema>[] = [];
-
-  function visit(task: z.infer<typeof taskSchema>) {
-    if (visited.has(task.title)) return;
-    visited.add(task.title);
-    
-    if (task.dependencies?.length) {
-      for (const depTitle of task.dependencies) {
-        const depTask = taskMap.get(depTitle);
-        if (depTask) visit(depTask);
-      }
-    }
-    
-    sorted.push(task);
-  }
-
-  tasks.forEach(task => visit(task));
-  return sorted;
+export function validateBudget(data: unknown) {
+  return budgetSchema.safeParse(data);
 }
 
-export type ProjectStatus = typeof projectStatus[number];
-export type PriorityLevel = typeof priorityLevels[number];
-export type ServiceType = typeof serviceTypes[number];
-export type TaxReturnStatus = typeof taxReturnStatus[number];
-export type AccountingPeriod = typeof accountingPeriod[number];
-export type TaskSchema = z.infer<typeof taskSchema>;
-export type ProjectFormValues = z.infer<typeof projectSchema>;
+export function validateTimeline(data: unknown) {
+  return timelineSchema.safeParse(data);
+}
+
+export function validateCustomFields(data: unknown) {
+  return customFieldsSchema.safeParse(data);
+}
+
+// Helper function to ensure all required fields are present
+export function ensureRequiredFields(data: Partial<ProjectFormSchema>): { success: true; data: ProjectFormSchema } | { success: false; error: string[] } {
+  const requiredFields = ['name', 'status', 'client_id'] as const;
+  const missingFields = requiredFields.filter(field => !data[field]);
+  
+  if (missingFields.length > 0) {
+    return {
+      success: false,
+      error: missingFields.map(field => `Missing required field: ${field}`)
+    };
+  }
+
+  return {
+    success: true,
+    data: data as ProjectFormSchema
+  };
+}

@@ -31,20 +31,21 @@ import {
 } from 'src/components/ui/select';
 import { Textarea } from 'src/components/ui/textarea';
 import { useProjectTemplates } from 'src/hooks/useProjectTemplates';
+import { ProjectTemplateInput, SeasonalPriority, ProjectDefaults } from '@/types/projects';
 
 const templateSchema = z.object({
   title: z.string().min(1, 'Title is required'),
   description: z.string().optional(),
   category: z.enum(['tax-return', 'bookkeeping', 'payroll', 'business-services', 'other']),
-  default_priority: z.enum(['low', 'medium', 'high']),
-  estimated_total_minutes: z.string().transform(val => parseInt(val) || 0),
-  recurring_schedule: z.enum(['daily', 'weekly', 'monthly', 'quarterly', 'annually', 'one-time']),
+  default_priority: z.enum(['low', 'medium', 'high']).optional(),
+  estimated_total_minutes: z.number().min(0),
+  recurring_schedule: z.enum(['daily', 'weekly', 'monthly', 'quarterly', 'annually', 'one-time']).optional(),
   seasonal_priority: z.object({
     Q1: z.enum(['low', 'medium', 'high', 'critical']),
     Q2: z.enum(['low', 'medium', 'high', 'critical']),
     Q3: z.enum(['low', 'medium', 'high', 'critical']),
     Q4: z.enum(['low', 'medium', 'high', 'critical']),
-  }),
+  }).optional(),
 })
 
 type TemplateFormValues = z.infer<typeof templateSchema>
@@ -65,7 +66,7 @@ export function CreateTemplateDialog({ open, onOpenChange }: CreateTemplateDialo
       description: '',
       category: 'other',
       default_priority: 'medium',
-      estimated_total_minutes: '0',
+      estimated_total_minutes: 0,
       recurring_schedule: 'one-time',
       seasonal_priority: {
         Q1: 'medium',
@@ -79,7 +80,22 @@ export function CreateTemplateDialog({ open, onOpenChange }: CreateTemplateDialo
   const onSubmit = async (data: TemplateFormValues) => {
     try {
       setIsSubmitting(true)
-      await createTemplate(data)
+      const templateInput: ProjectTemplateInput = {
+        title: data.title,
+        description: data.description || '',
+        category: data.category,
+        category_id: null,
+        default_priority: data.default_priority || 'medium',
+        recurring_schedule: data.recurring_schedule,
+        seasonal_priority: data.seasonal_priority as SeasonalPriority,
+        project_defaults: {
+          estimated_total_minutes: data.estimated_total_minutes,
+          recurring_schedule: data.recurring_schedule,
+          seasonal_priority: data.seasonal_priority
+        } as ProjectDefaults,
+        template_tasks: []
+      }
+      await createTemplate(templateInput)
       form.reset()
       onOpenChange(false)
     } catch (error) {
@@ -99,7 +115,7 @@ export function CreateTemplateDialog({ open, onOpenChange }: CreateTemplateDialo
           </DialogDescription>
         </DialogHeader>
 
-        <Form {...form}>
+        <Form form={form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             <FormField
               control={form.control}
