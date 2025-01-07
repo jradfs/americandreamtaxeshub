@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { Database } from '@/types/database.types'
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { 
@@ -15,30 +16,57 @@ import { updateTask } from '@/lib/supabase/tasks'
 import { cn } from "@/lib/utils"
 import { format } from "date-fns"
 
-type Task = {
-  id: string
-  title: string
-  status: 'todo' | 'in_progress' | 'completed'
+type Task = Database['public']['Tables']['tasks']['Row'] & {
+  status: Database['public']['Enums']['task_status']
+  priority?: Database['public']['Enums']['task_priority']
   due_date: Date | null
-  priority?: 'low' | 'medium' | 'high'
-  description?: string
 }
 
-const STATUS_COLORS = {
+const STATUS_COLORS: Record<Task['status'], string> = {
   todo: "bg-gray-100 text-gray-800",
   in_progress: "bg-blue-100 text-blue-800",
-  completed: "bg-green-100 text-green-800"
+  review: "bg-yellow-100 text-yellow-800",
+  completed: "bg-green-100 text-green-800",
+  blocked: "bg-red-100 text-red-800"
+}
+
+function isTaskStatus(status: string): status is Task['status'] {
+  return ['todo', 'in_progress', 'review', 'completed', 'blocked'].includes(status)
 }
 
 export function TaskItem({ task }: { task: Task }) {
   const [localTask, setLocalTask] = useState(task)
 
-  const handleStatusChange = async (newStatus: Task['status']) => {
+  const handleStatusChange = async (newStatus: string) => {
+    if (!isTaskStatus(newStatus)) {
+      console.error('Invalid task status:', newStatus);
+      return;
+    }
+
+    if (!task?.id) {
+      console.error('Task ID is missing');
+      return;
+    }
+
     try {
-      await updateTask(task.id, { status: newStatus })
-      setLocalTask(prev => ({ ...prev, status: newStatus }))
+      const { error } = await updateTask(task.id, { 
+        status: newStatus,
+        updated_at: new Date().toISOString()
+      });
+
+      if (error) {
+        throw new Error(`Failed to update task status: ${error.message}`);
+      }
+
+      setLocalTask(prev => ({
+        ...prev,
+        status: newStatus,
+        updated_at: new Date().toISOString()
+      }));
     } catch (error) {
-      console.error('Failed to update task status', error)
+      console.error('Task status update failed:', error);
+      // Show user-friendly error message
+      toast.error('Failed to update task status. Please try again.');
     }
   }
 

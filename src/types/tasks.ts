@@ -4,7 +4,35 @@ import { User } from './hooks'
 import { ProjectStatus, Priority, ServiceCategory, TaxReturnType } from './projects'
 
 // Base types from database
-export type Task = Database['public']['Tables']['tasks']['Row']
+export type Task = {
+  id: string
+  title: string
+  description?: string | null
+  status: Database['public']['Enums']['task_status']
+  priority?: Database['public']['Enums']['task_priority']
+  project_id: string
+  assignee_id?: string | null
+  category?: Database['public']['Enums']['service_type'] | null
+  due_date?: string | null
+  start_date?: string | null
+  created_at?: string | null
+  updated_at?: string | null
+  assignee?: User
+  project?: {
+    id: string
+    title: string
+    service_type: ServiceCategory
+    client_id: string
+    status: ProjectStatus
+    priority: Priority
+  }
+  dependencies?: string[]
+  checklist?: Array<{
+    title: string
+    completed: boolean
+  }>
+  metadata?: Json
+}
 export type NewTask = Database['public']['Tables']['tasks']['Insert']
 export type UpdateTask = Database['public']['Tables']['tasks']['Update']
 
@@ -116,6 +144,12 @@ export const getStatusColor = (status: TaskStatus): string => {
     'completed': 'bg-green-500',
     'blocked': 'bg-red-500',
   }
+  
+  if (!status || !(status in colors)) {
+    console.warn('Invalid task status:', status);
+    return 'bg-gray-500'; // Default color
+  }
+  
   return colors[status]
 }
 
@@ -130,16 +164,14 @@ export const getPriorityColor = (priority: TaskPriority): string => {
 }
 
 // Form data interface with enhanced type safety
-export interface TaskFormData extends Omit<TaskBase, 'id' | 'created_at' | 'updated_at' | 'version' | 'archived'> {
+export interface TaskFormData extends Omit<Database['public']['Tables']['tasks']['Insert'], 'id' | 'created_at' | 'updated_at'> {
   id?: string
-  checklist?: Array<{
-    title: string
-    completed: boolean
-  }>
-  tax_form_type?: TaxReturnType
+  checklist?: Json
+  tax_form_type?: Database['public']['Enums']['filing_type']
   tax_year?: number
   review_required?: boolean
   reviewer_id?: string
+  assigned_team?: string[]
 }
 
 // Task grouping interface

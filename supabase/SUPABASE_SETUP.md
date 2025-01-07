@@ -12,6 +12,20 @@
 
 ## Steps to Access Supabase
 
+### Environment Variables Setup
+
+#### Linux/MacOS (Bash)
+```bash
+export SUPABASE_ACCESS_TOKEN='sbp_829505ecb6492198977d14392b9272cf9723c08f'
+export SUPABASE_DB_PASSWORD='QBQmOUyqqgJXCpSo'
+```
+
+#### Windows (CMD/PowerShell)
+```cmd
+setx SUPABASE_ACCESS_TOKEN "sbp_829505ecb6492198977d14392b9272cf9723c08f"
+setx SUPABASE_DB_PASSWORD "QBQmOUyqqgJXCpSo"
+```
+
 ### 1. Initialize Supabase Project
 ```bash
 npx supabase init --force
@@ -36,8 +50,22 @@ This command:
 - Establishes the link for future operations
 
 ### 4. Generate Types
+
+#### Linux/MacOS (Bash)
 ```bash
 export SUPABASE_ACCESS_TOKEN='sbp_829505ecb6492198977d14392b9272cf9723c08f' && \
+npx supabase gen types typescript --project-id fnjkkmwmpxqvezqextxg > src/types/database.types.ts
+```
+
+#### Windows (CMD)
+```cmd
+set SUPABASE_ACCESS_TOKEN=sbp_829505ecb6492198977d14392b9272cf9723c08f
+npx supabase gen types typescript --project-id fnjkkmwmpxqvezqextxg > src/types/database.types.ts
+```
+
+#### Windows (PowerShell)
+```powershell
+$env:SUPABASE_ACCESS_TOKEN="sbp_829505ecb6492198977d14392b9272cf9723c08f"
 npx supabase gen types typescript --project-id fnjkkmwmpxqvezqextxg > src/types/database.types.ts
 ```
 
@@ -46,10 +74,16 @@ npx supabase gen types typescript --project-id fnjkkmwmpxqvezqextxg > src/types/
    - `SUPABASE_ACCESS_TOKEN`: Required for authentication with Supabase
    - `SUPABASE_DB_PASSWORD`: Required for database operations
 
-2. **WSL Environment**:
-   - Use `export VARIABLE_NAME='value'` to set environment variables
-   - Variables can be added to `~/.bashrc` for persistence
-   - Use `source ~/.bashrc` to reload environment variables
+2. **Environment Variables**:
+   - **Linux/MacOS**:
+     - Use `export VARIABLE_NAME='value'` to set environment variables
+     - Variables can be added to `~/.bashrc` for persistence
+     - Use `source ~/.bashrc` to reload environment variables
+   - **Windows**:
+     - Use `setx VARIABLE_NAME "value"` for permanent environment variables
+     - Use `set VARIABLE_NAME=value` for temporary session variables (CMD)
+     - Use `$env:VARIABLE_NAME="value"` in PowerShell
+     - Variables set with `setx` require restarting the terminal
 
 3. **Common Issues We Solved**:
    - Token format errors were resolved by setting the environment variable directly in WSL

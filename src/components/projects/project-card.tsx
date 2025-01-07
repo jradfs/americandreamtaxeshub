@@ -1,10 +1,12 @@
 'use client';
 
 import { useState } from 'react';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ProjectWithRelations } from "@/types/projects";
+import { Skeleton } from "@/components/ui/skeleton";
 import { formatDistanceToNow, isAfter, subDays } from "date-fns";
 import { ProjectDialog } from "./project-dialog";
 import {
@@ -33,6 +35,7 @@ interface ProjectCardProps {
   selected?: boolean;
   showHover?: boolean;
   onProjectClick?: () => void;
+  isLoading?: boolean;
 }
 
 const STATUS_STYLES = {
@@ -68,8 +71,27 @@ const STATUS_STYLES = {
   }
 } as const;
 
-export function ProjectCard({ project, onProjectUpdated, selected, showHover, onProjectClick }: ProjectCardProps) {
+export function ProjectCard({ project, onProjectUpdated, selected, showHover, onProjectClick, isLoading = false }: ProjectCardProps) {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const supabase = createClientComponentClient();
+
+  if (isLoading) {
+    return (
+      <Card className="h-[160px] p-4">
+        <div className="flex items-start space-x-4">
+          <Skeleton className="h-4 w-4 rounded-full" />
+          <div className="space-y-2 flex-1">
+            <Skeleton className="h-4 w-[200px]" />
+            <Skeleton className="h-4 w-[150px]" />
+          </div>
+        </div>
+        <div className="mt-4 space-y-2">
+          <Skeleton className="h-2 w-full" />
+          <Skeleton className="h-2 w-[80%]" />
+        </div>
+      </Card>
+    );
+  }
 
   const handleEditClick = (e: React.MouseEvent) => {
     e.preventDefault();

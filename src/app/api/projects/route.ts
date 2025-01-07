@@ -2,7 +2,7 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { z } from 'zod'
-import { Database } from '@/types/database.types'
+import { Database, Json } from '@/types/database.types'
 import { 
   NewProject, 
   ProjectWithRelations, 
@@ -10,40 +10,32 @@ import {
   Priority,
   ServiceCategory,
   ProjectMetadata,
-  ServiceInfo 
+  ServiceInfo,
+  TaxInfo,
+  AccountingInfo
 } from '@/types/projects'
 import { TaskFormData, TaskStatus } from '@/types/tasks'
 import { FilterState } from '@/types/hooks'
 import { projectSchema } from '@/lib/validations/project'
 
-// Example placeholder if you haven't defined it elsewhere
-const projectSchema = z.object({
-  name: z.string(),
-  description: z.string().optional(),
-  client_id: z.string(),
-  status: z.string(),
-  priority: z.string(),
-  due_date: z.string().optional(),
-  service_type: z.string(),
-  // ...any other fields you need...
-});
 
 interface CreateProjectRequest {
   template_id?: string
   name: string
   description?: string
   client_id: string
-  status: ProjectStatus
-  priority: Priority
+  status: Database['public']['Enums']['project_status']
+  priority: Database['public']['Enums']['priority_level']
   due_date?: string
-  service_type: ServiceCategory
-  tax_info?: Record<string, unknown>
-  accounting_info?: Record<string, unknown>
-  payroll_info?: Record<string, unknown>
-  tasks?: TaskFormData[]
+  service_type: Database['public']['Enums']['service_type']
+  tax_info?: Json
+  accounting_info?: Json
+  payroll_info?: Json
+  tasks?: Array<Database['public']['Tables']['tasks']['Insert'] & {
+    order_index?: number
+  }>
   team_members?: string[]
   tax_return_id?: number
-  project_defaults?: Record<string, unknown>
 }
 
 // Error handling utility
@@ -72,10 +64,17 @@ const validateProjectData = (data: CreateProjectRequest) => {
 
 export async function POST(request: Request) {
   try {
+    const cookieStore = cookies()
     const supabase = createServerClient<Database>(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-      { cookies: cookies(request) }
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          get(name: string) {
+            return cookieStore.get(name)?.value
+          },
+        },
+      }
     )
 
     const data: CreateProjectRequest = await request.json()
@@ -83,7 +82,18 @@ export async function POST(request: Request) {
     // Validate incoming data
     validateProjectData(data)
 
-    let projectData: NewProject = {
+    // Utility function to safely convert to Json type
+    const toJson = (value: unknown): Json | null => {
+      try {
+        if (value === null || value === undefined) return null;
+        if (typeof value === 'string') return JSON.parse(value);
+        return JSON.parse(JSON.stringify(value));
+      } catch {
+        return null;
+      }
+    };
+
+    const projectData: NewProject = {
       name: data.name,
       description: data.description,
       client_id: data.client_id,
@@ -91,11 +101,10 @@ export async function POST(request: Request) {
       priority: data.priority,
       due_date: data.due_date ? new Date(data.due_date).toISOString() : null,
       service_type: data.service_type,
-      tax_info: data.tax_info || {},
-      accounting_info: data.accounting_info || {},
-      payroll_info: data.payroll_info || {},
-      tax_return_id: data.tax_return_id || null,
-      project_defaults: data.project_defaults || {}
+      tax_info: data.tax_info ? JSON.stringify(data.tax_info) : null,
+      accounting_info: data.accounting_info ? JSON.stringify(data.accounting_info) : null,
+      payroll_info: data.payroll_info ? JSON.stringify(data.payroll_info) : null,
+      tax_return_id: data.tax_return_id || null
     }
 
     // Insert project
@@ -105,8 +114,11 @@ export async function POST(request: Request) {
       .select()
       .single()
 
-    if (error || !insertedProject) {
-      throw new APIError(error?.message || 'Failed to create project', error?.status || 500, error?.code)
+    if (error) {
+      throw new APIError(error.message || 'Failed to create project', 500, error.code || 'UNKNOWN_ERROR')
+    }
+    if (!insertedProject) {
+      throw new APIError('Failed to create project', 500, 'NO_PROJECT_CREATED')
     }
 
     // Handle tasks if any
@@ -126,7 +138,7 @@ export async function POST(request: Request) {
         .insert(tasksToInsert)
 
       if (tasksError) {
-        throw new APIError(tasksError.message, tasksError.status || 500, tasksError.code)
+        throw new APIError(tasksError.message, 500, tasksError.code || 'UNKNOWN_ERROR')
       }
     }
 
@@ -142,7 +154,7 @@ export async function POST(request: Request) {
         .insert(teamAssignments)
 
       if (teamError) {
-        throw new APIError(teamError.message, teamError.status || 500, teamError.code)
+        throw new APIError(teamError.message, 500, teamError.code || 'UNKNOWN_ERROR')
       }
     }
 
@@ -208,13 +220,16 @@ export async function GET(request: Request) {
             full_name
           )
         ),
-        team_members:project_team_members (
+        primary_manager:users!projects_primary_manager_fkey (
           id,
-          user:users (
-            id,
-            email,
-            full_name
-          )
+          email,
+          full_name
+        ),
+        users:users!projects_primary_manager_fkey (
+          id,
+          email,
+          full_name,
+          projects_managed
         ),
         documents (
           id,
@@ -231,8 +246,8 @@ export async function GET(request: Request) {
 
     // Apply filters with type safety
     const filters: Partial<FilterState> = {
-      status: searchParams.get('status') as ProjectStatus || undefined,
-      priority: searchParams.get('priority') as Priority || undefined,
+      status: searchParams.get('status') ? [searchParams.get('status') as ProjectStatus] : undefined,
+      priority: searchParams.get('priority') ? [searchParams.get('priority') as Priority] : undefined,
       client: searchParams.get('clientId') || undefined,
       search: searchParams.get('search') || undefined,
       service: searchParams.getAll('service_type').filter(Boolean) as ServiceCategory[],
@@ -245,10 +260,10 @@ export async function GET(request: Request) {
 
     // Apply filters
     if (filters.status) {
-      query = query.eq('status', filters.status)
+      query = query.in('status', filters.status)
     }
     if (filters.priority) {
-      query = query.eq('priority', filters.priority)
+      query = query.in('priority', filters.priority)
     }
     if (filters.client) {
       query = query.eq('client_id', filters.client)
@@ -259,11 +274,13 @@ export async function GET(request: Request) {
     if (filters.search) {
       query = query.ilike('name', `%${filters.search}%`)
     }
-    if (filters.dateRange.from) {
-      query = query.gte('due_date', filters.dateRange.from.toISOString())
-    }
-    if (filters.dateRange.to) {
-      query = query.lte('due_date', filters.dateRange.to.toISOString())
+    if (filters.dateRange) {
+      if (filters.dateRange.from) {
+        query = query.gte('due_date', filters.dateRange.from.toISOString())
+      }
+      if (filters.dateRange.to) {
+        query = query.lte('due_date', filters.dateRange.to.toISOString())
+      }
     }
     if (filters.isArchived !== undefined) {
       query = query.eq('is_archived', filters.isArchived)
@@ -273,7 +290,7 @@ export async function GET(request: Request) {
 
     if (error) {
       console.error('Error fetching projects:', error)
-      throw new APIError(error.message, error.code === '42501' ? 403 : 500)
+      throw new APIError(error.message, error.code === '42501' ? 403 : 500, error.code || 'UNKNOWN_ERROR')
     }
 
     return NextResponse.json(data)

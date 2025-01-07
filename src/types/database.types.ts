@@ -151,51 +151,14 @@ export type Database = {
             foreignKeyName: "document_tracking_project_id_fkey"
             columns: ["project_id"]
             isOneToOne: false
-            referencedRelation: "projects"
-            referencedColumns: ["id"]
+            referencedRelation: "project_progress"
+            referencedColumns: ["project_id"]
           },
-        ]
-      }
-      documents: {
-        Row: {
-          client_id: string | null
-          file_name: string
-          file_type: string
-          folder_path: string | null
-          id: number
-          project_id: number | null
-          storage_path: string
-          uploaded_at: string | null
-          uploaded_by: string | null
-        }
-        Insert: {
-          client_id?: string | null
-          file_name: string
-          file_type: string
-          folder_path?: string | null
-          id?: never
-          project_id?: number | null
-          storage_path: string
-          uploaded_at?: string | null
-          uploaded_by?: string | null
-        }
-        Update: {
-          client_id?: string | null
-          file_name?: string
-          file_type?: string
-          folder_path?: string | null
-          id?: never
-          project_id?: number | null
-          storage_path?: string
-          uploaded_at?: string | null
-          uploaded_by?: string | null
-        }
-        Relationships: [
           {
-            foreignKeyName: "documents_client_id_fkey"
-            columns: ["client_id"]
+            foreignKeyName: "document_tracking_project_id_fkey"
+            columns: ["project_id"]
             isOneToOne: false
-            referencedRelation: "clients"
+            referencedRelation: "projects"
             referencedColumns: ["id"]
           },
         ]
@@ -437,7 +400,9 @@ export type Database = {
           name: string
           parent_project_id: string | null
           payroll_info: Json | null
+          primary_manager: string | null
           priority: string
+          service_info: Json | null
           service_type: string | null
           stage: string | null
           start_date: string | null
@@ -461,7 +426,9 @@ export type Database = {
           name: string
           parent_project_id?: string | null
           payroll_info?: Json | null
+          primary_manager?: string | null
           priority?: string
+          service_info?: ServiceInfo | null
           service_type?: string | null
           stage?: string | null
           start_date?: string | null
@@ -485,7 +452,9 @@ export type Database = {
           name?: string
           parent_project_id?: string | null
           payroll_info?: Json | null
+          primary_manager?: string | null
           priority?: string
+          service_info?: Json | null
           service_type?: string | null
           stage?: string | null
           start_date?: string | null
@@ -529,7 +498,28 @@ export type Database = {
             foreignKeyName: "projects_parent_project_id_fkey"
             columns: ["parent_project_id"]
             isOneToOne: false
+            referencedRelation: "project_progress"
+            referencedColumns: ["project_id"]
+          },
+          {
+            foreignKeyName: "projects_parent_project_id_fkey"
+            columns: ["parent_project_id"]
+            isOneToOne: false
             referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "projects_primary_manager_fkey"
+            columns: ["primary_manager"]
+            isOneToOne: false
+            referencedRelation: "user_task_load"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "projects_primary_manager_fkey"
+            columns: ["primary_manager"]
+            isOneToOne: false
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
           {
@@ -604,6 +594,7 @@ export type Database = {
       tasks: {
         Row: {
           activity_log: Json | null
+          assigned_team: string[] | null
           assignee_id: string | null
           category: string | null
           checklist: Json | null
@@ -627,6 +618,7 @@ export type Database = {
         }
         Insert: {
           activity_log?: Json | null
+          assigned_team?: string[] | null
           assignee_id?: string | null
           category?: string | null
           checklist?: Json | null
@@ -650,6 +642,7 @@ export type Database = {
         }
         Update: {
           activity_log?: Json | null
+          assigned_team?: string[] | null
           assignee_id?: string | null
           category?: string | null
           checklist?: Json | null
@@ -690,6 +683,13 @@ export type Database = {
             foreignKeyName: "fk_tasks_project_id"
             columns: ["project_id"]
             isOneToOne: false
+            referencedRelation: "project_progress"
+            referencedColumns: ["project_id"]
+          },
+          {
+            foreignKeyName: "fk_tasks_project_id"
+            columns: ["project_id"]
+            isOneToOne: false
             referencedRelation: "projects"
             referencedColumns: ["id"]
           },
@@ -713,6 +713,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "project_dashboard"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "project_progress"
+            referencedColumns: ["project_id"]
           },
           {
             foreignKeyName: "tasks_project_id_fkey"
@@ -855,7 +862,8 @@ export type Database = {
           email: string
           full_name: string
           id: string
-          role: string
+          projects_managed: string[] | null
+          role: Database["public"]["Enums"]["user_role"]
           updated_at: string | null
         }
         Insert: {
@@ -863,7 +871,8 @@ export type Database = {
           email: string
           full_name: string
           id: string
-          role: string
+          projects_managed?: string[] | null
+          role: Database["public"]["Enums"]["user_role"]
           updated_at?: string | null
         }
         Update: {
@@ -871,7 +880,8 @@ export type Database = {
           email?: string
           full_name?: string
           id?: string
-          role?: string
+          projects_managed?: string[] | null
+          role?: Database["public"]["Enums"]["user_role"]
           updated_at?: string | null
         }
         Relationships: []
@@ -918,6 +928,17 @@ export type Database = {
         }
         Relationships: []
       }
+      project_progress: {
+        Row: {
+          completed_tasks: number | null
+          completion_percentage: number | null
+          project_id: string | null
+          project_name: string | null
+          project_status: Database["public"]["Enums"]["project_status"] | null
+          total_tasks: number | null
+        }
+        Relationships: []
+      }
       tax_return_deadlines: {
         Row: {
           assigned_to_email: string | null
@@ -933,6 +954,17 @@ export type Database = {
         }
         Relationships: []
       }
+      user_task_load: {
+        Row: {
+          completed_tasks: number | null
+          full_name: string | null
+          in_progress_tasks: number | null
+          overdue_tasks: number | null
+          total_tasks: number | null
+          user_id: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       _ltree_compress: {
@@ -944,6 +976,12 @@ export type Database = {
       _ltree_gist_options: {
         Args: {
           "": unknown
+        }
+        Returns: undefined
+      }
+      archive_project: {
+        Args: {
+          project_id: string
         }
         Returns: undefined
       }
@@ -973,6 +1011,10 @@ export type Database = {
           new_tax_year: number
         }
         Returns: string
+      }
+      commit_transaction: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
       }
       create_project_tasks: {
         Args: {
@@ -1022,6 +1064,19 @@ export type Database = {
       get_current_user_id: {
         Args: Record<PropertyKey, never>
         Returns: number
+      }
+      get_project_tasks: {
+        Args: {
+          project_id: string
+        }
+        Returns: {
+          id: string
+          title: string
+          status: string
+          priority: string
+          due_date: string
+          assignee_id: string
+        }[]
       }
       get_workspace_data: {
         Args: Record<PropertyKey, never>
@@ -1294,6 +1349,10 @@ export type Database = {
         }
         Returns: number
       }
+      rollback_transaction: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       sparsevec_out: {
         Args: {
           "": unknown
@@ -1416,6 +1475,7 @@ export type Database = {
         | "review"
         | "filed"
         | "amended"
+      user_role: "admin" | "team_member"
     }
     CompositeTypes: {
       [_ in never]: never

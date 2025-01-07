@@ -1,4 +1,4 @@
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { createClient } from '@supabase/ssr'
 import { Database } from '@/types/database.types'
 import { toast } from "@/components/ui/use-toast"
 

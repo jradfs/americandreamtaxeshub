@@ -4,16 +4,7 @@ import { ProjectWithRelations } from '@/types/projects';
 import { DateRange } from 'react-day-picker';
 import { startOfDay, endOfDay } from 'date-fns';
 
-export interface ProjectFilters {
-  search: string;
-  status: string;
-  priority: string;
-  stage: string;
-  clientId: string;
-  dateRange: DateRange | undefined;
-  sortBy: string;
-  sortOrder: 'asc' | 'desc';
-}
+import { ProjectFilters } from '@/types/projects';
 
 export const defaultFilters: ProjectFilters = {
   search: "",
@@ -23,7 +14,13 @@ export const defaultFilters: ProjectFilters = {
   clientId: "all",
   dateRange: undefined,
   sortBy: "created",
-  sortOrder: "desc"
+  sortOrder: "desc",
+  dueThisWeek: false,
+  dueThisMonth: false,
+  dueThisQuarter: false,
+  missingInfo: false,
+  needsReview: false,
+  readyToFile: false
 };
 
 export function useProjectFilters() {
@@ -101,9 +98,13 @@ export function useProjectFilters() {
 
       setProjects(processedData);
       setError(null);
-    } catch (err) {
-      console.error('Error fetching projects:', err);
-      setError(err instanceof Error ? err.message : 'Failed to fetch projects');
+    } catch (error: unknown) {
+      console.error('Error fetching projects:', error);
+      if (error instanceof Error) {
+        setError(error.message);
+      } else {
+        setError('Failed to fetch projects');
+      }
       setProjects([]);
     } finally {
       setLoading(false);

@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { TemplateCategory } from '@/types/database.types';
 import { Button } from '@/components/ui/button';
@@ -33,7 +33,7 @@ export function TemplateCategoryManager() {
         return true;
     };
 
-    const fetchCategories = async () => {
+    const fetchCategories = useCallback(async () => {
         setIsLoading(true);
         try {
             const { data, error } = await supabase
@@ -49,7 +49,7 @@ export function TemplateCategoryManager() {
         } finally {
             setIsLoading(false);
         }
-    };
+    }, [supabase]);
 
     const createCategory = async () => {
         if (!validateCategory(newCategory)) return;
@@ -129,7 +129,7 @@ export function TemplateCategoryManager() {
 
     useEffect(() => {
         fetchCategories();
-    }, []);
+    }, [fetchCategories, supabase]);
 
     return (
         <div className="space-y-4">

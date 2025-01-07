@@ -12,15 +12,15 @@ interface ServiceDetailsFormProps {
   loading?: boolean;
 }
 
-const SERVICE_OPTIONS = [
-  { value: 'tax_returns', label: 'Tax Returns' },
+const SERVICE_OPTIONS: { value: ServiceType; label: string }[] = [
+  { value: 'tax_preparation', label: 'Tax Preparation' },
   { value: 'accounting', label: 'Accounting' },
   { value: 'payroll', label: 'Payroll' },
   { value: 'business_services', label: 'Business Services' },
-  { value: 'irs_representation', label: 'IRS Representation' },
+  { value: 'irs_resolution', label: 'IRS Resolution' },
   { value: 'consulting', label: 'Consulting' },
   { value: 'uncategorized', label: 'Uncategorized' }
-] as const;
+];
 
 const TAX_RETURN_STATUS_OPTIONS = [
   { value: 'not_started', label: 'Not Started' },

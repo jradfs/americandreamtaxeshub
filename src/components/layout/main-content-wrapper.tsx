@@ -1,23 +1,24 @@
-"use client";
+"use client"
 
-import { cn } from "@/lib/utils";
-import { useSidebar } from "@/components/providers/sidebar-provider";
+import { cn } from "src/lib/utils"
 
 interface MainContentWrapperProps {
-  children: React.ReactNode;
+  children: React.ReactNode
+  className?: string
 }
 
-export function MainContentWrapper({ children }: MainContentWrapperProps) {
-  const { isCollapsed } = useSidebar();
-
+export function MainContentWrapper({ 
+  children, 
+  className 
+}: MainContentWrapperProps) {
   return (
-    <main
-      className={cn(
-        "flex-1 transition-all duration-300 ease-in-out",
-        isCollapsed ? "pl-[4.5rem]" : "pl-[16.5rem]"
-      )}
-    >
+    <div className={cn(
+      "flex-1 overflow-auto p-4",
+      "ml-16", // Account for sidebar width
+      "transition-all duration-300 ease-in-out",
+      className
+    )}>
       {children}
-    </main>
-  );
+    </div>
+  )
 }

@@ -10,19 +10,25 @@ export type UpdateProject = Database['public']['Tables']['projects']['Update']
 export type ServiceType = Database['public']['Tables']['projects']['Row']['service_type']
 
 // Enum types
-export type ServiceCategory = 
-  | 'tax_preparation'
-  | 'accounting'
-  | 'payroll'
-  | 'business_services'
-  | 'consulting'
-  | 'irs_resolution'
-  | 'other'
+export type ServiceCategory = Database['public']['Enums']['service_type']
 
 export type TaxReturnType = Database['public']['Enums']['tax_return_type']
-export type ProjectStatus = Database['public']['Enums']['project_status']
+/**
+ * Represents the lifecycle status of a project
+ * 
+ * - not_started: Project has been created but work hasn't started
+ * - on_hold: Project is temporarily paused
+ * - cancelled: Project has been cancelled
+ * - todo: Project is ready to start
+ * - in_progress: Work is actively being done on the project
+ * - review: Project is under review
+ * - blocked: Project is blocked waiting on external dependencies
+ * - completed: Project work is finished
+ * - archived: Project is archived for historical purposes
+ */
+export type ProjectStatus = Database['public']['Enums']['project_status'];
 export type ReviewStatus = Database['public']['Enums']['review_status']
-export type Priority = Database['public']['Enums']['priority']
+export type Priority = Database['public']['Enums']['priority_level']
 
 // Project metadata interface
 export interface ProjectMetadata {
@@ -48,7 +54,7 @@ export interface ProjectBase extends ProjectMetadata {
 }
 
 // Service-specific information interfaces
-export interface TaxInfo {
+export interface TaxInfo extends Json {
   return_type: TaxReturnType
   tax_year: number
   filing_deadline?: string
@@ -128,19 +134,37 @@ export interface ConsultingInfo {
 }
 
 // Client and related interfaces
+/**
+ * Represents a client in the system
+ * 
+ * @property {string} id - Unique identifier for the client
+ * @property {string} contact_email - Primary contact email address
+ * @property {string | null} full_name - Full name of the client (individual)
+ * @property {string | null} company_name - Company name (if business client)
+ * @property {string | null} business_tax_id - Business tax ID (EIN)
+ * @property {string | null} individual_tax_id - Individual tax ID (SSN)
+ * @property {Json} contact_info - Additional contact information
+ * @property {string | null} created_at - Timestamp when client was created
+ * @property {string | null} updated_at - Timestamp of last update
+ * @property {string | null} user_id - Associated user account ID
+ * @property {'active' | 'inactive' | 'pending' | 'archived'} status - Current status
+ * @property {'business' | 'individual' | null} type - Client type
+ * @property {Json} tax_info - Additional tax-related information
+ */
 export interface Client {
   id: string;
-  email: string;
+  contact_email: string;
   full_name: string | null;
   company_name: string | null;
   business_tax_id: string | null;
   individual_tax_id: string | null;
   contact_info: Json;
-  client_since: string | null;
-  client_type: string;
   created_at: string | null;
   updated_at: string | null;
   user_id: string | null;
+  status: 'active' | 'inactive' | 'pending' | 'archived';
+  type: 'business' | 'individual' | null;
+  tax_info: Json;
 }
 
 export interface Owner {
@@ -163,13 +187,44 @@ export interface Document {
 }
 
 // Project with all relations
-export interface ProjectWithRelations extends Project {
-  client?: Client | null
-  tasks?: Task[]
+/**
+ * Represents service-specific information for a project
+ * 
+ * @property {ServiceCategory} type - The category of service being provided
+ * @property {TaxInfo | AccountingInfo | PayrollInfo | BusinessServicesInfo | IRSNoticeInfo | ConsultingInfo} info - Service-specific details
+ */
+/**
+ * Represents service-specific information for a project
+ * 
+ * @property {ServiceCategory} type - The category of service being provided
+ * @property {TaxInfo | AccountingInfo | PayrollInfo | BusinessServicesInfo | IRSNoticeInfo | ConsultingInfo} info - Service-specific details
+ * @property {string} [created_at] - Timestamp when service info was created
+ * @property {string} [updated_at] - Timestamp when service info was last updated
+ * @property {number} [version] - Version number for tracking changes
+ * @property {Json} [metadata] - Additional metadata
+ * @property {Json} [audit_log] - Audit log of changes
+ */
+export type ServiceInfo = Json & {
+  type: ServiceCategory
+  info: TaxInfo | AccountingInfo | PayrollInfo | BusinessServicesInfo | IRSNoticeInfo | ConsultingInfo
+  created_at?: string
+  updated_at?: string
+  version?: number
+  metadata?: Json
+  audit_log?: Json
+}
+
+export interface ProjectWithRelations extends Database['public']['Tables']['projects']['Row'] {
+  client?: Database['public']['Tables']['clients']['Row'] | null
+  primary_manager?: Database['public']['Tables']['users']['Row'] | null
+  tasks?: (Database['public']['Tables']['tasks']['Row'] & {
+    assignee?: Database['public']['Tables']['users']['Row'] | null
+    assigned_team?: Database['public']['Tables']['users']['Row'][]
+  })[]
   tax_return?: Database['public']['Tables']['tax_returns']['Row'] | null
-  service_info?: {
-    type: ServiceCategory
-    info: TaxInfo | AccountingInfo | PayrollInfo | BusinessServicesInfo | IRSNoticeInfo | ConsultingInfo
+  service_info?: Database['public']['Tables']['projects']['Row']['service_info'] & {
+    metadata?: Json
+    audit_log?: Json
   }
 }
 
@@ -216,6 +271,18 @@ export interface ProjectFilters {
     end: Date
   }
   clientId?: string
+  stage?: string
+  isArchived?: boolean
+  sortBy?: string
+  sortOrder?: 'asc' | 'desc'
+  dueThisWeek?: boolean
+  dueThisMonth?: boolean
+  dueThisQuarter?: boolean
+  missingInfo?: boolean
+  needsReview?: boolean
+  readyToFile?: boolean
+  returnType?: TaxReturnType[]
+  reviewStatus?: ReviewStatus[]
   teamMemberId?: string
   tags?: string[]
   hasDocuments?: boolean

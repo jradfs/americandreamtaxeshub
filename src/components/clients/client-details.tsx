@@ -1,6 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import type { Client } from '@/types/projects';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -19,23 +21,34 @@ import {
 } from "lucide-react";
 
 interface ClientDetailsProps {
-  client: {
-    id: string;
-    name: string;
-    email: string;
-    phone?: string;
-    address?: string;
-    type?: string;
-    formation_date?: string;
-    year_end?: string;
-    resources?: Array<{ id: string; name: string; url: string; type: string }>;
-  };
+  clientId: string;
 }
 
 export function ClientDetails({ clientId }: { clientId: string }) {
-  const [client, setClient] = useState<Client | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [client, setClient] = useState<Client | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+
+  if (error) {
+    return (
+      <div className="p-4 text-red-600">
+        <h3>Error loading client data</h3>
+        <p>{error.message}</p>
+        <Button 
+          variant="outline" 
+          onClick={() => {
+            setError(null);
+            setLoading(true);
+            fetchClient();
+          }}
+        >
+          Retry
+        </Button>
+      </div>
+    );
+  }
   const [activeTab, setActiveTab] = useState('dashboard')
+  const supabase = createClientComponentClient()
 
   useEffect(() => {
     const fetchClient = async () => {
@@ -48,22 +61,26 @@ export function ClientDetails({ clientId }: { clientId: string }) {
 
         if (error) throw error
         setClient(data)
-      } catch (error) {
+      } catch (error: unknown) {
         console.error('Error fetching client:', error)
+        if (error instanceof Error) {
+          setError(error)
+        }
       } finally {
         setLoading(false)
       }
     }
 
     fetchClient()
-  }, [clientId])
+  }, [clientId, supabase])
+
+  const { tasks, updateTask, deleteTask } = useTasks({
+    clientId: client?.id || '',
+    assignedUserId: undefined
+  });
 
   if (loading) return <div>Loading client details...</div>
   if (!client) return <div>Client not found</div>
-  const { tasks, updateTask, deleteTask } = useTasks({
-    clientId: client.id,
-    assignedUserId: undefined // We'll add user context later
-  });
 
   return (
     <div className="h-full flex flex-col">

@@ -5,6 +5,9 @@
     "plugin:@typescript-eslint/recommended"
   ],
   "parser": "@typescript-eslint/parser",
+  "parserOptions": {
+    "project": "./tsconfig.json"
+  },
   "plugins": ["@typescript-eslint"],
   "rules": {
     "no-restricted-syntax": [
@@ -14,9 +17,28 @@
         "message": "Use Tailwind font utilities instead of direct font-family declarations"
       }
     ],
-    "@typescript-eslint/no-explicit-any": "warn",
-    "import/no-anonymous-default-export": "off"
+    "@typescript-eslint/no-explicit-any": "off",
+    "import/no-anonymous-default-export": "off",
+    "@typescript-eslint/consistent-type-imports": "error",
+    "@typescript-eslint/consistent-type-exports": "error",
+    "@typescript-eslint/no-unused-vars": ["warn", { 
+      "argsIgnorePattern": "^_",
+      "varsIgnorePattern": "^_"
+    }],
+    "react-hooks/exhaustive-deps": "warn",
+    "react/no-unescaped-entities": "off",
+    "no-case-declarations": "off",
+    "@typescript-eslint/no-shadow": "error",
+    "no-console": ["warn", { "allow": ["error", "warn", "info"] }],
+    "react-hooks/rules-of-hooks": "error",
+    "react/jsx-key": "error"
   },
+  "ignorePatterns": [
+    "node_modules/",
+    ".next/",
+    "out/",
+    "public/"
+  ],
   "overrides": [
     {
       "files": ["**/*.{ts,tsx}"],

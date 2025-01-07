@@ -1,4 +1,17 @@
 import { createServerClient } from '@supabase/ssr'
+
+// Helper function to calculate template metadata
+function calculateTemplateMetadata(tasks: TemplateTask[] = []) {
+  const totalEstimatedTime = tasks.reduce((total, task) => 
+    total + (task.estimated_minutes || 0), 0) || 0;
+
+  const categories = [...new Set(tasks.map(task => task.category).filter(Boolean) || [])];
+
+  return {
+    totalEstimatedTime,
+    categories
+  };
+}
 import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { Database } from '@/types/database.types'
@@ -67,7 +80,7 @@ export async function GET(request: Request) {
       .from('project_templates')
       .select(`
         *,
-        category:template_category_id (*),
+        category:template_categories (*),
         tasks:template_tasks (*)
       `)
 
@@ -88,25 +101,18 @@ export async function GET(request: Request) {
     query = query.order(sortBy, { ascending: sortOrder === 'asc' })
 
     const { data: templates, error } = await query
+      .returns<TemplateResponse[]>()
 
     if (error) throw error
 
     // Calculate metadata for each template
-    const templatesWithMetadata = templates.map(template => {
-      const totalEstimatedTime = template.tasks?.reduce((total, task) => 
-        total + (task.estimated_minutes || 0), 0) || 0
-
-      const categories = [...new Set(template.tasks?.map(task => task.category).filter(Boolean) || [])]
-
-      return {
-        ...template,
-        metadata: {
-          totalEstimatedTime,
-          categories,
-          requiredSkills: template.metadata?.requiredSkills || []
-        }
+    const templatesWithMetadata = templates.map(template => ({
+      ...template,
+      metadata: {
+        ...calculateTemplateMetadata(template.tasks),
+        requiredSkills: template.metadata?.requiredSkills || []
       }
-    })
+    }));
 
     return NextResponse.json(templatesWithMetadata)
   } catch (error) {
@@ -193,25 +199,19 @@ export async function POST(request: Request) {
         .from('project_templates')
         .select(`
           *,
-          category:template_category_id (*),
+          category:template_categories (*),
           tasks:template_tasks (*)
         `)
+        .returns<TemplateResponse>()
         .eq('id', template.id)
         .single()
 
       if (fetchError) throw fetchError
 
-      // Calculate metadata
-      const totalEstimatedTime = fullTemplate.tasks?.reduce((total, task) => 
-        total + (task.estimated_minutes || 0), 0) || 0
-
-      const categories = [...new Set(fullTemplate.tasks?.map(task => task.category).filter(Boolean) || [])]
-
       return NextResponse.json({
         ...fullTemplate,
         metadata: {
-          totalEstimatedTime,
-          categories,
+          ...calculateTemplateMetadata(fullTemplate.tasks),
           requiredSkills: fullTemplate.metadata?.requiredSkills || []
         }
       })
@@ -316,7 +316,7 @@ export async function PUT(request: Request) {
         .from('project_templates')
         .select(`
           *,
-          category:template_category_id (*),
+          category:template_categories (*),
           tasks:template_tasks (*)
         `)
         .eq('id', id)
@@ -324,17 +324,10 @@ export async function PUT(request: Request) {
 
       if (fetchError) throw fetchError
 
-      // Calculate metadata
-      const totalEstimatedTime = fullTemplate.tasks?.reduce((total, task) => 
-        total + (task.estimated_minutes || 0), 0) || 0
-
-      const categories = [...new Set(fullTemplate.tasks?.map(task => task.category).filter(Boolean) || [])]
-
       return NextResponse.json({
         ...fullTemplate,
         metadata: {
-          totalEstimatedTime,
-          categories,
+          ...calculateTemplateMetadata(fullTemplate.tasks),
           requiredSkills: fullTemplate.metadata?.requiredSkills || []
         }
       })

@@ -8,15 +8,7 @@ import { Task } from '@/types/database.types'
 import { toast } from 'sonner'
 import { FilterState, PaginationState, SortingState } from '@/types/hooks'
 
-interface ProjectFilters extends FilterState {
-  status?: ProjectStatus[]
-  serviceType?: ServiceType[]
-  clientId?: string
-  dueDateRange?: {
-    from: Date
-    to: Date
-  }
-}
+import { ProjectFilters } from '@/types/projects';
 
 export function useProjects(initialFilters?: ProjectFilters) {
   const [projects, setProjects] = useState<ProjectWithRelations[]>([])

@@ -14,30 +14,7 @@ import { useProjects } from './useProjects'
 
 export type ProjectView = 'service' | 'deadline' | 'status' | 'client' | 'return_type' | 'review_status' | 'priority'
 
-interface ProjectFilters {
-  search: string
-  service?: ServiceCategory[]
-  status?: ProjectStatus[]
-  priority?: Priority[]
-  dueThisWeek?: boolean
-  dueThisMonth?: boolean
-  dueThisQuarter?: boolean
-  missingInfo?: boolean
-  needsReview?: boolean
-  readyToFile?: boolean
-  returnType?: TaxReturnType[]
-  reviewStatus?: ReviewStatus[]
-  clientId?: string
-  teamMemberId?: string
-  dateRange?: {
-    start: Date
-    end: Date
-  }
-  tags?: string[]
-  hasDocuments?: boolean
-  hasNotes?: boolean
-  hasTimeEntries?: boolean
-}
+import { ProjectFilters } from '@/types/projects';
 
 const defaultFilters: ProjectFilters = {
   search: ''
@@ -274,60 +251,35 @@ export function useProjectManagement(initialFilters?: ProjectFilters) {
     })
   }, [filters, getProjectDeadline])
 
+  const groupKeyMap: Record<ProjectView, (project: ProjectWithRelations) => string> = {
+    service: (p) => p.service_type || 'uncategorized',
+    status: (p) => p.status,
+    priority: (p) => p.priority,
+    client: (p) => p.client?.company_name || p.client?.full_name || 'No Client',
+    return_type: (p) => p.tax_info?.return_type || 'Not Tax Return',
+    review_status: (p) => p.tax_info?.review_status || 'Not In Review',
+    deadline: (p) => {
+      const deadline = getProjectDeadline(p);
+      if (!deadline) return 'No Due Date';
+      const today = startOfDay(new Date());
+      if (isBefore(deadline, today)) return 'Overdue';
+      if (isWithinNextDays(deadline, 7)) return 'Due This Week';
+      if (isWithinNextDays(deadline, 30)) return 'Due This Month';
+      return 'Future';
+    }
+  };
+
   const groupProjects = useCallback((
     projects: ProjectWithRelations[],
     groupBy: ProjectView
   ): Record<string, ProjectWithRelations[]> => {
     return projects.reduce((groups, project) => {
-      let key: string
-      
-      switch (groupBy) {
-        case 'service':
-          key = project.service_type || 'uncategorized'
-          break
-        case 'status':
-          key = project.status
-          break
-        case 'priority':
-          key = project.priority
-          break
-        case 'client':
-          key = project.client?.company_name || project.client?.full_name || 'No Client'
-          break
-        case 'return_type':
-          key = project.tax_info?.return_type || 'Not Tax Return'
-          break
-        case 'review_status':
-          key = project.tax_info?.review_status || 'Not In Review'
-          break
-        case 'deadline':
-          const deadline = getProjectDeadline(project)
-          if (!deadline) {
-            key = 'No Due Date'
-          } else {
-            const today = startOfDay(new Date())
-            if (isBefore(deadline, today)) {
-              key = 'Overdue'
-            } else if (isWithinNextDays(deadline, 7)) {
-              key = 'Due This Week'
-            } else if (isWithinNextDays(deadline, 30)) {
-              key = 'Due This Month'
-            } else {
-              key = 'Future'
-            }
-          }
-          break
-        default:
-          key = 'Other'
-      }
-
-      const formattedKey = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
-      if (!groups[formattedKey]) {
-        groups[formattedKey] = []
-      }
-      groups[formattedKey].push(project)
-      return groups
-    }, {} as Record<string, ProjectWithRelations[]>)
+      const key = groupKeyMap[groupBy](project);
+      const formattedKey = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+      groups[formattedKey] = groups[formattedKey] || [];
+      groups[formattedKey].push(project);
+      return groups;
+    }, {} as Record<string, ProjectWithRelations[]>);
   }, [getProjectDeadline])
 
   const getProjectMetrics = useCallback((projects: ProjectWithRelations[]): ProjectMetrics => {

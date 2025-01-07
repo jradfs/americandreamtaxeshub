@@ -1,7 +1,7 @@
 'use client';
 
-import { Project } from "@/types/database.types";
-import { Task } from "@/types/task-management";
+import type { Project } from "@/types/database.types";
+import type { Task } from "@/types/task-management";
 import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -16,6 +16,11 @@ interface ProjectViewProps {
   clientTasks: Task[];
   teamTasks: Task[];
   clientName: string;
+  onStatusChange?: (status: ProjectStatus) => void;
+  onTaskComplete?: (taskId: string) => void;
+  onTaskDelete?: (taskId: string) => void;
+  onTaskUpdate?: (task: Task) => void;
+  onProjectUpdate?: (updates: Partial<Project>) => void;
 }
 
 export default function ProjectView({ project, clientTasks, teamTasks, clientName }: ProjectViewProps) {

@@ -138,7 +138,7 @@ export function ClientList() {
     startTransition(() => {
       fetchClients()
     })
-  }, [])
+  }, [supabase, toast])
 
   if (loading) {
     return <div className="flex items-center justify-center h-32">Loading clients...</div>

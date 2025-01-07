@@ -5,9 +5,11 @@
       "dom.iterable",
       "esnext"
     ],
-    "allowJs": true,
-    "skipLibCheck": true,
+    "allowJs": false,
     "strict": true,
+    "strictNullChecks": true,
+    "noImplicitAny": true,
+    "noImplicitThis": true,
     "noEmit": true,
     "incremental": true,
     "esModuleInterop": true,
@@ -21,6 +23,7 @@
         "name": "next"
       }
     ],
+    "skipLibCheck": true,
     "baseUrl": ".",
     "paths": {
       "@/*": [

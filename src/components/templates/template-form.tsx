@@ -1,4 +1,10 @@
 import { useState } from 'react';
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent
+} from '../ui/card';
 import { Tables } from 'src/types/database.types';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
@@ -16,7 +22,7 @@ interface TemplateTask {
   id?: string;
   title: string;
   description?: string;
-  priority: string;
+  priority: Database['public']['Enums']['task_priority'];
   dependencies: string[];
   order_index: number;
   estimated_hours?: number;
@@ -51,7 +57,7 @@ export default function TemplateForm({
     title: template?.title || '',
     description: template?.description || '',
     categoryId: template?.category_id || '',
-    priority: template?.priority || 'medium',
+    priority: template?.priority || 'medium' as Database['public']['Enums']['task_priority'],
     version: template?.version || 1,
     is_archived: template?.is_archived || false,
     tasks: template?.tasks || [] as TemplateTask[],
@@ -141,7 +147,7 @@ export default function TemplateForm({
     }
   };
 
-  const updateTask = (index: number, field: string, value: any) => {
+  const updateTask = (index: number, field: keyof TemplateTask, value: string | number | string[] | undefined) => {
     const updatedTasks = [...formData.tasks];
     updatedTasks[index] = {
       ...updatedTasks[index],

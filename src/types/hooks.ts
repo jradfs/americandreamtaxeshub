@@ -30,13 +30,6 @@ export type ProjectUpdate = Database['public']['Tables']['projects']['Update']
 // Task types moved to tasks.ts
 export type { Task, TaskInsert, TaskUpdate } from './tasks'
 
-export type Document = Database['public']['Tables']['documents']['Row']
-export type DocumentInsert = Database['public']['Tables']['documents']['Insert']
-export type DocumentUpdate = Database['public']['Tables']['documents']['Update']
-
-export type TimeEntry = Database['public']['Tables']['time_entries']['Row']
-export type TimeEntryInsert = Database['public']['Tables']['time_entries']['Insert']
-export type TimeEntryUpdate = Database['public']['Tables']['time_entries']['Update']
 
 export interface User extends BaseMetadata {
   email: string
@@ -131,23 +124,6 @@ export interface Notification extends BaseMetadata {
   metadata?: Json
 }
 
-// Document types with enhanced metadata
-export interface DocumentMetadata extends BaseMetadata {
-  name: string
-  type: string
-  size: number
-  path: string
-  uploaded_by: string
-  metadata?: {
-    contentType: string
-    hash: string
-    tags?: string[]
-    ocr_processed?: boolean
-    ocr_content?: string
-    classification?: string
-    sensitive?: boolean
-  }
-}
 
 // Template types with enhanced validation
 export interface TemplateTask extends BaseMetadata {

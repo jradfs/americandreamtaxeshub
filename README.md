@@ -7,7 +7,6 @@ A comprehensive practice management tool for tax professionals and accounting fi
 ### Client Management
 - Client database with tax information
 - Project and task association
-- Document management
 - Communication history
 
 ### Project Management

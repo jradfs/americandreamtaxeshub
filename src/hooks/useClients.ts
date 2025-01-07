@@ -29,8 +29,12 @@ export function useClients() {
         if (supabaseError) throw supabaseError
 
         setClients(data || [])
-      } catch (e) {
-        setError(e.message)
+      } catch (error: unknown) {
+        if (error instanceof Error) {
+          setError(error.message)
+        } else {
+          setError('An unknown error occurred')
+        }
       } finally {
         setLoading(false)
       }

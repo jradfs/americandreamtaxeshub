@@ -210,9 +210,13 @@ export function useProjectForm({ onSuccess, initialData }: UseProjectFormProps) 
         setTemplates(templatesResponse.data || []);
         setProfiles(profilesResponse.data || []);
         setCurrentUser(currentProfileResponse.data);
-      } catch (error) {
+      } catch (error: unknown) {
         console.error('Error fetching data:', error);
-        toast.error(error instanceof Error ? error.message : 'Failed to load form data');
+        if (error instanceof Error) {
+          toast.error(error.message);
+        } else {
+          toast.error('Failed to load form data');
+        }
         // Set empty arrays to prevent undefined errors
         setClients([]);
         setTemplates([]);

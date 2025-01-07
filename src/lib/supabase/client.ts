@@ -1,9 +1,12 @@
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { createClient } from '@supabase/ssr'
 import { type Database } from '@/types/database.types'
 
 // Create a new supabase client for use in the browser
 export const createClient = () => {
-  const client = createClientComponentClient<Database>({
+  return createClient<Database>(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
     options: {
       persistSession: true,
       autoRefreshToken: true,

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { createClient } from 'src/lib/supabase/server';
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
 import { classifyTask } from 'src/lib/ai/tasks';
 
 interface TemplateTask {
@@ -8,7 +9,18 @@ interface TemplateTask {
 }
 
 export async function POST(request: Request) {
-  const supabase = createClient();
+  const cookieStore = cookies();
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name: string) {
+          return cookieStore.get(name)?.value;
+        },
+      },
+    }
+  );
   const { project_id, template_id } = await request.json();
 
   if (!project_id || !template_id) {
