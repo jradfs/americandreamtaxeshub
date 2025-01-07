@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { classifyTask, getCategorySuggestions } from '@/lib/ai/tasks';
+import { classifyTask, getCategorySuggestions } from '../../../../lib/ai/tasks';
 
 export async function POST(request: Request) {
   try {

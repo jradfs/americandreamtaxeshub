@@ -20,16 +20,15 @@ export function TimelineTeamForm({ form, teamMembers }: TimelineTeamFormProps) {
   }));
 
   const handleAddTask = () => {
-    const currentTasks = form.getValues('tasks') || [];
-    form.setValue('tasks', [
+    const currentTasks = form.getValues('template_tasks') || [];
+    form.setValue('template_tasks', [
       ...currentTasks,
       {
         title: '',
         description: '',
         priority: 'medium',
         dependencies: [],
-        order_index: currentTasks.length,
-        status: 'not_started'
+        order_index: currentTasks.length
       }
     ]);
   };
@@ -69,15 +68,15 @@ export function TimelineTeamForm({ form, teamMembers }: TimelineTeamFormProps) {
             </Button>
           </div>
 
-          {form.watch('tasks')?.map((_, index) => (
+          {form.watch('template_tasks')?.map((_, index) => (
             <TaskForm
               key={index}
               form={form}
               index={index}
               teamMembers={teamMembers}
               onRemove={() => {
-                const tasks = form.getValues('tasks') || [];
-                form.setValue('tasks', tasks.filter((_, i) => i !== index));
+                const tasks = form.getValues('template_tasks') || [];
+                form.setValue('template_tasks', tasks.filter((_, i) => i !== index));
               }}
             />
           ))}

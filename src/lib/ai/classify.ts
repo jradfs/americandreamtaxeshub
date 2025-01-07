@@ -2,11 +2,11 @@ import { createChatCompletion } from './openai-client';
 
 // Define classification categories to match task categories
 export type ClassificationCategory =
-  | 'Payroll Processing'
+  | 'Client Communication'
   | 'Tax Preparation'
-  | 'Documentation'
-  | 'Client Management'
-  | 'Employee Management';
+  | 'Document Review'
+  | 'Financial Analysis'
+  | 'Task Management';
 
 // Function to classify text input
 export async function classifyText(

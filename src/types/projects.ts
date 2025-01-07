@@ -1,292 +1,183 @@
-import { Database } from './database.types'
-import type { Json } from './database.types'
-import { Task } from './tasks'
-import { User } from './hooks'
+import { Database } from './database.types';
+import type { Json } from './database.types';
+import { z } from 'zod';
+import { projectSchema } from '@/lib/validations/project';
 
-// Base types from database
-export type Project = Database['public']['Tables']['projects']['Row']
-export type NewProject = Database['public']['Tables']['projects']['Insert']
-export type UpdateProject = Database['public']['Tables']['projects']['Update']
-export type ServiceType = Database['public']['Tables']['projects']['Row']['service_type']
+// Database types
+export type DbProject = Database['public']['Tables']['projects']['Row'];
+export type DbProjectInsert = Database['public']['Tables']['projects']['Insert'];
+export type DbProjectUpdate = Database['public']['Tables']['projects']['Update'];
 
-// Enum types
-export type ServiceCategory = Database['public']['Enums']['service_type']
-
-export type TaxReturnType = Database['public']['Enums']['tax_return_type']
-/**
- * Represents the lifecycle status of a project
- * 
- * - not_started: Project has been created but work hasn't started
- * - on_hold: Project is temporarily paused
- * - cancelled: Project has been cancelled
- * - todo: Project is ready to start
- * - in_progress: Work is actively being done on the project
- * - review: Project is under review
- * - blocked: Project is blocked waiting on external dependencies
- * - completed: Project work is finished
- * - archived: Project is archived for historical purposes
- */
+// Enums from database
 export type ProjectStatus = Database['public']['Enums']['project_status'];
-export type ReviewStatus = Database['public']['Enums']['review_status']
-export type Priority = Database['public']['Enums']['priority_level']
+export type ServiceType = Database['public']['Enums']['service_type'];
+export type TaskPriority = Database['public']['Enums']['task_priority'];
 
-// Project metadata interface
-export interface ProjectMetadata {
-  readonly id: string
-  readonly created_at: string
-  readonly updated_at: string
-  version: number
-  archived: boolean
-}
-
-// Base project interface
-export interface ProjectBase extends ProjectMetadata {
-  title: string
-  description?: string
-  status: ProjectStatus
-  priority: Priority
+// Strongly typed JSON fields
+export interface TaxInfo {
+  return_type?: Database['public']['Enums']['filing_type']
+  filing_status?: string
+  tax_year?: number
   due_date?: string
-  assigned_to?: string[]
-  tags?: string[]
-  category: ServiceCategory
-  client_id: string
-  team_members?: string[]
-}
-
-// Service-specific information interfaces
-export interface TaxInfo extends Json {
-  return_type: TaxReturnType
-  tax_year: number
-  filing_deadline?: string
-  extension_filed?: boolean
-  extension_deadline?: string
+  extension_date?: string
   estimated_refund?: number
   estimated_liability?: number
-  prior_year_comparison?: boolean
-  missing_documents?: string[]
-  review_status?: ReviewStatus
-  reviewer_id?: string
-  review_notes?: string
-  payment_status?: 'pending' | 'partial' | 'paid' | 'overdue'
-  estimated_tax_payments?: Record<string, boolean>
-  state_returns?: Array<{
-    state: string
-    status: string
-    due_date?: string
-    extension_filed?: boolean
-  }>
+  notes?: string
 }
 
 export interface AccountingInfo {
-  service_type: 'bookkeeping' | 'financial_statements' | 'audit' | 'other'
   period_start?: string
   period_end?: string
-  frequency: 'monthly' | 'quarterly' | 'annual' | 'one_time'
-  software_used?: string
+  accounting_method?: 'cash' | 'accrual'
+  fiscal_year_end?: string
   last_reconciliation_date?: string
   chart_of_accounts_setup?: boolean
-  bank_accounts_connected?: boolean
-  credit_cards_connected?: boolean
+  software_used?: string
+  frequency?: 'weekly' | 'monthly' | 'quarterly' | 'annually'
+  notes?: string
 }
 
 export interface PayrollInfo {
-  frequency: 'weekly' | 'bi_weekly' | 'semi_monthly' | 'monthly'
-  next_payroll_date?: string
+  payroll_schedule?: 'weekly' | 'bi-weekly' | 'semi-monthly' | 'monthly'
   employee_count?: number
-  last_payroll_run?: string
-  tax_deposits_current?: boolean
-  software_used?: string
-  state_registrations?: string[]
-  workers_comp_setup?: boolean
-  benefits_setup?: boolean
-}
-
-export interface BusinessServicesInfo {
-  service_type: 'business_formation' | 'licensing' | 'compliance' | 'other'
-  due_date?: string
-  state?: string
-  entity_type?: string
-  filing_requirements?: string[]
-  compliance_deadlines?: string[]
-}
-
-export interface IRSNoticeInfo {
-  notice_type: string
-  notice_date: string
-  response_deadline: string
-  tax_year?: number
-  amount_due?: number
-  status: 'new' | 'in_progress' | 'responded' | 'resolved'
-  assigned_to?: string
-  response_strategy?: string
-  documents_needed?: string[]
-}
-
-export interface ConsultingInfo {
-  topic: string
-  scheduled_date?: string
-  duration?: number
-  follow_up_needed?: boolean
+  last_payroll_date?: string
+  next_payroll_date?: string
+  payroll_provider?: string
   notes?: string
-  attendees?: string[]
-  materials_prepared?: boolean
-  follow_up_date?: string
 }
 
-// Client and related interfaces
-/**
- * Represents a client in the system
- * 
- * @property {string} id - Unique identifier for the client
- * @property {string} contact_email - Primary contact email address
- * @property {string | null} full_name - Full name of the client (individual)
- * @property {string | null} company_name - Company name (if business client)
- * @property {string | null} business_tax_id - Business tax ID (EIN)
- * @property {string | null} individual_tax_id - Individual tax ID (SSN)
- * @property {Json} contact_info - Additional contact information
- * @property {string | null} created_at - Timestamp when client was created
- * @property {string | null} updated_at - Timestamp of last update
- * @property {string | null} user_id - Associated user account ID
- * @property {'active' | 'inactive' | 'pending' | 'archived'} status - Current status
- * @property {'business' | 'individual' | null} type - Client type
- * @property {Json} tax_info - Additional tax-related information
- */
-export interface Client {
-  id: string;
-  contact_email: string;
-  full_name: string | null;
-  company_name: string | null;
-  business_tax_id: string | null;
-  individual_tax_id: string | null;
-  contact_info: Json;
-  created_at: string | null;
-  updated_at: string | null;
-  user_id: string | null;
-  status: 'active' | 'inactive' | 'pending' | 'archived';
-  type: 'business' | 'individual' | null;
-  tax_info: Json;
+export interface ServiceInfo {
+  service_category?: string
+  frequency?: 'one-time' | 'weekly' | 'monthly' | 'quarterly' | 'annually'
+  last_service_date?: string
+  next_service_date?: string
+  special_instructions?: string
+  notes?: string
 }
 
-export interface Owner {
-  id: string
-  client_id: string
-  full_name: string
-  ownership_percentage: number
-  tax_id?: string
-  contact_info?: Json
-}
+// Form data type that matches our schema
+export type ProjectFormData = z.infer<typeof projectSchema>;
 
-export interface Document {
-  id: string
-  name: string
-  type: string
-  path: string
-  uploaded_by: string
-  upload_date: string
-  metadata?: Json
-}
-
-// Project with all relations
-/**
- * Represents service-specific information for a project
- * 
- * @property {ServiceCategory} type - The category of service being provided
- * @property {TaxInfo | AccountingInfo | PayrollInfo | BusinessServicesInfo | IRSNoticeInfo | ConsultingInfo} info - Service-specific details
- */
-/**
- * Represents service-specific information for a project
- * 
- * @property {ServiceCategory} type - The category of service being provided
- * @property {TaxInfo | AccountingInfo | PayrollInfo | BusinessServicesInfo | IRSNoticeInfo | ConsultingInfo} info - Service-specific details
- * @property {string} [created_at] - Timestamp when service info was created
- * @property {string} [updated_at] - Timestamp when service info was last updated
- * @property {number} [version] - Version number for tracking changes
- * @property {Json} [metadata] - Additional metadata
- * @property {Json} [audit_log] - Audit log of changes
- */
-export type ServiceInfo = Json & {
-  type: ServiceCategory
-  info: TaxInfo | AccountingInfo | PayrollInfo | BusinessServicesInfo | IRSNoticeInfo | ConsultingInfo
-  created_at?: string
-  updated_at?: string
-  version?: number
-  metadata?: Json
-  audit_log?: Json
-}
-
-export interface ProjectWithRelations extends Database['public']['Tables']['projects']['Row'] {
+// Enhanced project type with relationships and strongly typed JSON fields
+export interface ProjectWithRelations extends Omit<DbProject, 'tax_info' | 'accounting_info' | 'payroll_info' | 'service_info'> {
+  tax_info: TaxInfo | null
+  accounting_info: AccountingInfo | null
+  payroll_info: PayrollInfo | null
+  service_info: ServiceInfo | null
   client?: Database['public']['Tables']['clients']['Row'] | null
-  primary_manager?: Database['public']['Tables']['users']['Row'] | null
-  tasks?: (Database['public']['Tables']['tasks']['Row'] & {
-    assignee?: Database['public']['Tables']['users']['Row'] | null
-    assigned_team?: Database['public']['Tables']['users']['Row'][]
-  })[]
-  tax_return?: Database['public']['Tables']['tax_returns']['Row'] | null
-  service_info?: Database['public']['Tables']['projects']['Row']['service_info'] & {
-    metadata?: Json
-    audit_log?: Json
+  template?: Database['public']['Tables']['project_templates']['Row'] | null
+  tasks?: Database['public']['Tables']['tasks']['Row'][]
+  team_members?: Database['public']['Tables']['project_team_members']['Row'][]
+  primary_manager_details?: Database['public']['Tables']['users']['Row'] | null
+}
+
+// Type guards
+export function isTaxInfo(value: unknown): value is TaxInfo {
+  return value !== null &&
+    typeof value === 'object' &&
+    (!('tax_year' in value) || typeof value.tax_year === 'number') &&
+    (!('estimated_refund' in value) || typeof value.estimated_refund === 'number') &&
+    (!('estimated_liability' in value) || typeof value.estimated_liability === 'number')
+}
+
+export function isAccountingInfo(value: unknown): value is AccountingInfo {
+  return value !== null &&
+    typeof value === 'object' &&
+    (!('chart_of_accounts_setup' in value) || typeof value.chart_of_accounts_setup === 'boolean') &&
+    (!('accounting_method' in value) || ['cash', 'accrual'].includes(value.accounting_method as string))
+}
+
+export function isPayrollInfo(value: unknown): value is PayrollInfo {
+  return value !== null &&
+    typeof value === 'object' &&
+    (!('employee_count' in value) || typeof value.employee_count === 'number') &&
+    (!('payroll_schedule' in value) || ['weekly', 'bi-weekly', 'semi-monthly', 'monthly'].includes(value.payroll_schedule as string))
+}
+
+export function isServiceInfo(value: unknown): value is ServiceInfo {
+  return value !== null &&
+    typeof value === 'object' &&
+    (!('frequency' in value) || ['one-time', 'weekly', 'monthly', 'quarterly', 'annually'].includes(value.frequency as string))
+}
+
+export function isDbProject(project: unknown): project is DbProject {
+  return project !== null &&
+    typeof project === 'object' &&
+    'id' in project &&
+    'name' in project &&
+    'status' in project
+}
+
+// Conversion utilities
+export function toProjectFormData(project: DbProject): Omit<ProjectFormData, 'service_type' | 'priority'> & {
+  service_type?: ServiceType | null
+  priority?: TaskPriority | null
+} {
+  const {
+    id,
+    created_at,
+    updated_at,
+    priority,
+    service_type,
+    ...formData
+  } = project
+  
+  return {
+    ...formData,
+    priority: priority as TaskPriority,
+    service_type: service_type as ServiceType,
+    tax_info: isTaxInfo(project.tax_info) ? project.tax_info : null,
+    accounting_info: isAccountingInfo(project.accounting_info) ? project.accounting_info : null,
+    payroll_info: isPayrollInfo(project.payroll_info) ? project.payroll_info : null,
+    service_info: isServiceInfo(project.service_info) ? project.service_info : null,
   }
 }
 
-export interface Note {
-  id: string
-  project_id: string
-  content: string
-  created_by: string
-  created_at: string
-  updated_at: string
-  visibility: 'internal' | 'client' | 'private'
-}
+export function toDbProject(formData: ProjectFormData): DbProjectInsert {
+  const {
+    tax_info,
+    accounting_info,
+    payroll_info,
+    service_info,
+    ...rest
+  } = formData
 
-export interface TimeEntry {
-  id: string
-  project_id: string
-  user_id: string
-  task_id?: string
-  duration: number
-  description: string
-  billable: boolean
-  date: string
-  created_at: string
-  updated_at: string
-}
-
-// View and filter types
-export interface ProjectView {
-  id: string
-  name: string
-  filters: ProjectFilters
-  layout: 'list' | 'grid' | 'calendar'
-  sortBy?: string
-  sortOrder?: 'asc' | 'desc'
-}
-
-export interface ProjectFilters {
-  search?: string
-  service?: ServiceCategory[]
-  status?: ProjectStatus[]
-  priority?: Priority[]
-  dateRange?: {
-    start: Date
-    end: Date
+  return {
+    ...rest,
+    name: rest.name || '',
+    status: rest.status || 'not_started',
+    tax_info: tax_info as Json,
+    accounting_info: accounting_info as Json,
+    payroll_info: payroll_info as Json,
+    service_info: service_info as Json,
   }
-  clientId?: string
-  stage?: string
-  isArchived?: boolean
-  sortBy?: string
-  sortOrder?: 'asc' | 'desc'
-  dueThisWeek?: boolean
-  dueThisMonth?: boolean
-  dueThisQuarter?: boolean
-  missingInfo?: boolean
-  needsReview?: boolean
-  readyToFile?: boolean
-  returnType?: TaxReturnType[]
-  reviewStatus?: ReviewStatus[]
-  teamMemberId?: string
-  tags?: string[]
-  hasDocuments?: boolean
-  hasNotes?: boolean
-  hasTimeEntries?: boolean
-  view?: ProjectView
+}
+
+// Constants
+export const PROJECT_STATUS = {
+  NOT_STARTED: 'not_started',
+  ON_HOLD: 'on_hold',
+  CANCELLED: 'cancelled',
+  TODO: 'todo',
+  IN_PROGRESS: 'in_progress',
+  REVIEW: 'review',
+  BLOCKED: 'blocked',
+  COMPLETED: 'completed',
+  ARCHIVED: 'archived',
+} as const satisfies Record<string, ProjectStatus>
+
+export const SERVICE_TYPE = {
+  TAX_RETURN: 'tax_return',
+  BOOKKEEPING: 'bookkeeping',
+  PAYROLL: 'payroll',
+  ADVISORY: 'advisory',
+} as const satisfies Record<string, ServiceType>
+
+// Helper functions for type checking
+export function isValidProjectStatus(status: string): status is ProjectStatus {
+  return Object.values(PROJECT_STATUS).includes(status as ProjectStatus)
+}
+
+export function isValidServiceType(type: string): type is ServiceType {
+  return Object.values(SERVICE_TYPE).includes(type as ServiceType)
 }

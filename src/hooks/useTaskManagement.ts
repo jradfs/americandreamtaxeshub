@@ -3,11 +3,11 @@
 import { useState, useCallback } from 'react'
 import { UseFormReturn } from 'react-hook-form'
 import { ProjectFormValues } from '@/types/projects'
-import { TaskFormData, TaskStatus, TaskPriority } from '@/types/tasks'
+import { TaskFormValues, TaskStatus, TaskPriority } from '@/types/tasks'
 import { Database } from '@/types/database.types'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 
-type TaskSchema = TaskFormData & {
+type TaskSchema = TaskFormValues & {
   title: string
   dependencies: string[]
   order_index: number
@@ -237,20 +237,34 @@ export function useTaskManagement(form: UseFormReturn<ProjectFormValues>) {
 
   const optimizeTaskSequence = useCallback(async (tasks: Task[]) => {
     try {
-      // Analyze dependencies and optimize task sequence
-      const optimizedSequence = analyzeDependencies(tasks)
-      const resourceAllocation = optimizeResources(tasks)
+      // Basic task optimization without external functions
+      const sortedTasks = tasks.sort((a, b) => {
+        // Sort tasks by priority and due date
+        const priorityOrder = { 'high': 3, 'medium': 2, 'low': 1 }
+        const priorityDiff = (priorityOrder[b.priority] || 0) - (priorityOrder[a.priority] || 0)
+        
+        if (priorityDiff !== 0) return priorityDiff
+        
+        const aDueDate = a.due_date ? new Date(a.due_date).getTime() : Infinity
+        const bDueDate = b.due_date ? new Date(b.due_date).getTime() : Infinity
+        
+        return aDueDate - bDueDate
+      })
       
       return {
-        sequence: optimizedSequence,
-        allocation: resourceAllocation,
-        estimatedCompletion: predictCompletionTimeline(optimizedSequence)
+        sequence: sortedTasks,
+        allocation: null,
+        estimatedCompletion: null
       }
     } catch (error) {
       console.error('Error optimizing tasks:', error)
-      return null
+      return {
+        sequence: tasks,
+        allocation: null,
+        estimatedCompletion: null
+      }
     }
-  }, [supabase])
+  }, [])
 
   return {
     taskErrors,

@@ -51,7 +51,7 @@ export function BasicInfoForm({
 
   const templateOptions = templates.map(template => ({
     value: template.id,
-    label: template.name
+    label: template.title
   }));
 
   return (
@@ -82,7 +82,7 @@ export function BasicInfoForm({
               <FormLabel>Client</FormLabel>
               <FormControl>
                 <Select
-                  value={field.value}
+                  value={field.value || ''}
                   onValueChange={field.onChange}
                 >
                   <SelectTrigger>
@@ -127,7 +127,7 @@ export function BasicInfoForm({
               <FormLabel>Project Template</FormLabel>
               <FormControl>
                 <Select
-                  value={field.value}
+                  value={field.value || ''}
                   onValueChange={field.onChange}
                 >
                   <SelectTrigger>
@@ -150,12 +150,14 @@ export function BasicInfoForm({
         <FormField
           control={form.control}
           name="description"
-          render={({ field }) => (
+          render={({ field: { value, onChange, ...field } }) => (
             <FormItem>
               <FormLabel>Description</FormLabel>
               <FormControl>
                 <Textarea 
-                  {...field} 
+                  value={value || ''}
+                  onChange={onChange}
+                  {...field}
                   placeholder="Enter project description"
                   className="min-h-[100px]"
                 />

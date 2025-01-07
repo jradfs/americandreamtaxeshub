@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { Button } from '@/components/ui/button'
 import { 
@@ -36,15 +36,56 @@ import {
   TaskStatus,
   TaskPriority,
   taskStatusOptions, 
-  taskPriorityOptions
+  taskPriorityOptions,
+  ChecklistItem
 } from '@/types/tasks'
 import { Database } from '@/types/database.types'
+import type { ActivityLogEntry, RecurringConfig } from '@/types/tasks'
+import { User } from '@/types/users'
+
+// Helper function to safely parse checklist
+const parseChecklist = (data: any): ChecklistItem[] | null => {
+  if (Array.isArray(data)) {
+    return data.map((item) => ({
+      id: String(item.id),
+      title: String(item.title),
+      completed: Boolean(item.completed)
+    }));
+  }
+  return null;
+}
+
+// Helper function to safely parse activity_log
+const parseActivityLog = (data: any): ActivityLogEntry[] | null => {
+  if (Array.isArray(data)) {
+    return data.map((item) => ({
+      timestamp: String(item.timestamp),
+      user_id: String(item.user_id),
+      action: String(item.action),
+      details: item.details || {}
+    }));
+  }
+  return null;
+}
+
+// Helper function to safely parse recurring_config
+const parseRecurringConfig = (data: any): RecurringConfig | null => {
+  if (data && typeof data === 'object') {
+    return {
+      frequency: data.frequency,
+      interval: Number(data.interval),
+      end_date: data.end_date ? String(data.end_date) : undefined,
+      end_occurrences: data.end_occurrences ? Number(data.end_occurrences) : undefined
+    };
+  }
+  return null;
+}
 
 const taskSchema = z.object({
   title: z.string().min(1, "Title is required"),
   description: z.string().optional(),
-  status: z.custom<Database['public']['Enums']['task_status']>(),
-  priority: z.custom<Database['public']['Enums']['task_priority']>(),
+  status: z.enum(['todo', 'in_progress', 'review', 'completed', 'not_started'] as const),
+  priority: z.enum(['low', 'medium', 'high', 'urgent'] as const),
   progress: z.number().min(0).max(100).optional(),
   due_date: z.date().optional()
 })
@@ -75,7 +116,7 @@ export function TaskSidePanel({
     defaultValues: {
       title: task?.title || '',
       description: task?.description || '',
-      status: task?.status || 'todo',
+      status: (task?.status || 'todo') as TaskStatus,
       priority: task?.priority || 'medium',
       progress: task?.progress || 0,
       due_date: task?.due_date ? new Date(task.due_date) : undefined
@@ -85,8 +126,13 @@ export function TaskSidePanel({
   const onSubmit = async (values: z.infer<typeof taskSchema>) => {
     setLoading(true)
     try {
-      const updateData = {
-        ...values,
+      const baseData = {
+        title: values.title,
+        description: values.description,
+        status: values.status,
+        priority: values.priority,
+        progress: values.progress,
+        due_date: values.due_date?.toISOString(),
         project_id: projectId,
         client_id: clientId,
         updated_at: new Date().toISOString()
@@ -95,9 +141,14 @@ export function TaskSidePanel({
       if (task) {
         const { data: updatedTask, error } = await supabase
           .from('tasks')
-          .update(updateData)
+          .update(baseData)
           .eq('id', task.id)
-          .select('*')
+          .select(`
+            *, 
+            assignee:users(id, email, full_name, role), 
+            project:projects(id, name), 
+            parent_task:tasks(id, title)
+          `)
           .single()
 
         if (error) throw error
@@ -108,16 +159,32 @@ export function TaskSidePanel({
         })
 
         if (onTaskUpdate && updatedTask) {
-          onTaskUpdate(updatedTask as TaskWithRelations)
+          const transformedTask: TaskWithRelations = {
+            ...updatedTask,
+            checklist: parseChecklist(updatedTask.checklist) as ChecklistItem[] | null,
+            activity_log: parseActivityLog(updatedTask.activity_log) as ActivityLogEntry[] | null,
+            recurring_config: parseRecurringConfig(updatedTask.recurring_config) as RecurringConfig | null,
+            status: updatedTask.status as TaskStatus,
+            priority: updatedTask.priority as TaskPriority,
+            assignee: updatedTask.assignee as User | null,
+            project: updatedTask.project,
+            parent_task: updatedTask.parent_task
+          }
+          onTaskUpdate(transformedTask)
         }
       } else {
         const { data: newTask, error } = await supabase
           .from('tasks')
           .insert({
-            ...updateData,
+            ...baseData,
             created_at: new Date().toISOString()
           })
-          .select('*')
+          .select(`
+            *,
+            assignee:users(id, email, full_name, role),
+            project:projects(id, name), 
+            parent_task:tasks(id, title)
+          `)
           .single()
 
         if (error) throw error
@@ -128,7 +195,18 @@ export function TaskSidePanel({
         })
 
         if (onTaskUpdate && newTask) {
-          onTaskUpdate(newTask as TaskWithRelations)
+          const transformedTask: TaskWithRelations = {
+            ...newTask,
+            checklist: parseChecklist(newTask.checklist) as ChecklistItem[] | null,
+            activity_log: parseActivityLog(newTask.activity_log) as ActivityLogEntry[] | null,
+            recurring_config: parseRecurringConfig(newTask.recurring_config) as RecurringConfig | null,
+            status: newTask.status as TaskStatus,
+            priority: newTask.priority as TaskPriority,
+            assignee: newTask.assignee as User | null,
+            project: newTask.project,
+            parent_task: newTask.parent_task
+          }
+          onTaskUpdate(transformedTask)
         }
       }
 
@@ -155,7 +233,7 @@ export function TaskSidePanel({
           </SheetDescription>
         </SheetHeader>
 
-        <Form {...form}>
+        <Form form={form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 mt-4">
             <FormField
               control={form.control}
@@ -202,8 +280,8 @@ export function TaskSidePanel({
                     </FormControl>
                     <SelectContent>
                       {taskStatusOptions.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
+                        <SelectItem key={option} value={option}>
+                          {option.charAt(0).toUpperCase() + option.slice(1).replace('_', ' ')}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -230,8 +308,8 @@ export function TaskSidePanel({
                     </FormControl>
                     <SelectContent>
                       {taskPriorityOptions.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
+                        <SelectItem key={option} value={option}>
+                          {option.charAt(0).toUpperCase() + option.slice(1)}
                         </SelectItem>
                       ))}
                     </SelectContent>

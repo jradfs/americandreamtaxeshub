@@ -5,7 +5,8 @@ import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ProjectWithRelations } from "@/types/projects";
+import { ProjectWithRelations, ProjectStatus, TaxInfo } from "@/types/projects";
+import { TaskStatus } from "@/types/tasks";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatDistanceToNow, isAfter, subDays } from "date-fns";
 import { ProjectDialog } from "./project-dialog";
@@ -26,8 +27,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
-
-type ProjectStatus = 'not_started' | 'in_progress' | 'waiting_for_info' | 'needs_review' | 'completed' | 'archived';
+import { Database } from '@/types/database.types';
 
 interface ProjectCardProps {
   project: ProjectWithRelations;
@@ -38,7 +38,11 @@ interface ProjectCardProps {
   isLoading?: boolean;
 }
 
-const STATUS_STYLES = {
+const STATUS_STYLES: Record<ProjectStatus, {
+  color: string;
+  badge: string;
+  label: string;
+}> = {
   'not_started': {
     color: 'bg-secondary',
     badge: 'bg-secondary/5 text-secondary-foreground',
@@ -49,15 +53,15 @@ const STATUS_STYLES = {
     badge: 'bg-blue-500/5 text-blue-700',
     label: 'In Progress'
   },
-  'waiting_for_info': {
+  'todo': {
     color: 'bg-yellow-500',
     badge: 'bg-yellow-500/5 text-yellow-700',
-    label: 'Waiting for Info'
+    label: 'To Do'
   },
-  'needs_review': {
+  'review': {
     color: 'bg-purple-500',
     badge: 'bg-purple-500/5 text-purple-700',
-    label: 'Needs Review'
+    label: 'Review'
   },
   'completed': {
     color: 'bg-green-500',
@@ -68,12 +72,27 @@ const STATUS_STYLES = {
     color: 'bg-gray-400',
     badge: 'bg-gray-100/50 text-gray-700',
     label: 'Archived'
+  },
+  'blocked': {
+    color: 'bg-red-500',
+    badge: 'bg-red-500/5 text-red-700',
+    label: 'Blocked'
+  },
+  'cancelled': {
+    color: 'bg-gray-400',
+    badge: 'bg-gray-100/50 text-gray-700',
+    label: 'Cancelled'
+  },
+  'on_hold': {
+    color: 'bg-orange-500',
+    badge: 'bg-orange-500/5 text-orange-700',
+    label: 'On Hold'
   }
-} as const;
+};
 
 export function ProjectCard({ project, onProjectUpdated, selected, showHover, onProjectClick, isLoading = false }: ProjectCardProps) {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
-  const supabase = createClientComponentClient();
+  const supabase = createClientComponentClient<Database>();
 
   if (isLoading) {
     return (
@@ -99,18 +118,14 @@ export function ProjectCard({ project, onProjectUpdated, selected, showHover, on
     setEditDialogOpen(true);
   };
 
-  const isDeadlineNear = project.due_date && 
-    isAfter(new Date(), subDays(new Date(project.due_date), 7));
+  const taxInfo = project.tax_info as TaxInfo | null;
+  const isDeadlineNear = project.due_date && isAfter(new Date(), subDays(new Date(project.due_date), 7));
 
-  const completedTasks = project.tasks?.filter(t => t.status === "completed").length ?? 0;
+  const completedTasks = project.tasks?.filter(t => t.status === 'completed' as TaskStatus).length ?? 0;
   const totalTasks = project.tasks?.length ?? 0;
   const progress = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
-  const status = (project.status as ProjectStatus) in STATUS_STYLES 
-    ? (project.status as ProjectStatus) 
-    : 'not_started';
-
-  const statusStyle = STATUS_STYLES[status];
+  const statusStyle = STATUS_STYLES[project.status] || STATUS_STYLES.not_started;
 
   return (
     <>
@@ -150,7 +165,7 @@ export function ProjectCard({ project, onProjectUpdated, selected, showHover, on
                   
                   {/* Status and Return Type */}
                   <div className="flex items-center gap-2 flex-shrink-0">
-                    {project.tax_info?.return_type && (
+                    {taxInfo?.return_type && (
                       <Badge 
                         variant="outline" 
                         className={cn(
@@ -158,7 +173,7 @@ export function ProjectCard({ project, onProjectUpdated, selected, showHover, on
                           showHover ? "opacity-100" : "opacity-0"
                         )}
                       >
-                        {project.tax_info.return_type}
+                        {taxInfo.return_type}
                       </Badge>
                     )}
                     <Badge className={cn(
@@ -235,7 +250,7 @@ export function ProjectCard({ project, onProjectUpdated, selected, showHover, on
                 </div>
               )}
 
-              {/* Due Date and Tax Year */}
+              {/* Due Date */}
               <div className="flex items-center justify-between text-xs text-muted-foreground mt-auto">
                 {project.due_date && (
                   <div className="flex items-center">
@@ -243,29 +258,11 @@ export function ProjectCard({ project, onProjectUpdated, selected, showHover, on
                     <span className={cn(
                       isDeadlineNear && "text-destructive font-medium"
                     )}>
-                      Due {formatDistanceToNow(new Date(project.due_date), { addSuffix: true })}
+                      {formatDistanceToNow(new Date(project.due_date), { addSuffix: true })}
                     </span>
                   </div>
                 )}
-                {project.tax_info?.tax_year && (
-                  <div className="flex items-center">
-                    <Clock className="h-3.5 w-3.5 mr-1.5" />
-                    <span>Tax Year {project.tax_info.tax_year}</span>
-                  </div>
-                )}
               </div>
-
-              {/* Warnings */}
-              {project.tax_info?.missing_documents && project.tax_info.missing_documents.length > 0 && (
-                <div className={cn(
-                  "flex items-center gap-1.5 text-destructive text-xs mt-2",
-                  "transition-opacity duration-200",
-                  showHover ? "opacity-100" : "opacity-50"
-                )}>
-                  <AlertCircle className="h-3.5 w-3.5 flex-shrink-0" />
-                  <span>{project.tax_info.missing_documents.length} missing documents</span>
-                </div>
-              )}
             </div>
           </div>
         </Card>
@@ -275,10 +272,7 @@ export function ProjectCard({ project, onProjectUpdated, selected, showHover, on
         project={project}
         open={editDialogOpen}
         onOpenChange={setEditDialogOpen}
-        onSuccess={() => {
-          onProjectUpdated?.();
-          setEditDialogOpen(false);
-        }}
+        onProjectUpdated={onProjectUpdated}
       />
     </>
   );

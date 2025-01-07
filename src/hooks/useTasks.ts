@@ -1,122 +1,81 @@
+'use client'
+
 import { useState, useEffect } from 'react'
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
-import { Task, TaskWithRelations, TaskUpdate, TaskFormData } from '@/types/tasks'
-import { Database } from '@/types/database.types'
+import { createClient } from '@/lib/supabase/client'
+import type { DbTask, TaskFormValues, DbTaskUpdate } from '@/types/tasks'
 
-interface UseTasksOptions {
-  projectId?: string
-  clientId?: string
-  assignedUserId?: string
-}
-
-export function useTasks(options: UseTasksOptions = {}) {
-  const [tasks, setTasks] = useState<TaskWithRelations[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+export function useTasks() {
+  const [tasks, setTasks] = useState<DbTask[]>([])
+  const supabase = createClient()
 
   useEffect(() => {
     fetchTasks()
-  }, [options.projectId, options.clientId, options.assignedUserId])
+  }, [])
 
-  async function fetchTasks() {
-    try {
-      const response = await fetch(
-        `/api/tasks?${new URLSearchParams({
-          ...(options.projectId && { projectId: options.projectId }),
-          ...(options.clientId && { clientId: options.clientId }),
-          ...(options.assignedUserId && { assigneeId: options.assignedUserId })
-        })}`
-      )
+  const fetchTasks = async () => {
+    const { data, error } = await supabase
+      .from('tasks')
+      .select('*')
+      .order('created_at', { ascending: false })
 
-      if (!response.ok) {
-        throw new Error('Failed to fetch tasks')
-      }
-
-      const data = await response.json()
-      setTasks(data)
-      setError(null)
-    } catch (err) {
-      console.error('Error fetching tasks:', err)
-      setError('Failed to fetch tasks')
-      setTasks([])
-    } finally {
-      setLoading(false)
+    if (error) {
+      console.error('Error fetching tasks:', error)
+      return
     }
+
+    setTasks(data)
   }
 
-  async function createTask(taskData: TaskFormData) {
-    try {
-      const response = await fetch('/api/tasks', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(taskData)
-      })
+  const createTask = async (taskData: TaskFormValues) => {
+    const { data, error } = await supabase
+      .from('tasks')
+      .insert([taskData])
+      .select()
+      .single()
 
-      if (!response.ok) {
-        throw new Error('Failed to create task')
-      }
-
-      const data = await response.json()
-      setTasks(prev => [data, ...prev])
-      return { data, error: null }
-    } catch (err) {
-      console.error('Error creating task:', err)
-      return { data: null, error: 'Failed to create task' }
+    if (error) {
+      throw error
     }
+
+    setTasks((prev) => [data, ...prev])
+    return data
   }
 
-  async function updateTask(taskId: string, updates: TaskUpdate) {
-    try {
-      const response = await fetch('/api/tasks', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ id: taskId, ...updates })
-      })
+  const updateTask = async (taskId: string, taskData: DbTaskUpdate) => {
+    const { data, error } = await supabase
+      .from('tasks')
+      .update(taskData)
+      .eq('id', taskId)
+      .select()
+      .single()
 
-      if (!response.ok) {
-        throw new Error('Failed to update task')
-      }
-
-      const data = await response.json()
-      setTasks(prev =>
-        prev.map(task => (task.id === taskId ? data : task))
-      )
-      return { data, error: null }
-    } catch (err) {
-      console.error('Error updating task:', err)
-      return { data: null, error: 'Failed to update task' }
+    if (error) {
+      throw error
     }
+
+    setTasks((prev) =>
+      prev.map((task) => (task.id === taskId ? data : task))
+    )
+    return data
   }
 
-  async function deleteTask(taskId: string) {
-    try {
-      const response = await fetch(`/api/tasks?id=${taskId}`, {
-        method: 'DELETE'
-      })
+  const deleteTask = async (taskId: string) => {
+    const { error } = await supabase
+      .from('tasks')
+      .delete()
+      .eq('id', taskId)
 
-      if (!response.ok) {
-        throw new Error('Failed to delete task')
-      }
-
-      setTasks(prev => prev.filter(task => task.id !== taskId))
-      return { error: null }
-    } catch (err) {
-      console.error('Error deleting task:', err)
-      return { error: 'Failed to delete task' }
+    if (error) {
+      throw error
     }
+
+    setTasks((prev) => prev.filter((task) => task.id !== taskId))
   }
 
   return {
     tasks,
-    loading,
-    error,
-    fetchTasks,
     createTask,
     updateTask,
-    deleteTask
+    deleteTask,
   }
 }

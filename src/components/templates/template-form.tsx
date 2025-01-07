@@ -1,11 +1,13 @@
-import { useState } from 'react';
+'use client'
+
+import { useState, useEffect } from 'react';
 import {
   Card,
   CardHeader,
   CardTitle,
   CardContent
 } from '../ui/card';
-import { Tables } from 'src/types/database.types';
+import { Tables } from '@/types/database.types';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Textarea } from '../ui/textarea';
@@ -17,6 +19,7 @@ import {
   SelectValue,
 } from '../ui/select';
 import { Plus, Minus, GripVertical } from 'lucide-react';
+import { Database } from '@/types/database.types'
 
 interface TemplateTask {
   id?: string;
@@ -25,7 +28,6 @@ interface TemplateTask {
   priority: Database['public']['Enums']['task_priority'];
   dependencies: string[];
   order_index: number;
-  estimated_hours?: number;
   required_skills?: string[];
 }
 
@@ -42,7 +44,6 @@ interface TemplateFormProps {
 
 interface TemplatePreview {
   total_tasks: number;
-  estimated_hours: number;
   required_skills: string[];
   dependencies: Record<string, string[]>;
 }
@@ -57,7 +58,7 @@ export default function TemplateForm({
     title: template?.title || '',
     description: template?.description || '',
     categoryId: template?.category_id || '',
-    priority: template?.priority || 'medium' as Database['public']['Enums']['task_priority'],
+    priority: template?.default_priority || 'medium' as Database['public']['Enums']['task_priority'],
     version: template?.version || 1,
     is_archived: template?.is_archived || false,
     tasks: template?.tasks || [] as TemplateTask[],
@@ -69,7 +70,6 @@ export default function TemplateForm({
   const [newTask, setNewTask] = useState('');
   const [templatePreview, setTemplatePreview] = useState<TemplatePreview>({
     total_tasks: 0,
-    estimated_hours: 0,
     required_skills: [],
     dependencies: {}
   });
@@ -77,7 +77,6 @@ export default function TemplateForm({
   useEffect(() => {
     // Calculate template preview stats
     const totalTasks = formData.tasks.length;
-    const estimatedHours = formData.tasks.reduce((sum, task) => sum + (task.estimated_hours || 0), 0);
     const requiredSkills = Array.from(new Set(
       formData.tasks.flatMap(task => task.required_skills || [])
     ));
@@ -90,7 +89,6 @@ export default function TemplateForm({
 
     setTemplatePreview({
       total_tasks: totalTasks,
-      estimated_hours: estimatedHours,
       required_skills: requiredSkills,
       dependencies: dependencies
     });
@@ -135,7 +133,6 @@ export default function TemplateForm({
         priority: 'medium',
         dependencies: [],
         order_index: formData.tasks.length,
-        estimated_hours: 1,
         required_skills: []
       };
       
@@ -160,7 +157,7 @@ export default function TemplateForm({
   };
 
   const removeTask = (index: number) => {
-    const updatedTasks = formData.tasks.filter((task: Task, i: number) => i !== index);
+    const updatedTasks = formData.tasks.filter((task: TemplateTask, i: number) => i !== index);
     setFormData({
       ...formData,
       tasks: updatedTasks,
@@ -269,7 +266,7 @@ export default function TemplateForm({
                 </Button>
               </div>
               
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4">
                 <div>
                   <label className="text-sm font-medium">Priority</label>
                   <Select
@@ -285,15 +282,6 @@ export default function TemplateForm({
                       <SelectItem value="high">High</SelectItem>
                     </SelectContent>
                   </Select>
-                </div>
-
-                <div>
-                  <label className="text-sm font-medium">Estimated Hours</label>
-                  <Input
-                    type="number"
-                    value={task.estimated_hours}
-                    onChange={(e) => updateTask(index, 'estimated_hours', parseInt(e.target.value))}
-                  />
                 </div>
               </div>
 
@@ -341,12 +329,6 @@ export default function TemplateForm({
               <label className="text-sm font-medium">Total Tasks</label>
               <div className="text-lg font-semibold">
                 {templatePreview.total_tasks}
-              </div>
-            </div>
-            <div>
-              <label className="text-sm font-medium">Estimated Hours</label>
-              <div className="text-lg font-semibold">
-                {templatePreview.estimated_hours}
               </div>
             </div>
             <div>

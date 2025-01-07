@@ -48,7 +48,7 @@ export function useTaxReturns(clientId?: string) {
     ...rest
   }: Omit<TaxReturn, 'id' | 'created_at' | 'updated_at'>) {
     try {
-      if (!filing_type || !status || !tax_year) {
+      if (!filing_type || !status || tax_year === undefined) {
         throw new Error('Filing type, status, and tax year are required')
       }
 
@@ -59,7 +59,7 @@ export function useTaxReturns(clientId?: string) {
       const taxReturnData = {
         filing_type,
         status,
-        tax_year,
+        tax_year: typeof tax_year === 'string' ? parseInt(tax_year, 10) : tax_year,
         ...rest,
         client_id: clientId,
         created_at: new Date().toISOString(),
@@ -68,7 +68,11 @@ export function useTaxReturns(clientId?: string) {
 
       const { data, error } = await supabase
         .from('tax_returns')
-        .insert([taxReturnData])
+        .insert([{
+          ...taxReturnData,
+          filing_deadline: rest.filing_deadline,
+          extension_filed: rest.extension_filed
+        }])
         .select()
 
       if (error) throw error
@@ -103,6 +107,9 @@ export function useTaxReturns(clientId?: string) {
 
       const updateData = {
         ...updates,
+        tax_year: updates.tax_year 
+          ? (typeof updates.tax_year === 'string' ? parseInt(updates.tax_year, 10) : updates.tax_year)
+          : undefined,
         updated_at: new Date().toISOString()
       }
 
@@ -114,7 +121,9 @@ export function useTaxReturns(clientId?: string) {
 
       if (error) throw error
       if (data && data[0]) {
-        setTaxReturns(prev => prev.map(taxReturn => taxReturn.id === id ? data[0] : taxReturn))
+        setTaxReturns(prev => prev.map(taxReturn => 
+          taxReturn.id === id ? data[0] : taxReturn
+        ))
         toast({
           title: 'Success',
           description: 'Tax return updated successfully'

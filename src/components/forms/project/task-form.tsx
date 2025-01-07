@@ -1,12 +1,24 @@
 'use client';
 
+import { UseFormReturn } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
-import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { SelectField } from '../shared/select-field';
-import { MultiSelectField } from '../shared/multi-select-field';
-import { UseFormReturn } from 'react-hook-form';
+import {
+  FormField,
+  FormItem,
+  FormLabel,
+  FormControl,
+  FormMessage,
+} from '@/components/ui/form';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { TaskFormValues } from '@/types/tasks';
 import { ProjectFormValues } from '@/lib/validations/project';
 
 interface TaskFormProps {
@@ -16,99 +28,73 @@ interface TaskFormProps {
   onRemove: () => void;
 }
 
-const PRIORITY_OPTIONS = [
-  { value: 'low', label: 'Low' },
-  { value: 'medium', label: 'Medium' },
-  { value: 'high', label: 'High' }
-];
-
 export function TaskForm({ form, index, teamMembers, onRemove }: TaskFormProps) {
   const teamMemberOptions = teamMembers.map(member => ({
     value: member.id,
     label: member.name
   }));
 
-  const dependencyOptions = form.getValues('tasks')
-    ?.filter((_, i) => i !== index)
-    .map(task => ({
-      value: task.title,
-      label: task.title
-    })) || [];
-
   return (
-    <div className="p-4 border rounded-lg space-y-4">
-      <div className="flex items-center justify-between">
-        <h4 className="text-sm font-medium">Task {index + 1}</h4>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          onClick={onRemove}
-        >
-          Remove
-        </Button>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <FormField
-          control={form.control}
-          name={`tasks.${index}.title`}
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Title</FormLabel>
-              <FormControl>
-                <Input {...field} placeholder="Task title" />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <SelectField
-          form={form}
-          name={`tasks.${index}.priority`}
-          label="Priority"
-          options={PRIORITY_OPTIONS}
-          placeholder="Select priority"
-          defaultValue="medium"
-        />
-      </div>
-
+    <div className="space-y-4">
       <FormField
         control={form.control}
-        name={`tasks.${index}.description`}
+        name={`template_tasks.${index}.title`}
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Description</FormLabel>
+            <FormLabel>Title</FormLabel>
             <FormControl>
-              <Textarea
-                {...field}
-                placeholder="Task description"
-                className="min-h-[60px]"
-              />
+              <Input placeholder="Enter task title" {...field} />
             </FormControl>
             <FormMessage />
           </FormItem>
         )}
       />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <SelectField
-          form={form}
-          name={`tasks.${index}.assigned_to`}
-          label="Assigned To"
-          options={teamMemberOptions}
-          placeholder="Select team member"
-        />
+      <FormField
+        control={form.control}
+        name={`template_tasks.${index}.description`}
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Description</FormLabel>
+            <FormControl>
+              <Textarea placeholder="Enter task description" {...field} />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
 
-        <MultiSelectField
-          form={form}
-          name={`tasks.${index}.dependencies`}
-          label="Dependencies"
-          options={dependencyOptions}
-          placeholder="Select dependent tasks"
-        />
-      </div>
+      <FormField
+        control={form.control}
+        name={`template_tasks.${index}.priority`}
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Priority</FormLabel>
+            <Select onValueChange={field.onChange} defaultValue={field.value}>
+              <FormControl>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select priority" />
+                </SelectTrigger>
+              </FormControl>
+              <SelectContent>
+                <SelectItem value="low">Low</SelectItem>
+                <SelectItem value="medium">Medium</SelectItem>
+                <SelectItem value="high">High</SelectItem>
+                <SelectItem value="urgent">Urgent</SelectItem>
+              </SelectContent>
+            </Select>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
+      <Button
+        type="button"
+        variant="destructive"
+        onClick={onRemove}
+      >
+        Remove Task
+      </Button>
     </div>
   );
 }

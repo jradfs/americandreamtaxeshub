@@ -1,47 +1,40 @@
 import { useState, useEffect } from 'react'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
-
-export type Client = {
-  id: string
-  created_at: string
-  full_name: string
-  company_name: string
-  contact_email: string
-  phone_number: string
-  type: string
-  status: string
-}
+import { Client } from '@/types/clients'
 
 export function useClients() {
-  const [clients, setClients] = useState<Client[]>([])
+  const [data, setData] = useState<Client[]>([])
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useState<Error | null>(null)
   const supabase = createClientComponentClient()
 
   useEffect(() => {
     async function fetchClients() {
       try {
-        const { data, error: supabaseError } = await supabase
+        const { data: clientsData, error: supabaseError } = await supabase
           .from('clients')
           .select('*')
           .order('created_at', { ascending: false })
 
         if (supabaseError) throw supabaseError
 
-        setClients(data || [])
-      } catch (error: unknown) {
-        if (error instanceof Error) {
-          setError(error.message)
-        } else {
-          setError('An unknown error occurred')
-        }
+        // Transform the data to match our Client type
+        const transformedClients = clientsData?.map((client) => ({
+          ...client,
+          contact_info: client.contact_info || {},
+          tax_info: client.tax_info || {},
+        })) as Client[]
+
+        setData(transformedClients || [])
+      } catch (error) {
+        setError(error instanceof Error ? error : new Error('An unknown error occurred'))
       } finally {
         setLoading(false)
       }
     }
 
     fetchClients()
-  }, [])
+  }, [supabase])
 
-  return { clients, loading, error }
+  return { data, loading, error }
 }

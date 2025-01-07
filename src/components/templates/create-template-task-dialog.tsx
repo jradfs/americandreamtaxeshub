@@ -10,7 +10,7 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from 'src/components/ui/dialog.tsx';
+} from 'src/components/ui/dialog';
 import {
   Form,
   FormControl,
@@ -19,26 +19,25 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from 'src/components/ui/form.tsx';
-import { Input } from 'src/components/ui/input.tsx';
-import { Button } from 'src/components/ui/button.tsx';
+} from 'src/components/ui/form';
+import { Input } from 'src/components/ui/input';
+import { Button } from 'src/components/ui/button';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from 'src/components/ui/select.tsx';
-import { Textarea } from 'src/components/ui/textarea.tsx';
-import { useTemplateTasks } from 'src/hooks/useTemplateTasks.ts';
-import { TemplateTask } from 'src/types/hooks.ts';
+} from 'src/components/ui/select';
+import { Textarea } from 'src/components/ui/textarea';
+import { useTemplateTasks } from 'src/hooks/useTemplateTasks';
+import { TemplateTask } from 'src/types/hooks';
 
 const taskSchema = z.object({
   title: z.string().min(1, 'Title is required'),
-  description: z.string().optional(),
-  estimated_minutes: z.string().transform(val => parseInt(val) || 0),
-  priority: z.enum(['low', 'medium', 'high']),
-  dependencies: z.array(z.string()).optional(),
+  description: z.string().min(1, 'Description is required'),
+  priority: z.enum(['low', 'medium', 'high', 'urgent']),
+  dependencies: z.array(z.string()).default([]),
 })
 
 type TaskFormValues = z.infer<typeof taskSchema>
@@ -64,7 +63,6 @@ export function CreateTemplateTaskDialog({
     defaultValues: {
       title: '',
       description: '',
-      estimated_minutes: '0',
       priority: 'medium',
       dependencies: [],
     },
@@ -74,7 +72,10 @@ export function CreateTemplateTaskDialog({
     try {
       setIsSubmitting(true)
       await createTask({
-        ...data,
+        title: data.title,
+        description: data.description,
+        priority: data.priority,
+        dependencies: data.dependencies,
         template_id: templateId,
         order_index: existingTasks.length,
       })
@@ -97,7 +98,7 @@ export function CreateTemplateTaskDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <Form {...form}>
+        <Form form={form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             <FormField
               control={form.control}
@@ -127,21 +128,7 @@ export function CreateTemplateTaskDialog({
               )}
             />
 
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="estimated_minutes"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Estimated Time (minutes)</FormLabel>
-                    <FormControl>
-                      <Input type="number" min="0" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
+            <div className="grid grid-cols-1 gap-4">
               <FormField
                 control={form.control}
                 name="priority"
@@ -158,6 +145,7 @@ export function CreateTemplateTaskDialog({
                         <SelectItem value="low">Low</SelectItem>
                         <SelectItem value="medium">Medium</SelectItem>
                         <SelectItem value="high">High</SelectItem>
+                        <SelectItem value="urgent">Urgent</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />

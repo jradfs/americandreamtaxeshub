@@ -23,12 +23,24 @@ const nextConfig = {
   },
   poweredByHeader: false,
   generateEtags: false,
-  typescript: {
-    ignoreBuildErrors: false,
-  },
   eslint: {
     ignoreDuringBuilds: false,
   },
-};
+  experimental: {
+    optimizePackageImports: [
+      '@radix-ui/react-icons',
+      '@supabase/ssr',
+      '@tanstack/react-table'
+    ],
+    serverComponentsExternalPackages: ['pg', 'postgres'],
+  },
+  compiler: {
+    removeConsole: process.env.NODE_ENV === 'production',
+    styledComponents: true,
+  },
+  productionBrowserSourceMaps: false,
+  swcMinify: true,
+}
 
 export default nextConfig;
+

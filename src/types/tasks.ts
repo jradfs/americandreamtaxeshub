@@ -1,248 +1,93 @@
-import { Database } from './database.types'
+import type { Database } from './database.types'
 import type { Json } from './database.types'
-import { User } from './hooks'
-import { ProjectStatus, Priority, ServiceCategory, TaxReturnType } from './projects'
+import { z } from 'zod'
+import { taskSchema } from '@/lib/validations/task'
 
-// Base types from database
-export type Task = {
-  id: string
-  title: string
-  description?: string | null
-  status: Database['public']['Enums']['task_status']
-  priority?: Database['public']['Enums']['task_priority']
-  project_id: string
-  assignee_id?: string | null
-  category?: Database['public']['Enums']['service_type'] | null
-  due_date?: string | null
-  start_date?: string | null
-  created_at?: string | null
-  updated_at?: string | null
-  assignee?: User
-  project?: {
-    id: string
-    title: string
-    service_type: ServiceCategory
-    client_id: string
-    status: ProjectStatus
-    priority: Priority
-  }
-  dependencies?: string[]
-  checklist?: Array<{
-    title: string
-    completed: boolean
-  }>
-  metadata?: Json
-}
-export type NewTask = Database['public']['Tables']['tasks']['Insert']
-export type UpdateTask = Database['public']['Tables']['tasks']['Update']
+// Database types
+export type DbTask = Database['public']['Tables']['tasks']['Row']
+export type DbTaskInsert = Database['public']['Tables']['tasks']['Insert']
+export type DbTaskUpdate = Database['public']['Tables']['tasks']['Update']
 
-// Enum types
+// Enums from database
 export type TaskStatus = Database['public']['Enums']['task_status']
 export type TaskPriority = Database['public']['Enums']['task_priority']
-export type TaskCategory = 
-  | 'general'
-  | 'tax_preparation'
-  | 'bookkeeping'
-  | 'payroll'
-  | 'compliance'
-  | 'review'
-  | 'client_communication'
-  | 'documentation'
-  | 'research'
-  | 'other'
 
-// Task metadata interface
-export interface TaskMetadata {
-  readonly id: string
-  readonly created_at: string
-  readonly updated_at: string
-  version: number
-  archived: boolean
+// JSON field types with strong typing
+export type ChecklistItem = {
+  id: string
+  text: string
+  completed: boolean
+  added_by?: string
+  added_at?: string
 }
 
-// Base task interface
-export interface TaskBase extends TaskMetadata {
-  title: string
-  description?: string
-  status: TaskStatus
-  priority: TaskPriority
-  project_id: string
-  assignee_id?: string
-  due_date?: string
-  start_date?: string
-  estimated_minutes?: number
-  actual_minutes?: number
-  dependencies?: string[]
-  category?: TaskCategory
-  tags?: string[]
-  metadata?: Json
+export type Checklist = {
+  items: ChecklistItem[]
 }
 
-// Task with all relations
-export interface TaskWithRelations extends TaskBase {
-  assignee?: User
-  project?: {
-    id: string
-    title: string
-    service_type: ServiceCategory
-    client_id: string
-    status: ProjectStatus
-    priority: Priority
-  }
-  dependencies?: TaskWithRelations[]
-  dependents?: TaskWithRelations[]
-  time_entries?: Array<{
-    id: string
-    duration: number
-    billable: boolean
-    description?: string
-    user_id: string
-    created_at: string
-    updated_at: string
-  }>
-  checklist?: Array<{
-    id: string
-    title: string
-    completed: boolean
-    created_at: string
-    updated_at: string
-  }>
-  attachments?: Array<{
-    id: string
-    name: string
-    type: string
-    url: string
-    uploaded_by: string
-    upload_date: string
-    metadata?: Json
-  }>
+export type ActivityLogEntry = {
+  id: string
+  type: 'status_change' | 'assignment' | 'comment' | 'checklist_update'
+  user_id: string
+  timestamp: string
+  details: Record<string, unknown>
 }
 
-// Task status options with proper type inference
-export const taskStatusOptions = [
-  { label: 'To Do', value: 'todo' },
-  { label: 'In Progress', value: 'in_progress' },
-  { label: 'In Review', value: 'review' },
-  { label: 'Completed', value: 'completed' },
-  { label: 'Blocked', value: 'blocked' },
-] as const
+export type ActivityLog = {
+  entries: ActivityLogEntry[]
+}
 
-// Task priority options with proper type inference
-export const taskPriorityOptions = [
-  { label: 'Low', value: 'low' },
-  { label: 'Medium', value: 'medium' },
-  { label: 'High', value: 'high' },
-  { label: 'Urgent', value: 'urgent' },
-] as const
+export type RecurringConfig = {
+  frequency: 'daily' | 'weekly' | 'monthly' | 'yearly'
+  interval: number
+  end_date?: string
+  end_occurrences?: number
+}
 
-// Utility functions with proper typing
-export const getStatusColor = (status: TaskStatus): string => {
-  const colors: Record<TaskStatus, string> = {
-    'todo': 'bg-slate-500',
-    'in_progress': 'bg-blue-500',
-    'review': 'bg-yellow-500',
-    'completed': 'bg-green-500',
-    'blocked': 'bg-red-500',
-  }
+// Form data type that matches our schema
+export type TaskFormValues = z.infer<typeof taskSchema>
+
+// Enhanced task type with relationships and strongly typed JSON fields
+export type TaskWithRelations = Omit<DbTask, 'checklist' | 'activity_log' | 'recurring_config'> & {
+  checklist: Checklist | null
+  activity_log: ActivityLog | null
+  recurring_config: RecurringConfig | null
+  project?: Database['public']['Tables']['projects']['Row'] | null
+  assignee?: Database['public']['Tables']['users']['Row'] | null
+  parent_task?: DbTask | null
+  subtasks?: DbTask[]
+  dependencies?: DbTask[]
+  template?: Database['public']['Tables']['task_templates']['Row'] | null
+}
+
+// Constants
+export const taskStatusOptions: TaskStatus[] = ['todo', 'in_progress', 'review', 'completed']
+export const taskPriorityOptions: TaskPriority[] = ['low', 'medium', 'high', 'urgent']
+
+// Type guards
+export function isDbTask(task: unknown): task is DbTask {
+  return task !== null &&
+    typeof task === 'object' &&
+    'id' in task &&
+    'title' in task &&
+    'status' in task
+}
+
+// Conversion utilities
+export function toTaskFormValues(task: DbTask): TaskFormValues {
+  const {
+    id,
+    created_at,
+    updated_at,
+    ...formData
+  } = task
   
-  if (!status || !(status in colors)) {
-    console.warn('Invalid task status:', status);
-    return 'bg-gray-500'; // Default color
+  return {
+    ...formData,
+    status: task.status as TaskStatus,
+    priority: task.priority as TaskPriority | undefined,
+    checklist: task.checklist as Checklist | null,
+    activity_log: task.activity_log as ActivityLog | null,
+    recurring_config: task.recurring_config as RecurringConfig | null,
   }
-  
-  return colors[status]
-}
-
-export const getPriorityColor = (priority: TaskPriority): string => {
-  const colors: Record<TaskPriority, string> = {
-    'low': 'bg-slate-500',
-    'medium': 'bg-yellow-500',
-    'high': 'bg-orange-500',
-    'urgent': 'bg-red-500',
-  }
-  return colors[priority]
-}
-
-// Form data interface with enhanced type safety
-export interface TaskFormData extends Omit<Database['public']['Tables']['tasks']['Insert'], 'id' | 'created_at' | 'updated_at'> {
-  id?: string
-  checklist?: Json
-  tax_form_type?: Database['public']['Enums']['filing_type']
-  tax_year?: number
-  review_required?: boolean
-  reviewer_id?: string
-  assigned_team?: string[]
-}
-
-// Task grouping interface
-export interface TaskSection {
-  todo: TaskWithRelations[]
-  in_progress: TaskWithRelations[]
-  review: TaskWithRelations[]
-  completed: TaskWithRelations[]
-  blocked: TaskWithRelations[]
-  metadata: {
-    completionRate: number
-    totalEstimatedTime: number
-    totalActualTime: number
-    assignees: Array<{
-      id: string
-      name: string
-      taskCount: number
-      estimatedHours: number
-      actualHours: number
-    }>
-    categories: Array<{
-      name: TaskCategory
-      taskCount: number
-      completionRate: number
-    }>
-    tags: Array<{
-      name: string
-      taskCount: number
-    }>
-  }
-}
-
-// Component props interfaces
-export interface TaskBoardProps {
-  tasks: TaskWithRelations[]
-  onUpdateTask: (taskId: string, updates: UpdateTask) => Promise<void>
-  onEditTask: (task: TaskWithRelations) => void
-  onDeleteTask?: (taskId: string) => Promise<void>
-  onAssignTask?: (taskId: string, userId: string) => Promise<void>
-  onAddTimeEntry?: (taskId: string, duration: number, billable: boolean) => Promise<void>
-  onUpdateChecklist?: (taskId: string, checklist: TaskFormData['checklist']) => Promise<void>
-  filters?: {
-    assignee?: string
-    category?: TaskCategory
-    priority?: TaskPriority
-    tags?: string[]
-    showArchived?: boolean
-  }
-  sorting?: {
-    field: keyof TaskBase
-    direction: 'asc' | 'desc'
-  }
-}
-
-export interface CalendarViewProps {
-  tasks: TaskWithRelations[]
-  onSelectTask: (task: TaskWithRelations) => void
-  onCreateTask: (taskData: NewTask) => Promise<void>
-  onUpdateTask: (taskId: string, updates: UpdateTask) => Promise<void>
-  onDeleteTask?: (taskId: string) => Promise<void>
-  filters?: {
-    assignee?: string
-    category?: TaskCategory
-    priority?: TaskPriority
-    tags?: string[]
-    dateRange?: {
-      start: Date
-      end: Date
-    }
-    showArchived?: boolean
-  }
-  view?: 'month' | 'week' | 'day'
-  defaultDate?: Date
 }

@@ -53,21 +53,31 @@ This command:
 
 #### Linux/MacOS (Bash)
 ```bash
-export SUPABASE_ACCESS_TOKEN='sbp_829505ecb6492198977d14392b9272cf9723c08f' && \
+# First, set the access token
+export SUPABASE_ACCESS_TOKEN='sbp_829505ecb6492198977d14392b9272cf9723c08f'
+
+# Then generate types
 npx supabase gen types typescript --project-id fnjkkmwmpxqvezqextxg > src/types/database.types.ts
 ```
 
 #### Windows (CMD)
 ```cmd
+REM First, set the access token
 set SUPABASE_ACCESS_TOKEN=sbp_829505ecb6492198977d14392b9272cf9723c08f
+
+REM Then generate types
 npx supabase gen types typescript --project-id fnjkkmwmpxqvezqextxg > src/types/database.types.ts
 ```
 
 #### Windows (PowerShell)
 ```powershell
-$env:SUPABASE_ACCESS_TOKEN="sbp_829505ecb6492198977d14392b9272cf9723c08f"
-npx supabase gen types typescript --project-id fnjkkmwmpxqvezqextxg > src/types/database.types.ts
+# Set access token and generate types in one command to ensure proper encoding
+$env:SUPABASE_ACCESS_TOKEN="sbp_829505ecb6492198977d14392b9272cf9723c08f"; npx supabase gen types typescript --project-id fnjkkmwmpxqvezqextxg | Out-File -Encoding UTF8 src/types/database.types.ts
 ```
+
+**Important Note**: When using PowerShell, always use the `Out-File -Encoding UTF8` command instead of the redirect operator (`>`) to ensure proper file encoding and avoid any binary file issues.
+
+**Note**: Make sure you have `prettier` installed globally (`npm install -g prettier`) or as a dev dependency in your project before running these commands.
 
 ## Important Notes
 1. **Environment Variables**: 

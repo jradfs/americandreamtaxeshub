@@ -1,4 +1,4 @@
-import { getSupabase } from 'src/lib/supabase/client.ts';
+import { getSupabase } from '@/lib/supabase/client';
 
 const supabase = getSupabase();
 

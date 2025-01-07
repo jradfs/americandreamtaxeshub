@@ -1,140 +1,79 @@
 import { useState, useEffect } from 'react'
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
-import { Document, DocumentFormData } from '@/types/hooks'
+import { supabaseClient } from '@/lib/supabase/client'
 import { Database } from '@/types/database.types'
 
-interface UseDocumentsOptions {
-  projectId?: string
-  clientId?: string
-}
+type Document = Database['public']['Tables']['client_documents']['Row']
+type DocumentInsert = Database['public']['Tables']['client_documents']['Insert']
 
-export function useDocuments(options: UseDocumentsOptions = {}) {
+export const useDocuments = (clientId: string) => {
   const [documents, setDocuments] = useState<Document[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const supabase = createClientComponentClient<Database>()
+  const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
     fetchDocuments()
-  }, [options.projectId, options.clientId])
+  }, [clientId])
 
-  async function fetchDocuments() {
-    try {
-      let query = supabase
-        .from('documents')
-        .select(`
-          *,
-          project:project_id (*),
-          client:client_id (*)
-        `)
-        .order('created_at', { ascending: false })
+  const fetchDocuments = async () => {
+    setIsLoading(true)
+    const { data, error } = await supabaseClient
+      .from('client_documents')
+      .select('*')
+      .eq('client_id', clientId)
+      .order('due_date', { ascending: true })
 
-      if (options.projectId) {
-        query = query.eq('project_id', options.projectId)
-      }
-
-      if (options.clientId) {
-        query = query.eq('client_id', options.clientId)
-      }
-
-      const { data, error: fetchError } = await query
-
-      if (fetchError) throw fetchError
-
-      setDocuments(data || [])
-      setError(null)
-    } catch (err) {
-      console.error('Error fetching documents:', err)
-      setError('Failed to fetch documents')
-      setDocuments([])
-    } finally {
-      setLoading(false)
+    if (error) {
+      console.error('Error fetching documents:', error)
+    } else {
+      setDocuments(data)
     }
+    setIsLoading(false)
   }
 
-  async function uploadDocument(file: File, documentInfo: DocumentFormData) {
-    try {
-      const formData = new FormData()
-      formData.append('file', file)
-      formData.append('projectId', documentInfo.project_id || '')
-      formData.append('clientId', documentInfo.client_id || '')
-      formData.append('category', documentInfo.category || '')
-      formData.append('description', documentInfo.description || '')
+  const uploadDocument = async (file: File, type: Document['document_type'], dueDate?: Date) => {
+    // 1. Upload file to storage
+    const { data: fileData, error: uploadError } = await supabaseClient
+      .storage
+      .from('client-documents')
+      .upload(`${clientId}/${file.name}`, file)
 
-      const response = await fetch('/api/documents', {
-        method: 'POST',
-        body: formData
-      })
+    if (uploadError) throw uploadError
 
-      if (!response.ok) {
-        throw new Error('Failed to upload document')
-      }
-
-      const data = await response.json()
-      setDocuments(prev => [data, ...prev])
-      return { data, error: null }
-    } catch (err) {
-      console.error('Error uploading document:', err)
-      return { data: null, error: 'Failed to upload document' }
+    // 2. Create document record
+    const documentData: DocumentInsert = {
+      client_id: clientId,
+      document_name: file.name,
+      document_type: type,
+      status: 'pending',
+      uploaded_at: new Date().toISOString(),
+      file_path: fileData?.path
     }
+
+    const { data, error: dbError } = await supabaseClient
+      .from('client_documents')
+      .insert(documentData)
+      .single()
+
+    if (dbError) throw dbError
+
+    await fetchDocuments()
+    return data
   }
 
-  async function deleteDocument(documentId: string) {
-    try {
-      const response = await fetch(`/api/documents?id=${documentId}`, {
-        method: 'DELETE'
-      })
+  const updateDocumentStatus = async (documentId: number, status: Document['status']) => {
+    const { error } = await supabaseClient
+      .from('client_documents')
+      .update({ status })
+      .eq('id', documentId)
 
-      if (!response.ok) {
-        throw new Error('Failed to delete document')
-      }
-
-      setDocuments(prev => prev.filter(doc => doc.id !== documentId))
-      return { error: null }
-    } catch (err) {
-      console.error('Error deleting document:', err)
-      return { error: 'Failed to delete document' }
-    }
-  }
-
-  async function updateDocument(
-    documentId: string,
-    updates: Partial<Omit<Document, 'id' | 'created_at' | 'updated_at'>>
-  ) {
-    try {
-      const { data, error: updateError } = await supabase
-        .from('documents')
-        .update({
-          ...updates,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', documentId)
-        .select(`
-          *,
-          project:project_id (*),
-          client:client_id (*)
-        `)
-        .single()
-
-      if (updateError) throw updateError
-
-      setDocuments(prev =>
-        prev.map(doc => (doc.id === documentId ? data : doc))
-      )
-      return { data, error: null }
-    } catch (err) {
-      console.error('Error updating document:', err)
-      return { data: null, error: 'Failed to update document' }
-    }
+    if (error) throw error
+    await fetchDocuments()
   }
 
   return {
     documents,
-    loading,
-    error,
-    fetchDocuments,
+    isLoading,
     uploadDocument,
-    deleteDocument,
-    updateDocument
+    updateDocumentStatus,
+    fetchDocuments
   }
 }

@@ -1,94 +1,114 @@
-import { useState, useEffect } from 'react'
-import { supabase } from '@/lib/supabase'
-import { User, UserInsert, UserUpdate } from '@/types/hooks'
+import { useState, useCallback } from 'react'
+import { useSupabase } from '@/lib/supabase/supabase-provider'
+import { DbUser, DbUserInsert, DbUserUpdate, UserWithRelations } from '@/types/users'
 
 export function useUsers() {
-  const [users, setUsers] = useState<User[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const supabase = useSupabase()
+  const [users, setUsers] = useState<UserWithRelations[]>([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<Error | null>(null)
 
-  useEffect(() => {
-    fetchUsers()
-  }, [])
-
-  async function fetchUsers() {
+  const fetchUsers = useCallback(async () => {
+    setLoading(true)
     try {
       const { data, error } = await supabase
         .from('users')
-        .select('*')
-        .order('name')
+        .select(`
+          *,
+          profile:profiles(*),
+          managed_projects:projects(*),
+          assigned_tasks:tasks(*),
+          team_memberships:project_team_members(*)
+        `)
 
       if (error) throw error
-      setUsers(data)
+      setUsers(data || [])
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred')
+      setError(err instanceof Error ? err : new Error('Failed to fetch users'))
     } finally {
       setLoading(false)
     }
-  }
+  }, [supabase])
 
-  async function addUser(user: UserInsert) {
+  const createUser = useCallback(async (userData: DbUserInsert) => {
+    setLoading(true)
     try {
       const { data, error } = await supabase
         .from('users')
-        .insert([{
-          ...user,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        }])
-        .select()
+        .insert(userData)
+        .select(`
+          *,
+          profile:profiles(*),
+          managed_projects:projects(*),
+          assigned_tasks:tasks(*),
+          team_memberships:project_team_members(*)
+        `)
 
       if (error) throw error
-      setUsers(prev => [...prev, data[0]])
-      return data[0]
+      if (data) setUsers(prev => [...prev, data[0]])
+      return data?.[0]
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred')
-      throw err
+      setError(err instanceof Error ? err : new Error('Failed to create user'))
+      return null
+    } finally {
+      setLoading(false)
     }
-  }
+  }, [supabase])
 
-  async function updateUser(id: number, updates: UserUpdate) {
+  const updateUser = useCallback(async (userId: string, updates: DbUserUpdate) => {
+    setLoading(true)
     try {
       const { data, error } = await supabase
         .from('users')
-        .update({
-          ...updates,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', id)
-        .select()
+        .update(updates)
+        .eq('id', userId)
+        .select(`
+          *,
+          profile:profiles(*),
+          managed_projects:projects(*),
+          assigned_tasks:tasks(*),
+          team_memberships:project_team_members(*)
+        `)
 
       if (error) throw error
-      setUsers(prev => prev.map(user => user.id === id ? data[0] : user))
-      return data[0]
+      if (data) {
+        setUsers(prev => 
+          prev.map(user => user.id === userId ? { ...user, ...data[0] } : user)
+        )
+      }
+      return data?.[0]
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred')
-      throw err
+      setError(err instanceof Error ? err : new Error('Failed to update user'))
+      return null
+    } finally {
+      setLoading(false)
     }
-  }
+  }, [supabase])
 
-  async function deleteUser(id: number) {
+  const deleteUser = useCallback(async (userId: string) => {
+    setLoading(true)
     try {
       const { error } = await supabase
         .from('users')
         .delete()
-        .eq('id', id)
+        .eq('id', userId)
 
       if (error) throw error
-      setUsers(prev => prev.filter(user => user.id !== id))
+      setUsers(prev => prev.filter(user => user.id !== userId))
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred')
-      throw err
+      setError(err instanceof Error ? err : new Error('Failed to delete user'))
+    } finally {
+      setLoading(false)
     }
-  }
+  }, [supabase])
 
   return {
     users,
     loading,
     error,
-    addUser,
+    fetchUsers,
+    createUser,
     updateUser,
-    deleteUser,
-    refreshUsers: fetchUsers,
+    deleteUser
   }
 }
