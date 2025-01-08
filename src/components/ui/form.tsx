@@ -16,34 +16,20 @@ import { cn } from "@/lib/utils"
 import { Label } from "@/components/ui/label"
 
 const Form = React.forwardRef<
-  HTMLFormElement,
-  React.ComponentProps<"form"> & {
+  HTMLDivElement,
+  React.ComponentProps<"div"> & {
     form: any
   }
 >(({ form, className, children, ...props }, ref) => {
-  // Filter out all react-hook-form methods and state
-  const formMethodKeys = [
-    'handleSubmit', 'reset', 'clearErrors', 'setValue', 'getValues', 
-    'trigger', 'formState', 'setError', 'setFocus', 'getFieldState',
-    'register', 'unregister', 'watch', 'resetField'
-  ]
-  
-  const htmlProps = Object.entries(props).reduce((acc, [key, value]) => {
-    if (!formMethodKeys.includes(key)) {
-      acc[key] = value
-    }
-    return acc
-  }, {} as Record<string, any>)
-
   return (
     <FormProvider {...form}>
-      <form
+      <div
         ref={ref}
         className={cn("space-y-8", className)}
-        {...htmlProps}
+        {...props}
       >
         {children}
-      </form>
+      </div>
     </FormProvider>
   )
 })

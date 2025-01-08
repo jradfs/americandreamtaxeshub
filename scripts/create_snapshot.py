@@ -5,81 +5,74 @@ import json
 
 def create_code_snapshot(
     base_dir: str = ".",
-    # Focus on main app code directories
     directories: List[str] = [
-        "src/components",      # All components to analyze patterns
-        "src/lib",            # Core business logic
-        "src/types",          # Type definitions
-        "src/utils",          # Utility functions
+        "src/lib/supabase",    # Supabase configuration and queries
+        "src/app/dashboard",   # Dashboard where error occurs
+        "src/lib/api",         # API layer
+        "src/hooks",           # Data fetching hooks
+        "src/types",           # Type definitions
+        "src/components/dashboard", # Dashboard components
     ],
     output_file: str = "code_snapshot.md",
-    # Include only main code files
     include_file_extensions: Set[str] = {
         ".tsx",  # React components
         ".ts",   # TypeScript files
+        ".env",  # Environment files
     },
-    # Important large files we want to analyze
+    # Core files for data fetching analysis
     essential_files: Set[str] = {
-        # Core Business Logic
-        "src/hooks/useProjectManagement.ts",     # Project management core
-        "src/hooks/useTaxProjectManagement.ts",  # Tax project management
-        "src/hooks/useProjects.ts",             # Project data handling
-        "src/hooks/useClientOnboarding.ts",     # Client onboarding
-        "src/hooks/useWorkflows.ts",            # Workflow management
+        # Supabase Setup & Queries
+        "src/lib/supabase/dashboardQueries.ts",     # Dashboard queries (error source)
+        "src/lib/supabase/server.ts",               # Server client setup
+        "src/lib/supabase/client.ts",               # Browser client setup
+        "src/lib/supabase/middleware.ts",           # Supabase middleware
+        ".env.example",                             # Environment variables template
         
-        # Core Type Definitions
-        "src/types/database.types.ts",          # Database schema
-        "src/types/hooks.ts",                   # Business logic types
-        "src/lib/validations/schema.ts",        # Validation schemas
+        # Dashboard Implementation
+        "src/app/dashboard/page.tsx",               # Main dashboard (error location)
+        "src/app/dashboard/loading.tsx",            # Loading states
+        "src/app/dashboard/error.tsx",              # Error handling
+        "src/components/dashboard/metrics-card.tsx", # Metrics display
         
-        # Core Forms and Components
-        "src/components/clients/client-form.tsx",
-        "src/components/projects/project-form.tsx",
-        "src/components/tasks/task-form.tsx",
-        "src/components/forms/project/basic-info-form.tsx",
+        # Data Fetching Core
+        "src/hooks/useMetrics.ts",                  # Metrics hook
+        "src/hooks/useTaxReturns.ts",              # Tax returns hook
+        "src/lib/api/tax-returns.ts",              # Tax returns API
+        "src/lib/api/metrics.ts",                  # Metrics API
         
-        # Core Utils
-        "src/lib/utils.ts",                     # Utility functions
-        "src/middleware.ts",                    # Auth middleware
+        # Error Handling
+        "src/app/error.tsx",                       # Global error page
+        "src/lib/utils/error-handlers.ts",         # Error utilities
+        
+        # Types
+        "src/types/database.types.ts",             # Database types
+        "src/types/tax-returns.ts",                # Tax return types
+        "src/types/metrics.ts",                    # Metrics types
+        "src/types/supabase.ts",                   # Supabase types
+        
+        # Configuration
+        "src/lib/config/supabase.ts",             # Supabase config
+        "src/lib/config/database.ts",             # Database config
     },
-    # Exclude non-essential files
     exclude_files: Set[str] = {
-        "index.ts",           # Just exports
-        "*.stories.tsx",      # Storybook files
-        "*.test.ts",         # Test files
-        "*.spec.ts",         # Test specs
-        "*.d.ts",           # Type declarations
-        "**/page.tsx",      # Next.js pages
-        "**/layout.tsx",    # Next.js layouts
-        "types.ts",         # Simple type exports
+        "*.stories.tsx",
+        "*.test.ts",
+        "*.spec.ts",
+        "*.d.ts",
+        "*.mock.ts",
     },
     exclude_patterns: Set[str] = {
-        # Build and cache
         "node_modules",
         ".next",
         "dist",
-        "__pycache__",
-        ".git",
-        
-        # Tests
         "__tests__",
         "__mocks__",
-        
-        # Generated
-        ".cache",
-        "build",
-        "out",
-        
-        # IDE
-        ".vscode",
-        ".idea",
     },
-    # Size thresholds for analysis
-    min_file_size_kb: int = 10,    # Only include files larger than 10KB
-    max_total_size_mb: int = 10    # Allow larger total size for analysis
+    min_file_size_kb: int = 0,     # Include all files
+    max_total_size_mb: int = 10    # Increased size limit for more context
 ) -> str:
     """
-    Creates a code snapshot focusing on large, important files for redundancy analysis.
+    Creates a focused code snapshot for analyzing Supabase data fetching issues.
     """
     base_path = Path(base_dir).resolve()
     output_path = base_path / output_file
@@ -90,8 +83,10 @@ def create_code_snapshot(
     file_sizes = []
 
     with open(output_path, "w", encoding="utf-8") as out_f:
-        out_f.write("# Code Analysis Snapshot\n\n")
-        out_f.write("## Large Files Analysis\n\n")
+        out_f.write("# Supabase Data Fetching Analysis\n\n")
+        out_f.write("## Overview\n")
+        out_f.write("This snapshot focuses on the Supabase data fetching error in the dashboard metrics.\n")
+        out_f.write("Error: Failed to fetch pending tax returns in getDashboardMetrics.\n\n")
         
         # Process essential files first
         for essential_file in essential_files:
@@ -107,8 +102,6 @@ def create_code_snapshot(
             dir_path = base_path / directory
             if not dir_path.exists():
                 continue
-
-            dir_files = []
             
             for root, dirs, files in os.walk(dir_path):
                 # Skip excluded directories
@@ -207,6 +200,7 @@ def get_language_identifier(extension: str) -> str:
         ".tsx": "typescript",
         ".js": "javascript",
         ".jsx": "javascript",
+        ".sql": "sql",
     }
     return language_map.get(extension.lower(), "")
 
