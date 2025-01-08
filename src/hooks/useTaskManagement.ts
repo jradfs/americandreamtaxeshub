@@ -3,7 +3,7 @@
 import { useState, useCallback } from 'react'
 import { UseFormReturn } from 'react-hook-form'
 import { ProjectFormValues } from '@/types/projects'
-import { TaskFormValues, TaskStatus, TaskPriority } from '@/types/tasks'
+import { TaskFormValues, TaskStatus, TaskPriority, DbChecklistItem, DbActivityLogEntry } from '@/types/tasks'
 import { Database } from '@/types/database.types'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 
@@ -11,6 +11,8 @@ type TaskSchema = TaskFormValues & {
   title: string
   dependencies: string[]
   order_index: number
+  checklist_items?: DbChecklistItem[]
+  activity_log_entries?: DbActivityLogEntry[]
 }
 
 interface ValidationError {
@@ -140,11 +142,12 @@ export function useTaskManagement(form: UseFormReturn<ProjectFormValues>) {
       actual_minutes: task.actual_minutes,
       category: task.category,
       tags: task.tags,
-      checklist: task.checklist,
       tax_form_type: task.tax_form_type,
       tax_year: task.tax_year,
       review_required: task.review_required,
-      reviewer_id: task.reviewer_id
+      reviewer_id: task.reviewer_id,
+      checklist_items: task.checklist_items || [],
+      activity_log_entries: task.activity_log_entries || []
     }
     
     const updatedTasks = [...currentTasks, newTask]
@@ -266,6 +269,57 @@ export function useTaskManagement(form: UseFormReturn<ProjectFormValues>) {
     }
   }, [])
 
+  const createChecklistItem = useCallback(async (taskId: string, text: string) => {
+    const { data, error } = await supabase
+      .from('checklist_items')
+      .insert({
+        task_id: taskId,
+        text,
+        completed: false
+      })
+      .select()
+      .single()
+
+    if (error) throw error
+    return data
+  }, [supabase])
+
+  const updateChecklistItem = useCallback(async (itemId: string, updates: Partial<DbChecklistItem>) => {
+    const { data, error } = await supabase
+      .from('checklist_items')
+      .update(updates)
+      .eq('id', itemId)
+      .select()
+      .single()
+
+    if (error) throw error
+    return data
+  }, [supabase])
+
+  const deleteChecklistItem = useCallback(async (itemId: string) => {
+    const { error } = await supabase
+      .from('checklist_items')
+      .delete()
+      .eq('id', itemId)
+
+    if (error) throw error
+  }, [supabase])
+
+  const addActivityLogEntry = useCallback(async (taskId: string, type: string, details: Record<string, unknown>) => {
+    const { data, error } = await supabase
+      .from('activity_log_entries')
+      .insert({
+        task_id: taskId,
+        type,
+        details
+      })
+      .select()
+      .single()
+
+    if (error) throw error
+    return data
+  }, [supabase])
+
   return {
     taskErrors,
     addTask,
@@ -274,6 +328,10 @@ export function useTaskManagement(form: UseFormReturn<ProjectFormValues>) {
     updateTaskOrder,
     validateTasks: () => validateTaskDependencies(form.getValues('tasks') || []),
     getTaskMetadata,
-    optimizeTaskSequence
+    optimizeTaskSequence,
+    createChecklistItem,
+    updateChecklistItem,
+    deleteChecklistItem,
+    addActivityLogEntry
   }
 }

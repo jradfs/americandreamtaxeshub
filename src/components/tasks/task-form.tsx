@@ -31,8 +31,6 @@ export function TaskForm({ task, onSubmit, onCancel }: TaskFormProps) {
       priority: undefined,
       due_date: null,
       start_date: null,
-      checklist: null,
-      activity_log: null,
       recurring_config: null,
     }
   })

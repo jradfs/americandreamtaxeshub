@@ -6,10 +6,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
 import { clientFormSchema, type ClientFormSchema } from '@/lib/validations/client'
-import { DbClient } from '@/types/clients'
+import { DbClient, DbClientContactDetails, TaxInfo } from '@/types/clients'
 
 interface ClientFormProps {
-  client?: DbClient | null
+  client?: DbClient & {
+    contact_details?: DbClientContactDetails | null
+    tax_info?: TaxInfo | null
+  } | null
   onSubmit: (data: ClientFormSchema) => Promise<void>
 }
 
@@ -19,12 +22,26 @@ export function ClientForm({ client, onSubmit }: ClientFormProps) {
     defaultValues: {
       id: client?.id || '',
       full_name: client?.full_name || '',
-      email: client?.email || '',
+      company_name: client?.company_name || '',
       contact_email: client?.contact_email || '',
       status: client?.status || 'pending',
       type: client?.type || 'individual',
-      contact_info: client?.contact_info ? JSON.parse(JSON.stringify(client.contact_info)) : null,
-      tax_info: client?.tax_info ? JSON.parse(JSON.stringify(client.tax_info)) : null,
+      contact_details: client?.contact_details || {
+        phone: '',
+        address: '',
+        city: '',
+        state: '',
+        zip: '',
+      },
+      tax_info: client?.tax_info || {
+        filing_status: '',
+        tax_id: '',
+        tax_year: new Date().getFullYear(),
+        filing_type: null,
+        tax_id_type: null,
+        dependents: [],
+        previous_returns: []
+      }
     },
   })
 
@@ -61,12 +78,12 @@ export function ClientForm({ client, onSubmit }: ClientFormProps) {
 
             <FormField
               control={form.control}
-              name="email"
+              name="company_name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Email</FormLabel>
+                  <FormLabel>Company Name</FormLabel>
                   <FormControl>
-                    <Input {...field} type="email" placeholder="Enter email" />
+                    <Input {...field} placeholder="Enter company name" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -81,6 +98,134 @@ export function ClientForm({ client, onSubmit }: ClientFormProps) {
                   <FormLabel>Contact Email</FormLabel>
                   <FormControl>
                     <Input {...field} type="email" placeholder="Enter contact email" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Contact Details</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <FormField
+              control={form.control}
+              name="contact_details.phone"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Phone</FormLabel>
+                  <FormControl>
+                    <Input {...field} type="tel" placeholder="Enter phone number" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="contact_details.address"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Address</FormLabel>
+                  <FormControl>
+                    <Input {...field} placeholder="Enter street address" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="contact_details.city"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>City</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="Enter city" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="contact_details.state"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>State</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="Enter state" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <FormField
+              control={form.control}
+              name="contact_details.zip"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>ZIP Code</FormLabel>
+                  <FormControl>
+                    <Input {...field} placeholder="Enter ZIP code" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Tax Information</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <FormField
+              control={form.control}
+              name="tax_info.tax_id"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Tax ID</FormLabel>
+                  <FormControl>
+                    <Input {...field} placeholder="Enter tax ID" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="tax_info.filing_status"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Filing Status</FormLabel>
+                  <FormControl>
+                    <Input {...field} placeholder="Enter filing status" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="tax_info.tax_year"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Tax Year</FormLabel>
+                  <FormControl>
+                    <Input {...field} type="number" placeholder="Enter tax year" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

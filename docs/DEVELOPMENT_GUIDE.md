@@ -1,6 +1,6 @@
 # Development Guide
 
-This file summarizes all guidelines and best practices we’ve established, along with interview insights regarding how the firm wants to use the practice management tool.
+This file summarizes all guidelines and best practices we've established, along with interview insights regarding how the firm wants to use the practice management tool.
 
 ---
 
@@ -63,19 +63,53 @@ This file summarizes all guidelines and best practices we’ve established, alon
 
 ---
 
-## 4. Next Development Milestones
+## 4. Database Schema Guidelines
 
-1. **Finalize UUID Usage**:  
-   - Verify all references to IDs are updated (no leftover numeric type usage).
-2. **Refactor Old JSON**:  
-   - Remove references to old JSON fields replaced by `activity_log_entries`, `checklist_items`, etc.
-3. **Implement Basic AI**:  
-   - Possibly start with a feature to identify missing documents based on client status & `client_documents`.
-4. **Plan RLS**:  
-   - Outline role-based constraints to secure client data as the user base grows.
+1. **ID Usage**:  
+   - All tables use string-based UUIDs for primary keys (`id: string`).
+   - Foreign keys must reference UUIDs, not numeric IDs.
+   - Example: `project_id: string references projects(id)`.
+
+2. **Relational Structure**:  
+   - Tasks have related items in separate tables:
+     - `checklist_items`: Individual checklist entries for tasks
+     - `activity_log_entries`: Task activity history
+   - No JSON fields for structured data that can be normalized.
+
+3. **Timestamps**:  
+   - All tables include `created_at` and `updated_at`.
+   - Use timestamptz for all date/time fields.
+
+4. **Constraints**:  
+   - Foreign keys must have appropriate ON DELETE actions.
+   - Use enums for fixed-value columns (status, priority, etc.).
 
 ---
 
-## 5. Questions or Feedback?
+## 5. Next Development Milestones
+
+1. **Enhance AI Features**:  
+   - Implement document analysis for missing items.
+   - Add predictive analytics for task completion.
+   - Automate client communication based on status changes.
+
+2. **Improve Workflow Automation**:  
+   - Build templates for common task sequences.
+   - Add smart task assignment based on workload.
+   - Implement deadline prediction using historical data.
+
+3. **Security & Performance**:  
+   - Implement row-level security (RLS).
+   - Add caching for frequently accessed data.
+   - Optimize queries for large datasets.
+
+4. **UI/UX Improvements**:  
+   - Add bulk operations for tasks and projects.
+   - Enhance filtering and search capabilities.
+   - Improve mobile responsiveness.
+
+---
+
+## 6. Questions or Feedback?
 
 Reach out in the dev channel or open a discussion issue if clarifications are needed.

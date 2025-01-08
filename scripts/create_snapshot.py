@@ -20,17 +20,38 @@ def create_code_snapshot(
     },
     # Important large files we want to analyze
     essential_files: Set[str] = {
-        "src/types/database.types.ts",    # Database schema
+        # Core Business Logic
+        "src/hooks/useProjectManagement.ts",     # Project management core
+        "src/hooks/useTaxProjectManagement.ts",  # Tax project management
+        "src/hooks/useProjects.ts",             # Project data handling
+        "src/hooks/useClientOnboarding.ts",     # Client onboarding
+        "src/hooks/useWorkflows.ts",            # Workflow management
+        
+        # Core Type Definitions
+        "src/types/database.types.ts",          # Database schema
+        "src/types/hooks.ts",                   # Business logic types
+        "src/lib/validations/schema.ts",        # Validation schemas
+        
+        # Core Forms and Components
         "src/components/clients/client-form.tsx",
         "src/components/projects/project-form.tsx",
         "src/components/tasks/task-form.tsx",
+        "src/components/forms/project/basic-info-form.tsx",
+        
+        # Core Utils
+        "src/lib/utils.ts",                     # Utility functions
+        "src/middleware.ts",                    # Auth middleware
     },
-    # Only exclude truly non-essential files
+    # Exclude non-essential files
     exclude_files: Set[str] = {
         "index.ts",           # Just exports
         "*.stories.tsx",      # Storybook files
         "*.test.ts",         # Test files
         "*.spec.ts",         # Test specs
+        "*.d.ts",           # Type declarations
+        "**/page.tsx",      # Next.js pages
+        "**/layout.tsx",    # Next.js layouts
+        "types.ts",         # Simple type exports
     },
     exclude_patterns: Set[str] = {
         # Build and cache

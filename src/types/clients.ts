@@ -7,25 +7,12 @@ import { clientFormSchema } from '@/lib/validations/client'
 export type DbClient = Database['public']['Tables']['clients']['Row']
 export type DbClientInsert = Database['public']['Tables']['clients']['Insert']
 export type DbClientUpdate = Database['public']['Tables']['clients']['Update']
+export type DbClientContactDetails = Database['public']['Tables']['client_contact_details']['Row']
 
 // Enums from database
 export type ClientStatus = Database['public']['Enums']['client_status']
 export type ClientType = Database['public']['Enums']['client_type']
 export type FilingType = Database['public']['Enums']['filing_type']
-
-// Strongly typed JSON fields
-export interface ContactInfo {
-  email?: string | null
-  phone?: string | null
-  address?: string | null
-  city?: string | null
-  state?: string | null
-  zip?: string | null
-  alternate_email?: string | null
-  alternate_phone?: string | null
-  preferred_contact_method?: 'email' | 'phone' | null
-  notes?: string | null
-}
 
 export interface Dependent {
   name: string
@@ -55,24 +42,15 @@ export interface TaxInfo {
 // Form data type that matches our schema
 export type ClientFormData = z.infer<typeof clientFormSchema>
 
-// Enhanced client type with relationships and strongly typed JSON fields
-export interface ClientWithRelations extends Omit<DbClient, 'contact_info' | 'tax_info'> {
-  contact_info: ContactInfo | null
+// Enhanced client type with relationships
+export interface ClientWithRelations extends Omit<DbClient, 'tax_info'> {
   tax_info: TaxInfo | null
+  contact_details?: DbClientContactDetails | null
   documents?: Database['public']['Tables']['client_documents']['Row'][]
   workflows?: Database['public']['Tables']['client_onboarding_workflows']['Row'][]
   assigned_preparer?: Database['public']['Tables']['users']['Row'] | null
   tax_returns?: Database['public']['Tables']['tax_returns']['Row'][]
   projects?: Database['public']['Tables']['projects']['Row'][]
-}
-
-// Type guards
-export function isContactInfo(value: unknown): value is ContactInfo {
-  return value !== null &&
-    typeof value === 'object' &&
-    (!('email' in value) || typeof value.email === 'string' || value.email === null) &&
-    (!('phone' in value) || typeof value.phone === 'string' || value.phone === null) &&
-    (!('address' in value) || typeof value.address === 'string' || value.address === null)
 }
 
 export function isTaxInfo(value: unknown): value is TaxInfo {
@@ -99,12 +77,10 @@ export function toClientFormData(client: DbClient): ClientFormData {
     ...formData
   } = client
   
-  const contactInfo = isContactInfo(client.contact_info) ? client.contact_info : null
   const taxInfo = isTaxInfo(client.tax_info) ? client.tax_info : null
 
   return {
     ...formData,
-    contact_info: contactInfo,
     tax_info: taxInfo,
   } as ClientFormData
 }
@@ -112,7 +88,6 @@ export function toClientFormData(client: DbClient): ClientFormData {
 export function toDbClient(formData: ClientFormData): Omit<DbClientInsert, 'id'> {
   const {
     id, // Exclude id as it's handled by the database
-    contact_info,
     tax_info,
     ...rest
   } = formData
@@ -122,7 +97,6 @@ export function toDbClient(formData: ClientFormData): Omit<DbClientInsert, 'id'>
     ...rest,
     contact_email: rest.contact_email,
     status: rest.status,
-    contact_info: contact_info as Json,
     tax_info: tax_info as Json,
     // Add any other required fields with defaults
     type: rest.type || null,

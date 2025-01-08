@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import type { Database } from '@/types/database.types';
-import type { ClientWithRelations, ContactInfo, TaxInfo } from '@/types/clients';
+import type { ClientWithRelations, TaxInfo } from '@/types/clients';
 
 interface ClientDetailsProps {
   clientId: string;
@@ -46,8 +46,7 @@ export function ClientDetails({ clientId }: ClientDetailsProps) {
           const clientData = data as unknown as ClientResponse;
           const enhancedClient: ClientWithRelations = {
             ...clientData,
-            contact_info: clientData.contact_info as ContactInfo,
-            tax_info: clientData.tax_info as TaxInfo,
+            tax_info: clientData.tax_info as TaxInfo | null,
             documents: clientData.documents,
             workflows: clientData.workflows,
             assigned_preparer: clientData.assigned_preparer,
@@ -74,7 +73,6 @@ export function ClientDetails({ clientId }: ClientDetailsProps) {
     return <div>Client not found</div>;
   }
 
-  const contactInfo = client.contact_info;
   const taxInfo = client.tax_info;
 
   return (
@@ -86,13 +84,10 @@ export function ClientDetails({ clientId }: ClientDetailsProps) {
             <h3 className="font-semibold">Basic Information</h3>
             <div className="mt-2 space-y-2">
               <p>
-                <span className="font-medium">Name:</span> {client.full_name}
+                <span className="font-medium">Name:</span> {client.full_name || client.company_name}
               </p>
               <p>
-                <span className="font-medium">Email:</span> {client.email}
-              </p>
-              <p>
-                <span className="font-medium">Phone:</span> {contactInfo?.phone}
+                <span className="font-medium">Email:</span> {client.contact_email}
               </p>
               <p>
                 <span className="font-medium">Status:</span> {client.status}

@@ -1,3 +1,5 @@
+'use client'
+
 import { useState, useCallback } from 'react';
 import { addDays, isAfter, isBefore, startOfDay } from 'date-fns';
 import { ProjectWithRelations, TaxReturnType } from '@/types/projects';

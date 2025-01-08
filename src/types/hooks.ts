@@ -23,7 +23,7 @@ export type {
 }
 
 export type WorkflowTemplate = {
-  id: number
+  id: string
   name: string
   description?: string | null
   steps: Array<{
@@ -90,7 +90,7 @@ export type ProjectFilters = {
   service_category?: string[]
   status?: string[]
   priority?: string[]
-  dateRange?: { start: string; end: string }
+  dateRange?: { from: string; to: string }
   dueDateRange?: { from: Date; to: Date }
   clientId?: string
   teamMemberId?: string

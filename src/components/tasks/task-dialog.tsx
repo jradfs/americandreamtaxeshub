@@ -20,13 +20,15 @@ import {
 } from '@/components/ui/select'
 import type { Database } from '@/types/database.types'
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
+import { TaskWithRelations } from '@/types/tasks'
 
 type DbTaskInsert = Database['public']['Tables']['tasks']['Insert']
+type DbChecklistItem = Database['public']['Tables']['checklist_items']['Row']
 
 interface TaskDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  task?: DbTaskInsert | null
+  task?: TaskWithRelations | null
   onSubmit: (data: DbTaskInsert) => Promise<void>
 }
 
@@ -35,28 +37,17 @@ const PRIORITY_OPTIONS = ['low', 'medium', 'high', 'urgent'] as const
 
 export function TaskDialog({ open, onOpenChange, task, onSubmit }: TaskDialogProps) {
   const form = useForm<DbTaskInsert>({
-    defaultValues: task || {
-      title: '',
-      description: '',
-      status: 'todo',
-      priority: 'medium',
-      activity_log: null,
-      checklist: null,
-      assigned_team: null,
-      assignee_id: null,
-      category: null,
-      created_at: null,
-      dependencies: null,
-      due_date: null,
-      parent_task_id: null,
-      progress: null,
-      project_id: null,
-      recurring_config: null,
-      start_date: null,
-      tax_form_type: null,
-      tax_return_id: null,
-      template_id: null,
-      updated_at: null
+    defaultValues: {
+      title: task?.title || '',
+      description: task?.description || '',
+      status: task?.status || 'todo',
+      priority: task?.priority || 'medium',
+      assignee_id: task?.assignee_id || null,
+      category: task?.category || null,
+      due_date: task?.due_date || null,
+      parent_task_id: task?.parent_task_id || null,
+      project_id: task?.project_id || null,
+      template_id: task?.template_id || null
     }
   })
 

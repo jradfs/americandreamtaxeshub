@@ -106,31 +106,11 @@ export const projectSchema = z.object({
 })
 
 // Task Schemas
-export const taskChecklistSchema = z.object({
-  items: z.array(z.object({
-    id: z.string(),
-    text: z.string(),
-    completed: z.boolean(),
-    added_by: z.string().optional(),
-    added_at: z.string().optional()
-  }))
-})
-
 export const taskRecurringConfigSchema = z.object({
   frequency: z.enum(['daily', 'weekly', 'monthly', 'yearly']),
   interval: z.number(),
   end_date: z.string().optional(),
   end_occurrences: z.number().optional()
-})
-
-export const taskActivityLogSchema = z.object({
-  entries: z.array(z.object({
-    id: z.string(),
-    type: z.enum(['status_change', 'assignment', 'comment', 'checklist_update']),
-    user_id: z.string(),
-    timestamp: z.string(),
-    details: z.record(z.unknown())
-  }))
 })
 
 export const taskSchema = z.object({
@@ -143,9 +123,7 @@ export const taskSchema = z.object({
   due_date: z.string().optional(),
   start_date: z.string().optional(),
   progress: z.number().optional(),
-  checklist: taskChecklistSchema.nullable(),
   recurring_config: taskRecurringConfigSchema.nullable(),
-  activity_log: taskActivityLogSchema.nullable(),
   parent_task_id: z.string().optional(),
   dependencies: z.array(z.string()).optional(),
   category: z.string().optional(),

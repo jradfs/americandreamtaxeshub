@@ -7,42 +7,27 @@ import { Button } from '@/components/ui/button'
 import { TaskDialog } from '@/components/tasks/task-dialog'
 import { useTasks } from '@/hooks/useTasks'
 import { toast } from '@/components/ui/use-toast'
-import type { Database } from '@/types/database.types'
-
-type DbTaskInsert = Database['public']['Tables']['tasks']['Insert']
+import type { TaskWithRelations, DbTaskInsert } from '@/types/tasks'
 
 export default function TasksPage() {
   const router = useRouter()
   const [isDialogOpen, setIsDialogOpen] = useState(false)
-  const [selectedTask, setSelectedTask] = useState<DbTaskInsert | null>(null)
-  const [selectedIndex, setSelectedIndex] = useState<number | null>(null)
+  const [selectedTask, setSelectedTask] = useState<TaskWithRelations | null>(null)
   const { tasks, createTask, updateTask, deleteTask } = useTasks()
 
   const handleCreateTask = async (data: DbTaskInsert) => {
     try {
       await createTask({
-        ...data,
         title: data.title || '',
         status: data.status || 'todo',
-        activity_log: data.activity_log || null,
-        checklist: data.checklist || null,
-        assigned_team: data.assigned_team || null,
         assignee_id: data.assignee_id || null,
         category: data.category || null,
-        created_at: data.created_at || null,
-        dependencies: data.dependencies || null,
         description: data.description || null,
         due_date: data.due_date || null,
         parent_task_id: data.parent_task_id || null,
         priority: data.priority || 'medium',
-        progress: data.progress || null,
         project_id: data.project_id || null,
-        recurring_config: data.recurring_config || null,
-        start_date: data.start_date || null,
-        tax_form_type: data.tax_form_type || null,
-        tax_return_id: data.tax_return_id || null,
-        template_id: data.template_id || null,
-        updated_at: data.updated_at || null
+        template_id: data.template_id || null
       })
       setIsDialogOpen(false)
       toast({
@@ -60,35 +45,22 @@ export default function TasksPage() {
   }
 
   const handleUpdateTask = async (data: DbTaskInsert) => {
-    if (selectedIndex === null) return
+    if (!selectedTask?.id) return
 
     try {
-      await updateTask(selectedIndex, {
-        ...data,
+      await updateTask(selectedTask.id, {
         title: data.title || '',
         status: data.status || 'todo',
-        activity_log: data.activity_log || null,
-        checklist: data.checklist || null,
-        assigned_team: data.assigned_team || null,
         assignee_id: data.assignee_id || null,
         category: data.category || null,
-        created_at: data.created_at || null,
-        dependencies: data.dependencies || null,
         description: data.description || null,
         due_date: data.due_date || null,
         parent_task_id: data.parent_task_id || null,
         priority: data.priority || 'medium',
-        progress: data.progress || null,
         project_id: data.project_id || null,
-        recurring_config: data.recurring_config || null,
-        start_date: data.start_date || null,
-        tax_form_type: data.tax_form_type || null,
-        tax_return_id: data.tax_return_id || null,
-        template_id: data.template_id || null,
-        updated_at: data.updated_at || null
+        template_id: data.template_id || null
       })
       setSelectedTask(null)
-      setSelectedIndex(null)
       toast({
         title: 'Success',
         description: 'Task updated successfully.',
@@ -103,11 +75,10 @@ export default function TasksPage() {
     }
   }
 
-  const handleDeleteTask = async (index: number) => {
+  const handleDeleteTask = async (taskId: string) => {
     try {
-      await deleteTask(index)
+      await deleteTask(taskId)
       setSelectedTask(null)
-      setSelectedIndex(null)
       toast({
         title: 'Success',
         description: 'Task deleted successfully.',
@@ -132,9 +103,9 @@ export default function TasksPage() {
         </Button>
       </div>
       <div className="mt-8 grid gap-4">
-        {tasks.map((task, index) => (
+        {tasks.map((task) => (
           <div
-            key={index}
+            key={task.id}
             className="flex items-center justify-between rounded-lg border p-4"
           >
             <div>
@@ -144,16 +115,13 @@ export default function TasksPage() {
             <div className="flex items-center gap-2">
               <Button
                 variant="outline"
-                onClick={() => {
-                  setSelectedTask(task)
-                  setSelectedIndex(index)
-                }}
+                onClick={() => setSelectedTask(task)}
               >
                 Edit
               </Button>
               <Button
                 variant="destructive"
-                onClick={() => handleDeleteTask(index)}
+                onClick={() => handleDeleteTask(task.id)}
               >
                 Delete
               </Button>
@@ -167,7 +135,6 @@ export default function TasksPage() {
           setIsDialogOpen(open)
           if (!open) {
             setSelectedTask(null)
-            setSelectedIndex(null)
           }
         }}
         task={selectedTask}

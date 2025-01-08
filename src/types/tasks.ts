@@ -1,5 +1,4 @@
 import type { Database } from './database.types'
-import type { Json } from './database.types'
 import { z } from 'zod'
 import { taskSchema } from '@/lib/validations/task'
 
@@ -12,30 +11,9 @@ export type DbTaskUpdate = Database['public']['Tables']['tasks']['Update']
 export type TaskStatus = Database['public']['Enums']['task_status']
 export type TaskPriority = Database['public']['Enums']['task_priority']
 
-// JSON field types with strong typing
-export type ChecklistItem = {
-  id: string
-  text: string
-  completed: boolean
-  added_by?: string
-  added_at?: string
-}
-
-export type Checklist = {
-  items: ChecklistItem[]
-}
-
-export type ActivityLogEntry = {
-  id: string
-  type: 'status_change' | 'assignment' | 'comment' | 'checklist_update'
-  user_id: string
-  timestamp: string
-  details: Record<string, unknown>
-}
-
-export type ActivityLog = {
-  entries: ActivityLogEntry[]
-}
+// Relational table types
+export type DbChecklistItem = Database['public']['Tables']['checklist_items']['Row']
+export type DbActivityLogEntry = Database['public']['Tables']['activity_log_entries']['Row']
 
 export type RecurringConfig = {
   frequency: 'daily' | 'weekly' | 'monthly' | 'yearly'
@@ -52,10 +30,10 @@ export type TaskUpdate = Partial<TaskFormValues> & { id: string }
 // Task type for general use
 export type Task = TaskWithRelations
 
-// Enhanced task type with relationships and strongly typed JSON fields
-export type TaskWithRelations = Omit<DbTask, 'checklist' | 'activity_log' | 'recurring_config'> & {
-  checklist: Checklist | null
-  activity_log: ActivityLog | null
+// Enhanced task type with relationships using relational tables
+export type TaskWithRelations = DbTask & {
+  checklist_items?: DbChecklistItem[]
+  activity_log_entries?: DbActivityLogEntry[]
   recurring_config: RecurringConfig | null
   project?: Database['public']['Tables']['projects']['Row'] | null
   assignee?: Database['public']['Tables']['users']['Row'] | null
@@ -91,8 +69,6 @@ export function toTaskFormValues(task: DbTask): TaskFormValues {
     ...formData,
     status: task.status as TaskStatus,
     priority: task.priority as TaskPriority | undefined,
-    checklist: task.checklist as Checklist | null,
-    activity_log: task.activity_log as ActivityLog | null,
     recurring_config: task.recurring_config as RecurringConfig | null,
   }
 }

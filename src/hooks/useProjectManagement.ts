@@ -59,7 +59,11 @@ export function useProjectManagement(): {
         .select(`
           *,
           client:clients(*),
-          tasks:project_tasks(*),
+          tasks:project_tasks(
+            *,
+            checklist_items(*),
+            activity_log_entries(*)
+          ),
           tax_return:tax_returns(*)
         `);
 
@@ -248,25 +252,7 @@ export function useProjectManagement(): {
         (deadline && new Date(deadline) <= new Date(addMonths(new Date(), 3)));
 
       const matchesDateRange = !filters.dateRange || !deadline || 
-        (new Date(deadline) >= new Date(filters.dateRange.start) && new Date(deadline) <= new Date(filters.dateRange.end));
-
-      const matchesClient = !filters.clientId || 
-        project.client_id === filters.clientId;
-
-      const matchesTeamMember = !filters.teamMemberId || 
-        project.team_members?.some(member => member.user_id === filters.teamMemberId);
-
-      const matchesTags = !filters.tags?.length ||
-        filters.tags.every(tag => project.tags?.includes(tag));
-
-      const matchesDocuments = !filters.hasDocuments ||
-        (project.documents && project.documents.length > 0);
-
-      const matchesNotes = !filters.hasNotes ||
-        (project.notes && project.notes.length > 0);
-
-      const matchesTimeEntries = !filters.hasTimeEntries ||
-        (project.time_entries && project.time_entries.length > 0);
+        (deadline >= new Date(filters.dateRange.from) && deadline <= new Date(filters.dateRange.to));
 
       return (
         matchesSearch &&
@@ -278,210 +264,22 @@ export function useProjectManagement(): {
         matchesDueThisWeek &&
         matchesDueThisMonth &&
         matchesDueThisQuarter &&
-        matchesDateRange &&
-        matchesClient &&
-        matchesTeamMember &&
-        matchesTags &&
-        matchesDocuments &&
-        matchesNotes &&
-        matchesTimeEntries
+        matchesDateRange
       );
     });
   }, [filters, getProjectDeadline]);
 
-  const groupKeyMap: Record<string, (project: ProjectWithRelations) => string> = {
-    service_category: (p) => p.service_category || 'uncategorized',
-    status: (p) => p.status,
-    priority: (p) => p.priority,
-    client: (p) => p.client?.company_name || p.client?.full_name || 'No Client',
-    return_type: (p) => p.tax_info?.return_type || 'Not Tax Return',
-    review_status: (p) => p.tax_info?.review_status || 'Not In Review',
-    deadline: (p) => {
-      const deadline = getProjectDeadline(p);
-      if (!deadline) return 'No Due Date';
-      const today = new Date();
-      if (new Date(deadline) < today) return 'Overdue';
-      if (new Date(deadline) <= new Date(endOfWeek(today))) return 'Due This Week';
-      if (new Date(deadline) <= new Date(addMonths(today, 1))) return 'Due This Month';
-      return 'Future';
-    }
-  };
-
-  const groupProjects = useCallback((projects: ProjectWithRelations[], groupBy: string) => {
-    return projects.reduce((groups, project) => {
-      const key = groupKeyMap[groupBy](project);
-      const formattedKey = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-      groups[formattedKey] = groups[formattedKey] || [];
-      groups[formattedKey].push(project);
-      return groups;
-    }, {} as Record<string, ProjectWithRelations[]>);
-  }, [getProjectDeadline]);
-
-  const getProjectMetrics = useCallback((projects: ProjectWithRelations[]): {
-    totalProjects: number;
-    completedProjects: number;
-    completionRate: number;
-    averageTimeToComplete: number;
-    projectsByService: Record<ServiceCategory, number>;
-    projectsByStatus: Record<ProjectStatus, number>;
-    projectsByPriority: Record<Priority, number>;
-    upcomingDeadlines: Array<{
-      date: Date;
-      count: number;
-      projects: ProjectWithRelations[];
-    }>;
-    clientDistribution: Array<{
-      clientId: string;
-      clientName: string;
-      projectCount: number;
-    }>;
-    teamWorkload: Array<{
-      userId: string;
-      userName: string;
-      projectCount: number;
-      totalEstimatedHours: number;
-    }>;
-  } => {
-    const totalProjects = projects.length;
-    const completedProjects = projects.filter(p => p.status === 'completed').length;
-    
-    const projectsByService = projects.reduce((acc, project) => {
-      if (project.service_category) {
-        acc[project.service_category] = (acc[project.service_category] || 0) + 1;
-      }
-      return acc;
-    }, {} as Record<ServiceCategory, number>);
-
-    const projectsByStatus = projects.reduce((acc, project) => {
-      acc[project.status] = (acc[project.status] || 0) + 1;
-      return acc;
-    }, {} as Record<ProjectStatus, number>);
-
-    const projectsByPriority = projects.reduce((acc, project) => {
-      acc[project.priority] = (acc[project.priority] || 0) + 1;
-      return acc;
-    }, {} as Record<Priority, number>);
-
-    const deadlineGroups = new Map<string, ProjectWithRelations[]>();
-    projects.forEach(project => {
-      const deadline = getProjectDeadline(project);
-      if (deadline) {
-        const key = deadline.toISOString().split('T')[0];
-        if (!deadlineGroups.has(key)) {
-          deadlineGroups.set(key, []);
-        }
-        deadlineGroups.get(key)?.push(project);
-      }
-    });
-
-    const upcomingDeadlines = Array.from(deadlineGroups.entries())
-      .map(([date, projects]) => ({
-        date: new Date(date),
-        count: projects.length,
-        projects
-      }))
-      .sort((a, b) => a.date.getTime() - b.date.getTime());
-
-    const clientGroups = new Map<string, { name: string; count: number }>();
-    projects.forEach(project => {
-      if (project.client_id) {
-        const name = project.client?.company_name || project.client?.full_name || 'Unknown';
-        if (!clientGroups.has(project.client_id)) {
-          clientGroups.set(project.client_id, { name, count: 0 });
-        }
-        clientGroups.get(project.client_id)!.count++;
-      }
-    });
-
-    const clientDistribution = Array.from(clientGroups.entries())
-      .map(([id, { name, count }]) => ({
-        clientId: id,
-        clientName: name,
-        projectCount: count
-      }))
-      .sort((a, b) => b.projectCount - a.projectCount);
-
-    const teamGroups = new Map<string, { 
-      name: string;
-      projectCount: number;
-      estimatedHours: number;
-    }>();
-    
-    projects.forEach(project => {
-      project.team_members?.forEach(member => {
-        if (!teamGroups.has(member.user_id)) {
-          teamGroups.set(member.user_id, {
-            name: member.user?.full_name || 'Unknown',
-            projectCount: 0,
-            estimatedHours: 0
-          });
-        }
-        const group = teamGroups.get(member.user_id)!;
-        group.projectCount++;
-        
-        // Sum estimated hours from tasks
-        const estimatedMinutes = project.tasks
-          ?.filter(task => task.assignee_id === member.user_id)
-          .reduce((sum, task) => sum + (task.estimated_minutes || 0), 0) || 0;
-        
-        group.estimatedHours += estimatedMinutes / 60;
-      });
-    });
-
-    const teamWorkload = Array.from(teamGroups.entries())
-      .map(([id, { name, projectCount, estimatedHours }]) => ({
-        userId: id,
-        userName: name,
-        projectCount,
-        totalEstimatedHours: Math.round(estimatedHours * 10) / 10
-      }))
-      .sort((a, b) => b.projectCount - a.projectCount);
-
-    // Calculate average time to complete
-    const completedWithDuration = projects.filter(p => 
-      p.status === 'completed' && p.completed_at && p.created_at
-    );
-    
-    const totalDuration = completedWithDuration.reduce((sum, p) => {
-      const duration = new Date(p.completed_at!).getTime() - new Date(p.created_at).getTime();
-      return sum + duration;
-    }, 0);
-
-    const averageTimeToComplete = completedWithDuration.length > 0
-      ? totalDuration / completedWithDuration.length / (1000 * 60 * 60 * 24) // Convert to days
-      : 0;
-
-    return {
-      totalProjects,
-      completedProjects,
-      completionRate: totalProjects ? (completedProjects / totalProjects) * 100 : 0,
-      averageTimeToComplete,
-      projectsByService,
-      projectsByStatus,
-      projectsByPriority,
-      upcomingDeadlines,
-      clientDistribution,
-      teamWorkload
-    };
-  }, [getProjectDeadline]);
-
-  const filteredProjects = useMemo(() => filterProjects(projects || []), [filterProjects, projects]);
-  const groupedProjects = useMemo(() => groupProjects(filteredProjects, 'service_category'), [filteredProjects, groupProjects]);
-  const metrics = useMemo(() => getProjectMetrics(filteredProjects), [filteredProjects, getProjectMetrics]);
-
   return {
-    projects: filteredProjects,
+    projects,
     loading,
     error,
     filters,
     updateFilters,
     resetFilters,
-    filterProjects: applyFilters,
+    filterProjects,
     groupProjects,
     refresh: fetchProjects,
     bulkUpdateProjects,
-    archiveProjects,
-    metrics,
-    getNextEstimatedTaxDeadline
+    archiveProjects
   };
 }

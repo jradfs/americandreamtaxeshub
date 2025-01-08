@@ -45,7 +45,11 @@ export function useProjects(initialFilters?: ProjectFilters) {
       .select(`
         *,
         client:clients!projects_client_id_fkey (*),
-        tasks!tasks_project_id_fkey (*)
+        tasks!tasks_project_id_fkey (
+          *,
+          checklist_items(*),
+          activity_log_entries(*)
+        )
       `, { count: 'exact' })
 
     // Apply filters
@@ -85,14 +89,14 @@ export function useProjects(initialFilters?: ProjectFilters) {
       const { data, error } = await supabase
         .from('tax_returns')
         .select('*')
-        .in('id', projectIds.map(id => Number(id)))
+        .in('id', projectIds)
 
       if (error) {
         console.error('Error fetching tax returns:', error)
         return new Map()
       }
 
-      return new Map(data?.map(tr => [tr.id.toString(), tr]) || [])
+      return new Map(data?.map(tr => [tr.id, tr]) || [])
     } catch (error) {
       console.error('Error in fetchTaxReturns:', error)
       return new Map()
@@ -113,12 +117,12 @@ export function useProjects(initialFilters?: ProjectFilters) {
 
       // Fetch tax returns separately for projects that have tax_return_id
       const projectsWithTaxReturns = projectsData?.filter(p => p.tax_return_id) || []
-      const taxReturnsMap = await fetchTaxReturns(projectsWithTaxReturns.map(p => p.tax_return_id?.toString() || ''))
+      const taxReturnsMap = await fetchTaxReturns(projectsWithTaxReturns.map(p => p.tax_return_id))
 
       // Combine the data
       const enrichedProjects = projectsData?.map(project => ({
         ...project,
-        tax_return: project.tax_return_id ? taxReturnsMap.get(project.tax_return_id.toString()) : undefined
+        tax_return: project.tax_return_id ? taxReturnsMap.get(project.tax_return_id) : undefined
       })) as ProjectWithRelations[]
 
       setProjects(enrichedProjects)
@@ -167,18 +171,46 @@ export function useProjects(initialFilters?: ProjectFilters) {
 
       if (projectError) throw projectError
 
-      // Handle tasks
+      // Handle tasks and their related items
       if (projectData.tasks?.length) {
-        const tasks = projectData.tasks.map(task => ({
-          ...task,
-          project_id: project.id
-        }))
+        for (const task of projectData.tasks) {
+          // Create task
+          const { data: newTask, error: taskError } = await supabase
+            .from('tasks')
+            .insert({
+              ...task,
+              project_id: project.id
+            })
+            .select()
+            .single()
 
-        const { error: tasksError } = await supabase
-          .from('tasks')
-          .insert(tasks)
+          if (taskError) throw taskError
 
-        if (tasksError) throw tasksError
+          // Create checklist items if any
+          if (task.checklist_items?.length) {
+            const { error: checklistError } = await supabase
+              .from('checklist_items')
+              .insert(
+                task.checklist_items.map(item => ({
+                  ...item,
+                  task_id: newTask.id
+                }))
+              )
+
+            if (checklistError) throw checklistError
+          }
+
+          // Add initial activity log entry
+          const { error: activityError } = await supabase
+            .from('activity_log_entries')
+            .insert({
+              task_id: newTask.id,
+              type: 'created',
+              details: { status: newTask.status }
+            })
+
+          if (activityError) throw activityError
+        }
       }
 
       await fetchProjects()
@@ -211,12 +243,23 @@ export function useProjects(initialFilters?: ProjectFilters) {
   const deleteProject = async (projectId: string): Promise<{ error: string | null }> => {
     try {
       // Delete related records first
-      await Promise.all([
-        supabase.from('tasks').delete().eq('project_id', projectId),
-        supabase.from('notes').delete().eq('project_id', projectId),
-        supabase.from('documents').delete().eq('project_id', projectId)
-      ])
+      const { data: tasks } = await supabase
+        .from('tasks')
+        .select('id')
+        .eq('project_id', projectId)
 
+      if (tasks?.length) {
+        // Delete task-related records
+        await Promise.all(tasks.map(task => Promise.all([
+          supabase.from('checklist_items').delete().eq('task_id', task.id),
+          supabase.from('activity_log_entries').delete().eq('task_id', task.id)
+        ])))
+      }
+
+      // Then delete notes
+      await supabase.from('notes').delete().eq('project_id', projectId)
+
+      // Finally delete the project
       const { error } = await supabase
         .from('projects')
         .delete()
@@ -249,7 +292,6 @@ export function useProjects(initialFilters?: ProjectFilters) {
     createProject,
     updateProject,
     deleteProject,
-    fetchTaxReturnForProject,
-    fetchProjects
+    fetchTaxReturnForProject
   }
 }

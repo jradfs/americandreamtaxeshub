@@ -49,11 +49,10 @@ export function ClientDialog({
     defaultValues: {
       id: client?.id || '',
       full_name: client?.full_name || '',
-      email: client?.email || '',
+      company_name: client?.company_name || '',
       contact_email: client?.contact_email || '',
       status: client?.status || 'pending',
       type: client?.type || 'individual',
-      contact_info: client?.contact_info ? JSON.parse(JSON.stringify(client.contact_info)) : null,
       tax_info: client?.tax_info ? JSON.parse(JSON.stringify(client.tax_info)) : null,
     },
   })
@@ -89,15 +88,16 @@ export function ClientDialog({
             )}
           </div>
           <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="company_name">Company Name</Label>
             <Input
-              id="email"
-              type="email"
-              {...register('email')}
-              className={errors.email ? 'border-destructive' : ''}
+              id="company_name"
+              {...register('company_name')}
+              className={errors.company_name ? 'border-destructive' : ''}
             />
-            {errors.email && (
-              <p className="text-sm text-destructive">{errors.email.message}</p>
+            {errors.company_name && (
+              <p className="text-sm text-destructive">
+                {errors.company_name.message}
+              </p>
             )}
           </div>
           <div className="space-y-2">
