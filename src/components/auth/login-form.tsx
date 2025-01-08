@@ -52,7 +52,13 @@ export function LoginForm() {
         throw error
       }
 
+      toast({
+        title: "Success",
+        description: "Successfully logged in.",
+      })
+
       router.push('/dashboard')
+      router.refresh()
     } catch (error) {
       console.error('Login error:', error)
       toast({
@@ -64,7 +70,7 @@ export function LoginForm() {
   }
 
   return (
-    <Form form={form}>
+    <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
         <FormField
           control={form.control}
@@ -73,7 +79,11 @@ export function LoginForm() {
             <FormItem>
               <FormLabel>Email</FormLabel>
               <FormControl>
-                <Input placeholder="Enter your email" {...field} />
+                <Input 
+                  type="email"
+                  placeholder="Enter your email" 
+                  {...field} 
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
