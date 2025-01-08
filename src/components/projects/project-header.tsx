@@ -1,20 +1,27 @@
 'use client'
 
-import { ProjectWithRelations } from "@/types/projects"
+import { Database } from "@/types/database.types"
 import { Button } from "@/components/ui/button"
 import { Calendar, Clock, Mail } from "lucide-react"
 import { format } from "date-fns"
 import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
 import { useState } from "react"
-import { ProjectDialog } from "./project-dialog"
+import { CreateProjectDialog } from "./create-project-dialog"
+
+type DbProject = Database['public']['Tables']['projects']['Row']
+type DbClient = Database['public']['Tables']['clients']['Row']
 
 interface ProjectHeaderProps {
-  project: ProjectWithRelations
+  project: DbProject & {
+    client?: DbClient | null
+  }
 }
 
 export function ProjectHeader({ project }: ProjectHeaderProps) {
   const [editDialogOpen, setEditDialogOpen] = useState(false)
+
+  const clientContactInfo = project.client?.contact_info as { email?: string } | null
 
   return (
     <div className="space-y-4">
@@ -56,9 +63,9 @@ export function ProjectHeader({ project }: ProjectHeaderProps) {
           </div>
         </div>
         <div className="flex gap-2">
-          {project.client?.contact_info?.email && (
+          {clientContactInfo?.email && (
             <Button variant="outline" size="sm" asChild>
-              <Link href={`mailto:${project.client.contact_info.email}`}>
+              <Link href={`mailto:${clientContactInfo.email}`}>
                 <Mail className="mr-2 h-4 w-4" />
                 Email Client
               </Link>
@@ -102,10 +109,13 @@ export function ProjectHeader({ project }: ProjectHeaderProps) {
         </div>
       </div>
 
-      <ProjectDialog
-        project={project}
+      <CreateProjectDialog
         open={editDialogOpen}
         onOpenChange={setEditDialogOpen}
+        onSubmit={async (data) => {
+          // Handle project update
+          console.log('Update project:', data)
+        }}
       />
     </div>
   )

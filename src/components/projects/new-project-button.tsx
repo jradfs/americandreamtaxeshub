@@ -5,10 +5,16 @@ import { Button } from '@/components/ui/button';
 import { PlusCircle } from "lucide-react";
 import { CreateProjectDialog } from "./create-project-dialog";
 import { useProjects } from '@/hooks/useProjects';
+import { ProjectFormData } from '@/lib/validations/project';
 
 export function NewProjectButton() {
   const [open, setOpen] = useState(false);
-  const { fetchProjects } = useProjects();
+  const { fetchProjects, createProject } = useProjects();
+
+  const handleSubmit = async (data: ProjectFormData) => {
+    await createProject(data);
+    await fetchProjects();
+  };
 
   return (
     <>
@@ -23,10 +29,7 @@ export function NewProjectButton() {
       <CreateProjectDialog 
         open={open}
         onOpenChange={setOpen}
-        onSuccess={async () => {
-          setOpen(false);
-          await fetchProjects();
-        }}
+        onSubmit={handleSubmit}
       />
     </>
   );

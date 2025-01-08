@@ -46,6 +46,11 @@ export type RecurringConfig = {
 
 // Form data type that matches our schema
 export type TaskFormValues = z.infer<typeof taskSchema>
+export type TaskFormData = TaskFormValues
+export type TaskUpdate = Partial<TaskFormValues> & { id: string }
+
+// Task type for general use
+export type Task = TaskWithRelations
 
 // Enhanced task type with relationships and strongly typed JSON fields
 export type TaskWithRelations = Omit<DbTask, 'checklist' | 'activity_log' | 'recurring_config'> & {

@@ -21,8 +21,8 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { projectSchema } from '@/lib/validations/project';
 import { useToast } from '@/components/ui/use-toast';
-import { Label } from '@/components/ui/label';
-import { ProjectFormData, ServiceType } from '@/types/projects';
+import { ProjectFormData } from '@/types/projects';
+import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 
 interface CreateProjectDialogProps {
   open: boolean;
@@ -55,15 +55,12 @@ export function CreateProjectDialog({
       await onSubmit(data);
       form.reset();
       onOpenChange(false);
-      toast({
-        title: 'Success',
-        description: 'Project created successfully',
-      });
+      toast({ title: 'Success', description: 'Project created successfully' });
     } catch (error) {
       console.error('Error creating project:', error);
       toast({
         title: 'Error',
-        description: 'Failed to create project. Please try again.',
+        description: 'Failed to create project',
         variant: 'destructive',
       });
     } finally {
@@ -76,65 +73,65 @@ export function CreateProjectDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Create New Project</DialogTitle>
-          <DialogDescription>
-            Enter the details for your new project.
-          </DialogDescription>
+          <DialogDescription>Enter the details for your new project.</DialogDescription>
         </DialogHeader>
 
         <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="name">Project Name</Label>
-            <Input
-              id="name"
-              placeholder="Enter project name"
-              {...form.register('name')}
-            />
-            {form.formState.errors.name && (
-              <p className="text-sm text-red-500">
-                {form.formState.errors.name.message}
-              </p>
+          <FormField
+            control={form.control}
+            name="name"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Project Name</FormLabel>
+                <FormControl>
+                  <Input placeholder="Enter project name" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
             )}
-          </div>
+          />
 
-          <div className="space-y-2">
-            <Label htmlFor="description">Description</Label>
-            <Input
-              id="description"
-              placeholder="Enter project description"
-              {...form.register('description')}
-            />
-          </div>
+          <FormField
+            control={form.control}
+            name="description"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Description</FormLabel>
+                <FormControl>
+                  <Input placeholder="Enter project description" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
-          <div className="space-y-2">
-            <Label htmlFor="service_type">Service Type</Label>
-            <Select
-              onValueChange={(value) =>
-                form.setValue('service_type', value as ServiceType)
-              }
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select service type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="tax_return">Tax Return</SelectItem>
-                <SelectItem value="bookkeeping">Bookkeeping</SelectItem>
-                <SelectItem value="payroll">Payroll</SelectItem>
-                <SelectItem value="advisory">Advisory</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          <FormField
+            control={form.control}
+            name="service_type"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Service Type</FormLabel>
+                <Select onValueChange={field.onChange} value={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select service type" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="tax_return">Tax Return</SelectItem>
+                    <SelectItem value="bookkeeping">Bookkeeping</SelectItem>
+                    <SelectItem value="payroll">Payroll</SelectItem>
+                    <SelectItem value="advisory">Advisory</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
           <div className="flex justify-end space-x-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-            >
-              Cancel
-            </Button>
-            <Button type="submit" disabled={isLoading}>
-              {isLoading ? 'Creating...' : 'Create Project'}
-            </Button>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+            <Button type="submit" disabled={isLoading}>{isLoading ? 'Creating...' : 'Create Project'}</Button>
           </div>
         </form>
       </DialogContent>

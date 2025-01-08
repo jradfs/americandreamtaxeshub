@@ -1,15 +1,15 @@
 'use client'
 
-import { DbTask, TaskFormValues } from '@/types/tasks'
-import { TaskItem } from './task-item'
-import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'
+import type { Database } from '@/types/database.types'
+
+type DbTaskInsert = Database['public']['Tables']['tasks']['Insert']
 
 interface TaskListProps {
-  tasks: DbTask[]
+  tasks: DbTaskInsert[]
   isLoading?: boolean
-  onUpdate?: (task: DbTask) => void
-  onDelete?: (taskId: string) => void
-  onReorder?: (tasks: DbTask[]) => void
+  onUpdate?: (task: DbTaskInsert, index: number) => void
+  onDelete?: (index: number) => void
+  onReorder?: (tasks: DbTaskInsert[]) => void
 }
 
 export function TaskList({ 
@@ -27,50 +27,30 @@ export function TaskList({
     return <div>No tasks found</div>
   }
 
-  const handleDragEnd = (result: any) => {
-    if (!result.destination || !onReorder) return
-
-    const items = Array.from(tasks)
-    const [reorderedItem] = items.splice(result.source.index, 1)
-    items.splice(result.destination.index, 0, reorderedItem)
-
-    onReorder(items)
-  }
-
   return (
-    <DragDropContext onDragEnd={handleDragEnd}>
-      <Droppable droppableId="tasks">
-        {(provided) => (
-          <div
-            {...provided.droppableProps}
-            ref={provided.innerRef}
-            className="space-y-2"
-          >
-            {tasks.map((task, index) => (
-              <Draggable 
-                key={task.id} 
-                draggableId={task.id} 
-                index={index}
-              >
-                {(provided) => (
-                  <div
-                    ref={provided.innerRef}
-                    {...provided.draggableProps}
-                    {...provided.dragHandleProps}
-                  >
-                    <TaskItem 
-                      task={task}
-                      onUpdate={onUpdate}
-                      onDelete={onDelete}
-                    />
-                  </div>
-                )}
-              </Draggable>
-            ))}
-            {provided.placeholder}
+    <div className="space-y-2">
+      {tasks.map((task, index) => (
+        <div key={index} className="p-4 border rounded-lg">
+          <div className="flex justify-between items-center">
+            <div>
+              <h4 className="font-medium">{task.title}</h4>
+              {task.description && <p className="text-sm text-gray-500">{task.description}</p>}
+            </div>
+            <div className="flex gap-2">
+              {onUpdate && (
+                <button onClick={() => onUpdate(task, index)} className="text-blue-500">
+                  Edit
+                </button>
+              )}
+              {onDelete && (
+                <button onClick={() => onDelete(index)} className="text-red-500">
+                  Delete
+                </button>
+              )}
+            </div>
           </div>
-        )}
-      </Droppable>
-    </DragDropContext>
+        </div>
+      ))}
+    </div>
   )
 }

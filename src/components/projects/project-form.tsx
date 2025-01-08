@@ -9,6 +9,8 @@ import { ProjectWithRelations } from '@/types/projects';
 import { Database } from '@/types/database.types';
 
 type Project = Database['public']['Tables']['projects']['Row'];
+type TaskPriority = Database['public']['Enums']['task_priority'];
+type ServiceType = Database['public']['Enums']['service_type'];
 
 interface ProjectFormProps {
   project?: ProjectWithRelations;
@@ -30,9 +32,9 @@ export function ProjectForm({ project, onSuccess }: ProjectFormProps) {
       name: project.name,
       description: project.description,
       client_id: project.client_id,
-      service_type: project.service_type,
+      service_type: project.service_type as ServiceType | null,
       status: project.status,
-      priority: project.priority,
+      priority: project.priority as TaskPriority | undefined,
       due_date: project.due_date,
       start_date: project.start_date,
       end_date: project.end_date,
@@ -47,9 +49,7 @@ export function ProjectForm({ project, onSuccess }: ProjectFormProps) {
       stage: project.stage,
       completed_tasks: project.completed_tasks,
       completion_percentage: project.completion_percentage,
-      task_count: project.task_count,
-      created_at: project.created_at,
-      updated_at: project.updated_at
+      task_count: project.task_count
     } : undefined,
     onSubmit: async (data: ProjectFormValues) => {
       await onSuccess?.();

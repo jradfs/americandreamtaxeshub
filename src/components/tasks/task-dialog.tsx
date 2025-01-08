@@ -18,41 +18,49 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { taskSchema } from '@/lib/validations/task'
-import type { DbTask, TaskFormValues, TaskStatus, TaskPriority } from '@/types/tasks'
+import type { Database } from '@/types/database.types'
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
+
+type DbTaskInsert = Database['public']['Tables']['tasks']['Insert']
 
 interface TaskDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  task?: DbTask | null
-  onSubmit: (data: TaskFormValues) => Promise<void>
+  task?: DbTaskInsert | null
+  onSubmit: (data: DbTaskInsert) => Promise<void>
 }
 
-const STATUS_OPTIONS: TaskStatus[] = ['todo', 'in_progress', 'review', 'completed']
-const PRIORITY_OPTIONS: TaskPriority[] = ['low', 'medium', 'high', 'urgent']
+const STATUS_OPTIONS = ['todo', 'in_progress', 'review', 'completed'] as const
+const PRIORITY_OPTIONS = ['low', 'medium', 'high', 'urgent'] as const
 
 export function TaskDialog({ open, onOpenChange, task, onSubmit }: TaskDialogProps) {
-  const form = useForm<TaskFormValues>({
-    resolver: zodResolver(taskSchema),
-    defaultValues: task ? {
-      ...task,
-      status: task.status as TaskStatus,
-      priority: task.priority as TaskPriority | undefined,
-    } : {
+  const form = useForm<DbTaskInsert>({
+    defaultValues: task || {
       title: '',
       description: '',
       status: 'todo',
-      priority: undefined,
-      due_date: null,
-      start_date: null,
-      checklist: null,
+      priority: 'medium',
       activity_log: null,
+      checklist: null,
+      assigned_team: null,
+      assignee_id: null,
+      category: null,
+      created_at: null,
+      dependencies: null,
+      due_date: null,
+      parent_task_id: null,
+      progress: null,
+      project_id: null,
       recurring_config: null,
+      start_date: null,
+      tax_form_type: null,
+      tax_return_id: null,
+      template_id: null,
+      updated_at: null
     }
   })
 
-  const handleSubmit = async (data: TaskFormValues) => {
+  const handleSubmit = async (data: DbTaskInsert) => {
     try {
       await onSubmit(data)
       form.reset()
@@ -129,10 +137,7 @@ export function TaskDialog({ open, onOpenChange, task, onSubmit }: TaskDialogPro
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Priority</FormLabel>
-                  <Select 
-                    onValueChange={field.onChange} 
-                    defaultValue={field.value}
-                  >
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Select priority" />
@@ -146,24 +151,6 @@ export function TaskDialog({ open, onOpenChange, task, onSubmit }: TaskDialogPro
                       ))}
                     </SelectContent>
                   </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="due_date"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Due Date</FormLabel>
-                  <FormControl>
-                    <Input 
-                      type="datetime-local" 
-                      {...field} 
-                      value={field.value || ''} 
-                    />
-                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}

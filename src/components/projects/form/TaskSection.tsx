@@ -6,16 +6,17 @@ import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 import { TaskList } from '@/components/tasks/task-list';
 import { TaskDialog } from '@/components/tasks/task-dialog';
-import { Task, TaskFormData } from '@/types/tasks';
-import { TemplateTask } from '@/lib/validations/project';
+import type { Database } from '@/types/database.types';
+
+type DbTaskInsert = Database['public']['Tables']['tasks']['Insert'];
 
 interface TaskSectionProps {
   projectId: string;
-  tasks: TemplateTask[];
-  onAddTask: (task: TaskFormData) => void;
-  onEditTask: (index: number, task: Task | TaskFormData) => void;
+  tasks: DbTaskInsert[];
+  onAddTask: (task: DbTaskInsert) => void;
+  onEditTask: (task: DbTaskInsert, index: number) => void;
   onDeleteTask: (index: number) => void;
-  onReorderTasks: (tasks: TemplateTask[]) => void;
+  onReorderTasks: (tasks: DbTaskInsert[]) => void;
 }
 
 export function TaskSection({
@@ -28,40 +29,14 @@ export function TaskSection({
 }: TaskSectionProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
-  const handleAddTask = async (task: TaskFormData) => {
-    try {
-      await onAddTask({
-        ...task,
-        project_id: projectId,
-      });
-      setIsDialogOpen(false);
-    } catch (error) {
-      console.error('Failed to create task:', error);
-    }
-  };
-
-  const handleEditTask = async (index: number, task: Task | TaskFormData) => {
-    try {
-      await onEditTask(index, task);
-    } catch (error) {
-      console.error('Failed to update task:', error);
-    }
-  };
-
-  const handleDeleteTask = async (index: number) => {
-    try {
-      await onDeleteTask(index);
-    } catch (error) {
-      console.error('Failed to delete task:', error);
-    }
-  };
-
-  const handleReorderTasks = async (reorderedTasks: TemplateTask[]) => {
-    try {
-      await onReorderTasks(reorderedTasks);
-    } catch (error) {
-      console.error('Failed to reorder tasks:', error);
-    }
+  const handleAddTask = async (task: DbTaskInsert) => {
+    onAddTask({
+      ...task,
+      project_id: projectId,
+      activity_log: [],
+      checklist: [],
+    });
+    setIsDialogOpen(false);
   };
 
   return (
@@ -82,9 +57,9 @@ export function TaskSection({
 
         <TaskList
           tasks={tasks}
-          onEdit={handleEditTask}
-          onDelete={handleDeleteTask}
-          onReorder={handleReorderTasks}
+          onUpdate={onEditTask}
+          onDelete={onDeleteTask}
+          onReorder={onReorderTasks}
         />
 
         <TaskDialog

@@ -44,76 +44,37 @@ const checklistSchema = z.object({
 const customFieldsSchema = z.record(z.string(), z.unknown()).nullable();
 
 // Main task form schema
-export const taskFormSchema = z.object({
-  // Required fields
+export const taskSchema = z.object({
   title: z.string().min(1, 'Task title is required'),
-  status: z.enum(['todo', 'in_progress', 'review', 'blocked', 'completed'] as const satisfies readonly DbEnums['task_status']),
+  description: z.string().optional(),
   project_id: z.string().uuid('Invalid project ID'),
-  
-  // Optional fields with validation
-  id: z.string().uuid('Invalid UUID format').optional(),
-  description: z.string().nullable(),
-  priority: z.enum(['low', 'medium', 'high', 'urgent'] as const satisfies readonly DbEnums['priority_level']).nullable(),
-  type: z.enum(['preparation', 'review', 'filing', 'meeting', 'research', 'other'] as const satisfies readonly DbEnums['task_type']).nullable(),
+  assignee_id: z.string().uuid('Invalid assignee ID').optional(),
+  status: z.enum(['todo', 'in_progress', 'review', 'blocked', 'completed'] as const satisfies readonly DbEnums['task_status']),
+  priority: z.enum(['low', 'medium', 'high', 'urgent']).optional(),
   due_date: dateSchema,
   start_date: dateSchema,
-  end_date: dateSchema,
-  completion_date: dateSchema,
-  estimated_hours: z.number().min(0).nullable(),
-  actual_hours: z.number().min(0).nullable(),
-  assigned_to: z.string().uuid('Invalid assignee ID').nullable(),
-  reviewer_id: z.string().uuid('Invalid reviewer ID').nullable(),
-  parent_task_id: z.string().uuid('Invalid parent task ID').nullable(),
-  dependencies: z.array(z.string().uuid('Invalid task ID')).nullable(),
-  blockers: z.array(z.string().uuid('Invalid task ID')).nullable(),
-  notes: z.string().nullable(),
-  attachments: z.array(z.string().url('Invalid attachment URL')).nullable(),
-  order_index: z.number().min(0).nullable(),
-  last_updated: dateSchema,
-  created_at: dateSchema,
-  updated_at: dateSchema,
-  
-  // JSON fields
-  time_tracking: timeTrackingSchema,
   checklist: checklistSchema,
-  custom_fields: customFieldsSchema,
+  activity_log: z.array(z.object({
+    action: z.string(),
+    timestamp: z.string(),
+    user_id: z.string().optional(),
+    details: z.string().optional()
+  })).nullable(),
+  recurring_config: z.object({
+    frequency: z.enum(['daily', 'weekly', 'monthly', 'yearly']),
+    interval: z.number().min(1),
+    end_date: dateSchema,
+    days_of_week: z.array(z.number().min(0).max(6)).optional(),
+    day_of_month: z.number().min(1).max(31).optional(),
+    month: z.number().min(1).max(12).optional()
+  }).nullable()
 });
 
 // Export types
-export type TaskFormSchema = z.infer<typeof taskFormSchema>;
+export type TaskFormSchema = z.infer<typeof taskSchema>;
 
 // Validation helpers
 export function validateTaskForm(data: unknown): { success: true; data: TaskFormSchema } | { success: false; error: z.ZodError } {
-  const result = taskFormSchema.safeParse(data);
+  const result = taskSchema.safeParse(data);
   return result;
-}
-
-export function validateTimeTracking(data: unknown) {
-  return timeTrackingSchema.safeParse(data);
-}
-
-export function validateChecklist(data: unknown) {
-  return checklistSchema.safeParse(data);
-}
-
-export function validateCustomFields(data: unknown) {
-  return customFieldsSchema.safeParse(data);
-}
-
-// Helper function to ensure all required fields are present
-export function ensureRequiredFields(data: Partial<TaskFormSchema>): { success: true; data: TaskFormSchema } | { success: false; error: string[] } {
-  const requiredFields = ['title', 'status', 'project_id'] as const;
-  const missingFields = requiredFields.filter(field => !data[field]);
-  
-  if (missingFields.length > 0) {
-    return {
-      success: false,
-      error: missingFields.map(field => `Missing required field: ${field}`)
-    };
-  }
-
-  return {
-    success: true,
-    data: data as TaskFormSchema
-  };
 }

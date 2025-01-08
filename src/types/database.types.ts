@@ -9,32 +9,169 @@
 export type Database = {
   public: {
     Tables: {
+      activity_log_entries: {
+        Row: {
+          action: string
+          created_at: string | null
+          details: Json | null
+          id: string
+          performed_by: string | null
+          task_id: string
+        }
+        Insert: {
+          action: string
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          performed_by?: string | null
+          task_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          performed_by?: string | null
+          task_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "activity_log_entries_performed_by_fkey"
+            columns: ["performed_by"]
+            isOneToOne: false
+            referencedRelation: "user_task_load"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "activity_log_entries_performed_by_fkey"
+            columns: ["performed_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "activity_log_entries_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      checklist_items: {
+        Row: {
+          completed: boolean
+          created_at: string | null
+          description: string | null
+          id: string
+          task_id: string
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          completed?: boolean
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          task_id: string
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          completed?: boolean
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          task_id?: string
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "checklist_items_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_contact_details: {
+        Row: {
+          address: string | null
+          city: string | null
+          client_id: string
+          created_at: string | null
+          id: string
+          phone: string | null
+          state: string | null
+          updated_at: string | null
+          zip: string | null
+        }
+        Insert: {
+          address?: string | null
+          city?: string | null
+          client_id: string
+          created_at?: string | null
+          id?: string
+          phone?: string | null
+          state?: string | null
+          updated_at?: string | null
+          zip?: string | null
+        }
+        Update: {
+          address?: string | null
+          city?: string | null
+          client_id?: string
+          created_at?: string | null
+          id?: string
+          phone?: string | null
+          state?: string | null
+          updated_at?: string | null
+          zip?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_contact_details_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_documents: {
         Row: {
           client_id: string | null
+          created_at: string | null
           document_name: string
           document_type: string
-          id: number
+          id: string
           reminder_sent: boolean | null
           status: string
+          updated_at: string | null
           uploaded_at: string | null
         }
         Insert: {
           client_id?: string | null
+          created_at?: string | null
           document_name: string
           document_type: string
-          id?: never
+          id?: string
           reminder_sent?: boolean | null
           status: string
+          updated_at?: string | null
           uploaded_at?: string | null
         }
         Update: {
           client_id?: string | null
+          created_at?: string | null
           document_name?: string
           document_type?: string
-          id?: never
+          id?: string
           reminder_sent?: boolean | null
           status?: string
+          updated_at?: string | null
           uploaded_at?: string | null
         }
         Relationships: []
@@ -43,7 +180,7 @@ export type Database = {
         Row: {
           client_id: string | null
           created_at: string | null
-          id: number
+          id: string
           progress: string | null
           status: string
           updated_at: string | null
@@ -51,7 +188,7 @@ export type Database = {
         Insert: {
           client_id?: string | null
           created_at?: string | null
-          id?: never
+          id?: string
           progress?: string | null
           status: string
           updated_at?: string | null
@@ -59,7 +196,7 @@ export type Database = {
         Update: {
           client_id?: string | null
           created_at?: string | null
-          id?: never
+          id?: string
           progress?: string | null
           status?: string
           updated_at?: string | null
@@ -76,7 +213,6 @@ export type Database = {
           city: string | null
           company_name: string | null
           contact_email: string
-          contact_info: Json
           created_at: string | null
           document_deadline: string | null
           email: string | null
@@ -112,7 +248,6 @@ export type Database = {
           city?: string | null
           company_name?: string | null
           contact_email: string
-          contact_info?: Json
           created_at?: string | null
           document_deadline?: string | null
           email?: string | null
@@ -148,7 +283,6 @@ export type Database = {
           city?: string | null
           company_name?: string | null
           contact_email?: string
-          contact_info?: Json
           created_at?: string | null
           document_deadline?: string | null
           email?: string | null
@@ -231,7 +365,7 @@ export type Database = {
           created_at: string | null
           email: string
           full_name: string
-          id: number
+          id: string
           tax_id: string
           updated_at: string | null
         }
@@ -239,7 +373,7 @@ export type Database = {
           created_at?: string | null
           email: string
           full_name: string
-          id?: never
+          id?: string
           tax_id: string
           updated_at?: string | null
         }
@@ -247,7 +381,7 @@ export type Database = {
           created_at?: string | null
           email?: string
           full_name?: string
-          id?: never
+          id?: string
           tax_id?: string
           updated_at?: string | null
         }
@@ -258,48 +392,79 @@ export type Database = {
           client_id: string | null
           content: string
           created_at: string | null
-          id: number
-          project_id: number | null
+          id: string
+          project_id: string | null
+          updated_at: string | null
           user_id: string | null
         }
         Insert: {
           client_id?: string | null
           content: string
           created_at?: string | null
-          id?: never
-          project_id?: number | null
+          id?: string
+          project_id?: string | null
+          updated_at?: string | null
           user_id?: string | null
         }
         Update: {
           client_id?: string | null
           content?: string
           created_at?: string | null
-          id?: never
-          project_id?: number | null
+          id?: string
+          project_id?: string | null
+          updated_at?: string | null
           user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "notes_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "project_dashboard"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notes_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "project_progress"
+            referencedColumns: ["project_id"]
+          },
+          {
+            foreignKeyName: "notes_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       notifications: {
         Row: {
-          id: number
+          created_at: string | null
+          id: string
           message: string
           sent_at: string | null
           status: string
+          updated_at: string | null
           user_id: string | null
         }
         Insert: {
-          id?: never
+          created_at?: string | null
+          id?: string
           message: string
           sent_at?: string | null
           status: string
+          updated_at?: string | null
           user_id?: string | null
         }
         Update: {
-          id?: never
+          created_at?: string | null
+          id?: string
           message?: string
           sent_at?: string | null
           status?: string
+          updated_at?: string | null
           user_id?: string | null
         }
         Relationships: []
@@ -307,21 +472,27 @@ export type Database = {
       owners: {
         Row: {
           client_id: string | null
-          id: number
-          individual_id: number | null
+          created_at: string | null
+          id: string
+          individual_id: string | null
           ownership_percentage: number | null
+          updated_at: string | null
         }
         Insert: {
           client_id?: string | null
-          id?: never
-          individual_id?: number | null
+          created_at?: string | null
+          id?: string
+          individual_id?: string | null
           ownership_percentage?: number | null
+          updated_at?: string | null
         }
         Update: {
           client_id?: string | null
-          id?: never
-          individual_id?: number | null
+          created_at?: string | null
+          id?: string
+          individual_id?: string | null
           ownership_percentage?: number | null
+          updated_at?: string | null
         }
         Relationships: [
           {
@@ -338,7 +509,7 @@ export type Database = {
           client_id: string | null
           created_at: string | null
           frequency: string
-          id: number
+          id: string
           last_processed_date: string | null
           next_due_date: string | null
           progress: string | null
@@ -349,7 +520,7 @@ export type Database = {
           client_id?: string | null
           created_at?: string | null
           frequency: string
-          id?: never
+          id?: string
           last_processed_date?: string | null
           next_due_date?: string | null
           progress?: string | null
@@ -360,7 +531,7 @@ export type Database = {
           client_id?: string | null
           created_at?: string | null
           frequency?: string
-          id?: never
+          id?: string
           last_processed_date?: string | null
           next_due_date?: string | null
           progress?: string | null
@@ -535,7 +706,7 @@ export type Database = {
           status: Database["public"]["Enums"]["project_status"]
           task_count: number | null
           tax_info: Json | null
-          tax_return_id: number | null
+          tax_return_id: string | null
           template_id: string | null
           updated_at: string | null
         }
@@ -561,7 +732,7 @@ export type Database = {
           status: Database["public"]["Enums"]["project_status"]
           task_count?: number | null
           tax_info?: Json | null
-          tax_return_id?: number | null
+          tax_return_id?: string | null
           template_id?: string | null
           updated_at?: string | null
         }
@@ -587,18 +758,11 @@ export type Database = {
           status?: Database["public"]["Enums"]["project_status"]
           task_count?: number | null
           tax_info?: Json | null
-          tax_return_id?: number | null
+          tax_return_id?: string | null
           template_id?: string | null
           updated_at?: string | null
         }
         Relationships: [
-          {
-            foreignKeyName: "fk_projects_tax_return"
-            columns: ["tax_return_id"]
-            isOneToOne: false
-            referencedRelation: "tax_return_deadlines"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "fk_projects_tax_return"
             columns: ["tax_return_id"]
@@ -719,11 +883,9 @@ export type Database = {
       }
       tasks: {
         Row: {
-          activity_log: Json | null
           assigned_team: string[] | null
           assignee_id: string | null
           category: string | null
-          checklist: Json | null
           created_at: string | null
           dependencies: string[] | null
           description: string | null
@@ -743,11 +905,9 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
-          activity_log?: Json | null
           assigned_team?: string[] | null
           assignee_id?: string | null
           category?: string | null
-          checklist?: Json | null
           created_at?: string | null
           dependencies?: string[] | null
           description?: string | null
@@ -767,11 +927,9 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
-          activity_log?: Json | null
           assigned_team?: string[] | null
           assignee_id?: string | null
           category?: string | null
-          checklist?: Json | null
           created_at?: string | null
           dependencies?: string[] | null
           description?: string | null
@@ -865,7 +1023,7 @@ export type Database = {
           extension_date: string | null
           filed_date: string | null
           filing_type: string
-          id: number
+          id: string
           notes: string | null
           status: string
           tax_year: number
@@ -879,7 +1037,7 @@ export type Database = {
           extension_date?: string | null
           filed_date?: string | null
           filing_type: string
-          id?: never
+          id?: string
           notes?: string | null
           status: string
           tax_year: number
@@ -893,7 +1051,7 @@ export type Database = {
           extension_date?: string | null
           filed_date?: string | null
           filing_type?: string
-          id?: never
+          id?: string
           notes?: string | null
           status?: string
           tax_year?: number
@@ -1016,21 +1174,21 @@ export type Database = {
         Row: {
           created_at: string | null
           description: string | null
-          id: number
+          id: string
           name: string
           steps: Json
         }
         Insert: {
           created_at?: string | null
           description?: string | null
-          id?: never
+          id?: string
           name: string
           steps: Json
         }
         Update: {
           created_at?: string | null
           description?: string | null
-          id?: never
+          id?: string
           name?: string
           steps?: Json
         }
@@ -1062,21 +1220,6 @@ export type Database = {
           project_name: string | null
           project_status: Database["public"]["Enums"]["project_status"] | null
           total_tasks: number | null
-        }
-        Relationships: []
-      }
-      tax_return_deadlines: {
-        Row: {
-          assigned_to_email: string | null
-          client_name: string | null
-          company_name: string | null
-          deadline_status: string | null
-          due_date: string | null
-          extension_date: string | null
-          filing_type: string | null
-          id: number | null
-          status: string | null
-          tax_year: number | null
         }
         Relationships: []
       }

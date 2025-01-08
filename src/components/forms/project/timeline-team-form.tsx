@@ -28,7 +28,9 @@ export function TimelineTeamForm({ form, teamMembers }: TimelineTeamFormProps) {
         description: '',
         priority: 'medium',
         dependencies: [],
-        order_index: currentTasks.length
+        assigned_team: [],
+        status: 'not_started',
+        progress: 0
       }
     ]);
   };
