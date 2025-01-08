@@ -2,732 +2,6 @@
 
 ## Large Files Analysis
 
-### `src\lib\utils.ts`
-
-```typescript
-import { type ClassValue, clsx } from 'clsx'
-import { twMerge } from 'tailwind-merge'
-import { type Task } from '@/types/tasks'
-import { type ProjectWithRelations } from '@/types/projects'
-
-export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs))
-}
-
-export function filterTasks(tasks: Task[], filters: { dueDate?: Date }) {
-  if (!filters.dueDate) return tasks
-  
-  return tasks.filter(task => {
-    if (!task.due_date) return false
-    const taskDueDate = new Date(task.due_date)
-    return taskDueDate <= filters.dueDate
-  })
-}
-
-export function groupTasks(tasks: Task[], groupBy: string) {
-  if (!tasks?.length) return {}
-  
-  return tasks.reduce((groups, task) => {
-    const key = task[groupBy as keyof Task] as string
-    if (!key) return groups
-    
-    return {
-      ...groups,
-      [key]: [...(groups[key] || []), task]
-    }
-  }, {} as { [key: string]: Task[] })
-}
-
-export function calculateCompletionRate(project: ProjectWithRelations): number {
-  if (!project.tasks?.length) return 0
-  const completedTasks = project.tasks.filter(task => task.status === 'completed')
-  return (completedTasks.length / project.tasks.length) * 100
-}
-
-export function assessProjectRisk(project: ProjectWithRelations): string {
-  const completionRate = calculateCompletionRate(project)
-  const dueDate = project.due_date ? new Date(project.due_date) : null
-  const today = new Date()
-
-  if (!dueDate) return 'unknown'
-  if (dueDate < today && completionRate < 100) return 'high'
-  if (completionRate < 50 && dueDate.getTime() - today.getTime() < 7 * 24 * 60 * 60 * 1000) return 'high'
-  if (completionRate < 75) return 'medium'
-  return 'low'
-}
-
-export function predictDelay(project: ProjectWithRelations): number {
-  const completionRate = calculateCompletionRate(project)
-  if (completionRate === 100) return 0
-
-  const dueDate = project.due_date ? new Date(project.due_date) : null
-  if (!dueDate) return 0
-
-  const today = new Date()
-  const remainingWork = 100 - completionRate
-  const daysUntilDue = Math.ceil((dueDate.getTime() - today.getTime()) / (24 * 60 * 60 * 1000))
-  
-  if (daysUntilDue <= 0) return Math.ceil(remainingWork / 10)
-  return Math.max(0, Math.ceil(remainingWork / 10) - daysUntilDue)
-}
-
-export function analyzeResourceUtilization(project: ProjectWithRelations): number {
-  if (!project.team_members?.length || !project.tasks?.length) return 0
-
-  const assignedTasks = project.tasks.filter(task => task.assignee_id)
-  return (assignedTasks.length / project.tasks.length) * 100
-}
-
-export function generateRecommendations(project: ProjectWithRelations): string[] {
-  const recommendations: string[] = []
-  const completionRate = calculateCompletionRate(project)
-  const riskLevel = assessProjectRisk(project)
-  const resourceUtilization = analyzeResourceUtilization(project)
-
-  if (completionRate < 50) {
-    recommendations.push('Project progress is behind schedule. Consider allocating more resources.')
-  }
-
-  if (riskLevel === 'high') {
-    recommendations.push('High risk detected. Immediate attention required.')
-  }
-
-  if (resourceUtilization < 70) {
-    recommendations.push('Resource utilization is low. Consider optimizing task assignments.')
-  }
-
-  if (!project.tasks?.some(task => task.priority === 'high')) {
-    recommendations.push('No high-priority tasks identified. Review task prioritization.')
-  }
-
-  return recommendations
-}
-
-export const formatDate = (date: string | Date) => {
-  return new Date(date).toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric'
-  })
-}
-
-export const formatDateTime = (date: string | Date) => {
-  return new Date(date).toLocaleString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit'
-  })
-}
-
-export const formatCurrency = (amount: number) => {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD'
-  }).format(amount)
-}
-
-export const generateSlug = (text: string) => {
-  return text
-    .toLowerCase()
-    .replace(/[^\w ]+/g, '')
-    .replace(/ +/g, '-')
-}
-
-export const truncateText = (text: string, maxLength: number) => {
-  if (text.length <= maxLength) return text
-  return text.slice(0, maxLength) + '...'
-}
-
-```
-
-### `src\hooks\useClientOnboarding.ts`
-
-```typescript
-import { useState, useEffect } from 'react'
-import { supabase } from '@/lib/supabase'
-import { ClientOnboardingWorkflow, WorkflowTemplate } from '@/types/hooks'
-
-export function useClientOnboarding(clientId?: string) {
-  const [workflow, setWorkflow] = useState<ClientOnboardingWorkflow | null>(null)
-  const [templates, setTemplates] = useState<WorkflowTemplate[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-
-  useEffect(() => {
-    if (clientId) {
-      fetchWorkflow()
-    }
-    fetchTemplates()
-  }, [clientId])
-
-  async function fetchWorkflow() {
-    if (!clientId) return
-
-    try {
-      const { data, error } = await supabase
-        .from('client_onboarding_workflows')
-        .select('*')
-        .eq('client_id', clientId)
-        .single()
-
-      if (error && error.code !== 'PGRST116') throw error // PGRST116 is "no rows returned"
-      
-      // Transform the data to include steps if progress exists
-      if (data) {
-        const progressData = data.progress ? JSON.parse(data.progress) : null
-        const workflowData: ClientOnboardingWorkflow = {
-          ...data,
-          steps: progressData?.steps || []
-        }
-        setWorkflow(workflowData)
-      } else {
-        setWorkflow(null)
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  async function fetchTemplates() {
-    try {
-      const { data, error } = await supabase
-        .from('workflow_templates')
-        .select('*')
-        .order('name')
-
-      if (error) throw error
-      
-      // Transform the templates data to parse steps JSON
-      const transformedTemplates = (data || []).map(template => ({
-        ...template,
-        steps: Array.isArray(template.steps) 
-          ? template.steps 
-          : typeof template.steps === 'string'
-            ? JSON.parse(template.steps)
-            : []
-      })) as WorkflowTemplate[]
-      
-      setTemplates(transformedTemplates)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred')
-    }
-  }
-
-  async function startWorkflow(clientId: string, templateId: number) {
-    try {
-      if (!clientId || !templateId) {
-        throw new Error('Client ID and template ID are required')
-      }
-
-      const template = templates.find(t => t.id === templateId)
-      if (!template) {
-        throw new Error('Template not found')
-      }
-
-      const workflowData = {
-        client_id: clientId,
-        template_id: templateId,
-        status: 'in_progress',
-        progress: JSON.stringify({
-          currentStep: 0,
-          totalSteps: template.steps.length,
-          completedSteps: [],
-          steps: template.steps.map(step => ({
-            ...step,
-            status: 'pending'
-          }))
-        }),
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      }
-
-      const { data, error } = await supabase
-        .from('client_onboarding_workflows')
-        .insert([workflowData])
-        .select()
-
-      if (error) throw error
-      if (data && data[0]) {
-        const progressData = JSON.parse(data[0].progress || '{}')
-        const workflowWithSteps: ClientOnboardingWorkflow = {
-          ...data[0],
-          steps: progressData.steps || []
-        }
-        setWorkflow(workflowWithSteps)
-        return workflowWithSteps
-      }
-      throw new Error('Failed to start workflow')
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred')
-      throw err
-    }
-  }
-
-  async function updateWorkflow(
-    id: number,
-    updates: Partial<Omit<ClientOnboardingWorkflow, 'id' | 'created_at' | 'client_id'>>
-  ) {
-    try {
-      if (!id) {
-        throw new Error('Workflow ID is required')
-      }
-
-      const updateData = {
-        ...updates,
-        updated_at: new Date().toISOString()
-      }
-
-      const { data, error } = await supabase
-        .from('client_onboarding_workflows')
-        .update(updateData)
-        .eq('id', id)
-        .select()
-
-      if (error) throw error
-      if (data && data[0]) {
-        setWorkflow(data[0])
-        return data[0]
-      }
-      throw new Error('Failed to update workflow')
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred')
-      throw err
-    }
-  }
-
-  async function deleteWorkflow(id: number) {
-    try {
-      if (!id) {
-        throw new Error('Workflow ID is required')
-      }
-
-      const { error } = await supabase
-        .from('client_onboarding_workflows')
-        .delete()
-        .eq('id', id)
-
-      if (error) throw error
-      setWorkflow(null)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred')
-      throw err
-    }
-  }
-
-  return {
-    workflow,
-    templates,
-    loading,
-    error,
-    startWorkflow,
-    updateWorkflow,
-    deleteWorkflow,
-    refresh: fetchWorkflow
-  }
-}
-
-```
-
-### `src\lib\validations\schema.ts`
-
-```typescript
-import { z } from 'zod'
-import { 
-  CLIENT_STATUS, 
-  CLIENT_TYPE, 
-  FILING_TYPE 
-} from '@/types/clients'
-import {
-  PROJECT_STATUS,
-  SERVICE_TYPE
-} from '@/types/projects'
-import {
-  TASK_STATUS,
-  TASK_PRIORITY
-} from '@/types/tasks'
-
-// Client Schemas
-export const contactInfoSchema = z.object({
-  email: z.string().email(),
-  phone: z.string().optional(),
-  address: z.object({
-    street: z.string(),
-    city: z.string(),
-    state: z.string(),
-    zip: z.string()
-  }).optional(),
-  alternate_email: z.string().email().optional(),
-  alternate_phone: z.string().optional(),
-  preferred_contact_method: z.enum(['email', 'phone']).optional(),
-  notes: z.string().optional()
-})
-
-export const taxInfoSchema = z.object({
-  filing_type: z.enum(FILING_TYPE),
-  tax_id_type: z.enum(['ssn', 'ein']).optional(),
-  tax_id: z.string().optional(),
-  filing_status: z.string().optional(),
-  dependents: z.array(z.object({
-    name: z.string(),
-    ssn: z.string().optional(),
-    relationship: z.string().optional(),
-    birth_date: z.string().optional()
-  })).optional(),
-  previous_returns: z.array(z.object({
-    year: z.number(),
-    filed_date: z.string(),
-    preparer: z.string().optional(),
-    notes: z.string().optional()
-  })).optional()
-})
-
-export const clientSchema = z.object({
-  contact_email: z.string().email(),
-  full_name: z.string().optional(),
-  company_name: z.string().optional(),
-  status: z.enum(CLIENT_STATUS),
-  type: z.enum(CLIENT_TYPE),
-  contact_info: contactInfoSchema,
-  tax_info: taxInfoSchema.nullable(),
-  business_tax_id: z.string().optional(),
-  individual_tax_id: z.string().optional()
-})
-
-// Project Schemas
-export const projectTaxInfoSchema = z.object({
-  return_type: z.enum(FILING_TYPE),
-  tax_year: z.number(),
-  filing_status: z.string().optional(),
-  is_extension_filed: z.boolean().optional(),
-  extension_date: z.string().optional(),
-  documents_received: z.boolean().optional(),
-  last_filed_date: z.string().optional()
-})
-
-export const accountingInfoSchema = z.object({
-  fiscal_year_end: z.string().optional(),
-  accounting_method: z.enum(['cash', 'accrual']).optional(),
-  last_reconciliation_date: z.string().optional(),
-  software: z.string().optional(),
-  chart_of_accounts_setup: z.boolean().optional(),
-  notes: z.string().optional()
-})
-
-export const payrollInfoSchema = z.object({
-  frequency: z.enum(['weekly', 'bi-weekly', 'monthly']).optional(),
-  employee_count: z.number().optional(),
-  last_payroll_date: z.string().optional(),
-  next_payroll_date: z.string().optional(),
-  tax_deposit_schedule: z.enum(['monthly', 'semi-weekly']).optional(),
-  notes: z.string().optional()
-})
-
-export const projectSchema = z.object({
-  name: z.string(),
-  description: z.string().optional(),
-  status: z.enum(PROJECT_STATUS),
-  service_type: z.enum(SERVICE_TYPE),
-  client_id: z.string().optional(),
-  primary_manager: z.string().optional(),
-  start_date: z.string().optional(),
-  due_date: z.string().optional(),
-  end_date: z.string().optional(),
-  tax_info: projectTaxInfoSchema.nullable(),
-  accounting_info: accountingInfoSchema.nullable(),
-  payroll_info: payrollInfoSchema.nullable(),
-  service_info: z.record(z.unknown()).nullable()
-})
-
-// Task Schemas
-export const taskRecurringConfigSchema = z.object({
-  frequency: z.enum(['daily', 'weekly', 'monthly', 'yearly']),
-  interval: z.number(),
-  end_date: z.string().optional(),
-  end_occurrences: z.number().optional()
-})
-
-export const taskSchema = z.object({
-  title: z.string(),
-  description: z.string().optional(),
-  status: z.enum(TASK_STATUS),
-  priority: z.enum(TASK_PRIORITY).optional(),
-  project_id: z.string().optional(),
-  assignee_id: z.string().optional(),
-  due_date: z.string().optional(),
-  start_date: z.string().optional(),
-  progress: z.number().optional(),
-  recurring_config: taskRecurringConfigSchema.nullable(),
-  parent_task_id: z.string().optional(),
-  dependencies: z.array(z.string()).optional(),
-  category: z.string().optional(),
-  tax_form_type: z.string().optional(),
-  tax_return_id: z.string().optional(),
-  template_id: z.string().optional()
-}) 
-```
-
-### `src\hooks\useWorkflows.ts`
-
-```typescript
-import { useState, useEffect } from 'react'
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
-import { Database } from '@/types/database.types'
-import { 
-  DbWorkflowTemplate,
-  DbWorkflowTemplateInsert,
-  WorkflowTemplateWithRelations,
-  WorkflowStep,
-  WorkflowStatus,
-  WORKFLOW_STATUS
-} from '@/types/workflows'
-
-interface CreateWorkflowRequest {
-  name: string
-  description?: string | null
-  steps: WorkflowStep[]
-}
-
-interface UseWorkflowsOptions {
-  initialFilters?: {
-    status?: WorkflowStatus
-    search?: string
-  }
-  pageSize?: number
-}
-
-export function useWorkflows(options: UseWorkflowsOptions = {}) {
-  const [workflows, setWorkflows] = useState<WorkflowTemplateWithRelations[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<Error | null>(null)
-  const [filters, setFilters] = useState(options.initialFilters || {})
-  const [page, setPage] = useState(1)
-  const [pageSize] = useState(options.pageSize || 10)
-
-  const supabase = createClientComponentClient<Database>()
-
-  useEffect(() => {
-    fetchWorkflows()
-  }, [filters, page, pageSize])
-
-  async function fetchWorkflows() {
-    try {
-      let query = supabase
-        .from('workflow_templates')
-        .select(`
-          *,
-          workflows:client_onboarding_workflows(*)
-        `)
-
-      // Apply filters
-      if (filters.status) {
-        query = query.eq('status', filters.status)
-      }
-      if (filters.search) {
-        query = query.ilike('name', `%${filters.search}%`)
-      }
-
-      // Apply pagination
-      const from = (page - 1) * pageSize
-      const to = from + pageSize - 1
-      query = query.range(from, to)
-
-      // Execute query
-      const { data, error: fetchError } = await query
-        .order('created_at', { ascending: false })
-
-      if (fetchError) throw fetchError
-
-      setWorkflows(data || [])
-      setError(null)
-    } catch (err) {
-      console.error('Error fetching workflows:', err)
-      setError(err instanceof Error ? err : new Error('Failed to fetch workflows'))
-      setWorkflows([])
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  async function createWorkflow(workflowData: CreateWorkflowRequest): Promise<{ data: WorkflowTemplateWithRelations | null, error: Error | null }> {
-    try {
-      const { data, error: createError } = await supabase
-        .from('workflow_templates')
-        .insert({
-          name: workflowData.name,
-          description: workflowData.description,
-          steps: workflowData.steps
-        } satisfies DbWorkflowTemplateInsert)
-        .select(`
-          *,
-          workflows:client_onboarding_workflows(*)
-        `)
-        .single()
-
-      if (createError) throw createError
-
-      setWorkflows(prev => [data, ...prev])
-      return { data, error: null }
-    } catch (err) {
-      console.error('Error creating workflow:', err)
-      return { 
-        data: null, 
-        error: err instanceof Error ? err : new Error('Failed to create workflow')
-      }
-    }
-  }
-
-  async function updateWorkflow(
-    id: number,
-    updates: Partial<DbWorkflowTemplate>
-  ): Promise<{ data: WorkflowTemplateWithRelations | null, error: Error | null }> {
-    try {
-      const { data, error: updateError } = await supabase
-        .from('workflow_templates')
-        .update(updates)
-        .eq('id', id)
-        .select(`
-          *,
-          workflows:client_onboarding_workflows(*)
-        `)
-        .single()
-
-      if (updateError) throw updateError
-
-      setWorkflows(prev =>
-        prev.map(workflow =>
-          workflow.id === id ? data : workflow
-        )
-      )
-      return { data, error: null }
-    } catch (err) {
-      console.error('Error updating workflow:', err)
-      return { 
-        data: null, 
-        error: err instanceof Error ? err : new Error('Failed to update workflow')
-      }
-    }
-  }
-
-  async function deleteWorkflow(id: number): Promise<{ error: Error | null }> {
-    try {
-      const { error: deleteError } = await supabase
-        .from('workflow_templates')
-        .delete()
-        .eq('id', id)
-
-      if (deleteError) throw deleteError
-
-      setWorkflows(prev => prev.filter(workflow => workflow.id !== id))
-      return { error: null }
-    } catch (err) {
-      console.error('Error deleting workflow:', err)
-      return { 
-        error: err instanceof Error ? err : new Error('Failed to delete workflow')
-      }
-    }
-  }
-
-  return {
-    workflows,
-    loading,
-    error,
-    filters,
-    page,
-    pageSize,
-    setFilters,
-    setPage,
-    fetchWorkflows,
-    createWorkflow,
-    updateWorkflow,
-    deleteWorkflow
-  }
-}
-
-```
-
-### `src\components\projects\project-form.tsx`
-
-```typescript
-'use client';
-
-import { useState } from 'react';
-import { ProjectFormProvider } from './form/ProjectFormContext';
-import { ProjectFormTabs } from './form/ProjectFormTabs';
-import { useProjectForm } from '@/hooks/useProjectForm';
-import { ProjectFormValues } from '@/lib/validations/project';
-import { ProjectWithRelations } from '@/types/projects';
-import { Database } from '@/types/database.types';
-
-type Project = Database['public']['Tables']['projects']['Row'];
-type TaskPriority = Database['public']['Enums']['task_priority'];
-type ServiceType = Database['public']['Enums']['service_type'];
-
-interface ProjectFormProps {
-  project?: ProjectWithRelations;
-  onSuccess?: () => void;
-}
-
-export function ProjectForm({ project, onSuccess }: ProjectFormProps) {
-  const [activeTab, setActiveTab] = useState('basic-info');
-  const {
-    form,
-    isSubmitting,
-    progress,
-    onServiceTypeChange,
-    onTemplateSelect,
-    onSubmit,
-    calculateProgress,
-  } = useProjectForm({
-    defaultValues: project ? {
-      name: project.name,
-      description: project.description,
-      client_id: project.client_id,
-      service_type: project.service_type as ServiceType | null,
-      status: project.status,
-      priority: project.priority as TaskPriority | undefined,
-      due_date: project.due_date,
-      start_date: project.start_date,
-      end_date: project.end_date,
-      tax_info: project.tax_info || null,
-      accounting_info: project.accounting_info || null,
-      payroll_info: project.payroll_info || null,
-      service_info: project.service_info || null,
-      template_id: project.template_id,
-      tax_return_id: project.tax_return_id,
-      parent_project_id: project.parent_project_id,
-      primary_manager: project.primary_manager,
-      stage: project.stage,
-      completed_tasks: project.completed_tasks,
-      completion_percentage: project.completion_percentage,
-      task_count: project.task_count
-    } : undefined,
-    onSubmit: async (data: ProjectFormValues) => {
-      await onSuccess?.();
-    },
-  });
-
-  return (
-    <ProjectFormProvider
-      form={form}
-      isSubmitting={isSubmitting}
-      progress={progress}
-      onServiceTypeChange={onServiceTypeChange}
-      onTemplateSelect={onTemplateSelect}
-    >
-      <ProjectFormTabs
-        activeTab={activeTab}
-        onTabChange={setActiveTab}
-        getTabProgress={() => progress}
-      />
-    </ProjectFormProvider>
-  );
-} 
-```
-
 ### `src\components\clients\client-form.tsx`
 
 ```typescript
@@ -972,234 +246,66 @@ export function ClientForm({ client, onSubmit }: ClientFormProps) {
 } 
 ```
 
-### `src\middleware.ts`
+### `src\components\tasks\task-form.tsx`
 
 ```typescript
-import { createServerClient, type CookieOptions } from '@supabase/ssr'
-import { NextResponse, type NextRequest } from 'next/server'
+'use client'
 
-export async function middleware(request: NextRequest) {
-  let response = NextResponse.next({
-    request: {
-      headers: request.headers,
-    },
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
+import { taskSchema } from '@/lib/validations/task'
+import type { DbTask, TaskFormValues } from '@/types/tasks'
+import { PrioritySelect } from '@/components/ui/priority-select'
+import { StatusSelect } from '@/components/ui/status-select'
+
+interface TaskFormProps {
+  task?: DbTask | null
+  onSubmit: (data: TaskFormValues) => Promise<void>
+  onCancel?: () => void
+}
+
+export function TaskForm({ task, onSubmit, onCancel }: TaskFormProps) {
+  const form = useForm<TaskFormValues>({
+    resolver: zodResolver(taskSchema),
+    defaultValues: task ? {
+      ...task,
+      status: task.status,
+      priority: task.priority,
+    } : {
+      title: '',
+      description: '',
+      status: 'todo',
+      priority: undefined,
+      due_date: null,
+      start_date: null,
+      recurring_config: null,
+    }
   })
 
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        get(name: string) {
-          return request.cookies.get(name)?.value
-        },
-        set(name: string, value: string, options: CookieOptions) {
-          request.cookies.set({
-            name,
-            value,
-            ...options,
-          })
-          response = NextResponse.next({
-            request: {
-              headers: request.headers,
-            },
-          })
-          response.cookies.set({
-            name,
-            value,
-            ...options,
-          })
-        },
-        remove(name: string, options: CookieOptions) {
-          request.cookies.set({
-            name,
-            value: '',
-            ...options,
-          })
-          response = NextResponse.next({
-            request: {
-              headers: request.headers,
-            },
-          })
-          response.cookies.set({
-            name,
-            value: '',
-            ...options,
-          })
-        },
-      },
+  const handleSubmit = async (data: TaskFormValues) => {
+    try {
+      await onSubmit(data)
+      form.reset()
+    } catch (error) {
+      console.error('Failed to submit task:', error)
     }
-  )
-
-  const { data: { user } } = await supabase.auth.getUser()
-
-  // If user is not signed in and the current path is not /auth/login,
-  // redirect the user to /auth/login
-  if (!user && !request.nextUrl.pathname.startsWith('/auth')) {
-    return NextResponse.redirect(new URL('/auth/login', request.url))
   }
-
-  // If user is signed in and the current path is /auth/login,
-  // redirect the user to /dashboard
-  if (user && request.nextUrl.pathname.startsWith('/auth')) {
-    return NextResponse.redirect(new URL('/dashboard', request.url))
-  }
-
-  return response
-}
-
-export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
-}
-
-```
-
-### `src\components\forms\project\basic-info-form.tsx`
-
-```typescript
-'use client';
-
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { UseFormReturn } from 'react-hook-form';
-import { ProjectFormValues } from '@/lib/validations/project';
-import { Tables } from '@/types/database.types';
-
-type Client = Tables<'clients'>;
-type ProjectTemplate = Tables<'project_templates'> & {
-  tasks: Tables<'template_tasks'>[];
-};
-
-interface BasicInfoFormProps {
-  form: UseFormReturn<ProjectFormValues>;
-  clients: Client[];
-  templates?: ProjectTemplate[];
-  templatesLoading?: boolean;
-}
-
-export function BasicInfoForm({ 
-  form, 
-  clients,
-  templates = [],
-  templatesLoading = false 
-}: BasicInfoFormProps) {
-  // Group clients by type and create appropriate labels
-  const clientOptions = clients
-    .sort((a, b) => {
-      // Sort by type first, then by name
-      if (a.type !== b.type) {
-        return a.type === 'business' ? -1 : 1;
-      }
-      // For businesses, sort by company name
-      if (a.type === 'business') {
-        return (a.company_name || '').localeCompare(b.company_name || '');
-      }
-      // For individuals, sort by full name
-      return (a.full_name || '').localeCompare(b.full_name || '');
-    })
-    .map(client => ({
-      value: client.id,
-      label: client.type === 'business' 
-        ? `${client.company_name || 'Unnamed Business'}`
-        : `${client.full_name || 'Unnamed Individual'}`,
-      group: client.type === 'business' ? 'Business Clients' : 'Individual Clients'
-    }));
-
-  const templateOptions = templates.map(template => ({
-    value: template.id,
-    label: template.title
-  }));
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Basic Project Information</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
         <FormField
           control={form.control}
-          name="name"
+          name="title"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Project Name</FormLabel>
+              <FormLabel>Title</FormLabel>
               <FormControl>
-                <Input {...field} placeholder="Enter project name" />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="client_id"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Client</FormLabel>
-              <FormControl>
-                <Select
-                  value={field.value || ''}
-                  onValueChange={field.onChange}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a client" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectGroup>
-                      <SelectLabel>Business Clients</SelectLabel>
-                      {clientOptions
-                        .filter(option => option.group === 'Business Clients')
-                        .map(option => (
-                          <SelectItem key={option.value} value={option.value}>
-                            {option.label}
-                          </SelectItem>
-                        ))
-                      }
-                    </SelectGroup>
-                    <SelectGroup>
-                      <SelectLabel>Individual Clients</SelectLabel>
-                      {clientOptions
-                        .filter(option => option.group === 'Individual Clients')
-                        .map(option => (
-                          <SelectItem key={option.value} value={option.value}>
-                            {option.label}
-                          </SelectItem>
-                        ))
-                      }
-                    </SelectGroup>
-                  </SelectContent>
-                </Select>
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="template_id"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Project Template</FormLabel>
-              <FormControl>
-                <Select
-                  value={field.value || ''}
-                  onValueChange={field.onChange}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder={templatesLoading ? "Loading templates..." : "Select a template"} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {templateOptions.map(option => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Input {...field} placeholder="Enter task title" />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -1209,269 +315,59 @@ export function BasicInfoForm({
         <FormField
           control={form.control}
           name="description"
-          render={({ field: { value, onChange, ...field } }) => (
+          render={({ field }) => (
             <FormItem>
               <FormLabel>Description</FormLabel>
               <FormControl>
-                <Textarea 
-                  value={value || ''}
-                  onChange={onChange}
-                  {...field}
-                  placeholder="Enter project description"
-                  className="min-h-[100px]"
+                <Textarea {...field} placeholder="Enter task description" />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <StatusSelect<TaskFormValues>
+          name="status"
+          control={form.control}
+        />
+
+        <PrioritySelect<TaskFormValues>
+          name="priority"
+          control={form.control}
+        />
+
+        <FormField
+          control={form.control}
+          name="due_date"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Due Date</FormLabel>
+              <FormControl>
+                <Input 
+                  type="datetime-local" 
+                  {...field} 
+                  value={field.value || ''} 
                 />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
-      </CardContent>
-    </Card>
-  );
-}
 
-```
-
-### `src\types\hooks.ts`
-
-```typescript
-import { Project, ProjectTemplate, ProjectFormValues } from './projects'
-import { Task, TaskStatus, ReviewStatus } from './tasks'
-import { Client } from './clients'
-import { Database } from './database.types'
-
-// Re-export database enums
-export type ProjectStatus = Database['public']['Enums']['project_status']
-export type TaskPriority = Database['public']['Enums']['task_priority']
-export type ClientStatus = Database['public']['Enums']['client_status']
-export type ClientType = Database['public']['Enums']['client_type']
-export type ServiceType = Database['public']['Enums']['service_type']
-
-// Re-export all types to ensure they are available
-export type {
-  Project,
-  ProjectTemplate,
-  ProjectFormValues,
-  Task,
-  TaskStatus,
-  ReviewStatus,
-  Client,
-  Database
-}
-
-export type WorkflowTemplate = {
-  id: string
-  name: string
-  description?: string | null
-  steps: Array<{
-    title: string
-    description?: string
-    status?: 'pending' | 'in_progress' | 'completed'
-  }>
-  created_at?: string | null
-}
-
-export type TemplateTask = {
-  id: string
-  title: string
-  description: string
-  order_index: number
-  priority: 'low' | 'medium' | 'high' | 'urgent'
-  template_id: string
-  dependencies: string[]
-  created_at: string
-  updated_at: string
-}
-
-export type TaxReturn = {
-  id?: string
-  project_id?: string
-  tax_year: number
-  filing_type?: string
-  status?: string
-  filing_deadline?: string
-  extension_filed?: boolean
-  created_at?: string
-  updated_at?: string
-}
-
-export type WorkflowStatus = 'draft' | 'in_progress' | 'completed' | 'archived'
-export type WorkflowTask = Task & { workflow_id?: string }
-
-export type ClientOnboardingWorkflow = Database['public']['Tables']['client_onboarding_workflows']['Row'] & {
-  steps?: Array<{
-    title: string
-    description?: string
-    status: 'pending' | 'in_progress' | 'completed'
-  }>
-}
-
-export type Document = Database['public']['Tables']['client_documents']['Row'] & {
-  project?: Database['public']['Tables']['projects']['Row'] | null
-  client?: Database['public']['Tables']['clients']['Row'] | null
-}
-
-export type DocumentFormData = Omit<Document, 'id' | 'uploaded_at'>
-
-export type Note = Database['public']['Tables']['notes']['Row']
-
-export type PayrollService = Database['public']['Tables']['payroll_services']['Row']
-
-export type Priority = 'low' | 'medium' | 'high' | 'urgent'
-export type ServiceCategory = 'tax_returns' | 'payroll' | 'accounting' | 'tax_planning' | 'compliance' | 'uncategorized'
-
-export type ProjectFilters = {
-  search?: string
-  service?: string[]
-  serviceType?: string[]
-  service_category?: string[]
-  status?: string[]
-  priority?: string[]
-  dateRange?: { from: string; to: string }
-  dueDateRange?: { from: Date; to: Date }
-  clientId?: string
-  teamMemberId?: string
-  tags?: string[]
-  hasDocuments?: boolean
-  hasNotes?: boolean
-  hasTimeEntries?: boolean
-  returnType?: string[]
-  reviewStatus?: string[]
-  dueThisWeek?: boolean
-  dueThisMonth?: boolean
-  dueThisQuarter?: boolean
-}
-
-export type ProjectAnalytics = {
-  completionRate: number
-  riskLevel: string
-  predictedDelay: number
-  resourceUtilization: number
-  recommendations: string[]
-}
-
-```
-
-### `src\hooks\useTaxProjectManagement.ts`
-
-```typescript
-'use client'
-
-import { useState, useCallback } from 'react';
-import { addDays, isAfter, isBefore, startOfDay } from 'date-fns';
-import { ProjectWithRelations, TaxReturnType } from '@/types/projects';
-
-// Constants for tax deadlines
-const TAX_DEADLINES = {
-  '1040': {
-    normal: '04-15',
-    extended: '10-15'
-  },
-  '1120': {
-    normal: '03-15',
-    extended: '09-15'
-  },
-  '1065': {
-    normal: '03-15',
-    extended: '09-15'
-  },
-  '1120S': {
-    normal: '03-15',
-    extended: '09-15'
-  }
-};
-
-const ESTIMATED_TAX_DEADLINES = ['04-15', '06-15', '09-15', '01-15'];
-
-export function useTaxProjectManagement() {
-  const [view, setView] = useState<'deadline' | 'return_type' | 'review_status'>('deadline');
-
-  const getDeadline = useCallback((returnType: TaxReturnType, isExtended: boolean = false): Date => {
-    const currentYear = new Date().getFullYear();
-    const deadlineType = isExtended ? 'extended' : 'normal';
-    const monthDay = TAX_DEADLINES[returnType]?.[deadlineType] || '04-15';
-    return new Date(`${currentYear}-${monthDay}`);
-  }, []);
-
-  const getNextEstimatedTaxDeadline = useCallback(() => {
-    const today = startOfDay(new Date());
-    const currentYear = today.getFullYear();
-    
-    for (const deadline of ESTIMATED_TAX_DEADLINES) {
-      const deadlineDate = new Date(`${currentYear}-${deadline}`);
-      if (isAfter(deadlineDate, today)) {
-        return deadlineDate;
-      }
-    }
-    
-    // If all deadlines have passed, return first deadline of next year
-    return new Date(`${currentYear + 1}-${ESTIMATED_TAX_DEADLINES[0]}`);
-  }, []);
-
-  const groupProjectsByDeadline = useCallback((projects: ProjectWithRelations[]) => {
-    const groups: Record<string, ProjectWithRelations[]> = {
-      'Due This Week': [],
-      'Due This Month': [],
-      'Due Later': [],
-      'Past Due': [],
-    };
-
-    const today = startOfDay(new Date());
-    const nextWeek = addDays(today, 7);
-    const nextMonth = addDays(today, 30);
-
-    projects.forEach(project => {
-      if (!project.tax_info?.filing_deadline) return;
-
-      const deadline = new Date(project.tax_info.filing_deadline);
-      
-      if (isBefore(deadline, today)) {
-        groups['Past Due'].push(project);
-      } else if (isBefore(deadline, nextWeek)) {
-        groups['Due This Week'].push(project);
-      } else if (isBefore(deadline, nextMonth)) {
-        groups['Due This Month'].push(project);
-      } else {
-        groups['Due Later'].push(project);
-      }
-    });
-
-    return groups;
-  }, []);
-
-  const groupProjectsByReturnType = useCallback((projects: ProjectWithRelations[]) => {
-    return projects.reduce((groups, project) => {
-      const returnType = project.tax_info?.return_type || 'Other';
-      if (!groups[returnType]) {
-        groups[returnType] = [];
-      }
-      groups[returnType].push(project);
-      return groups;
-    }, {} as Record<string, ProjectWithRelations[]>);
-  }, []);
-
-  const groupProjectsByReviewStatus = useCallback((projects: ProjectWithRelations[]) => {
-    return projects.reduce((groups, project) => {
-      const status = project.tax_info?.review_status || 'Not Started';
-      if (!groups[status]) {
-        groups[status] = [];
-      }
-      groups[status].push(project);
-      return groups;
-    }, {} as Record<string, ProjectWithRelations[]>);
-  }, []);
-
-  return {
-    view,
-    setView,
-    getDeadline,
-    getNextEstimatedTaxDeadline,
-    groupProjectsByDeadline,
-    groupProjectsByReturnType,
-    groupProjectsByReviewStatus,
-  };
-}
-
+        <div className="flex justify-end space-x-2">
+          {onCancel && (
+            <Button type="button" variant="outline" onClick={onCancel}>
+              Cancel
+            </Button>
+          )}
+          <Button type="submit">
+            {task ? 'Update' : 'Create'}
+          </Button>
+        </div>
+      </form>
+    </Form>
+  )
+} 
 ```
 
 ### `src\hooks\useProjectManagement.ts`
@@ -1761,6 +657,1094 @@ export function useProjectManagement(): {
     bulkUpdateProjects,
     archiveProjects
   };
+}
+
+```
+
+### `src\components\projects\project-form.tsx`
+
+```typescript
+'use client';
+
+import { useState } from 'react';
+import { ProjectFormProvider } from './form/ProjectFormContext';
+import { ProjectFormTabs } from './form/ProjectFormTabs';
+import { useProjectForm } from '@/hooks/useProjectForm';
+import { ProjectFormValues } from '@/lib/validations/project';
+import { ProjectWithRelations } from '@/types/projects';
+import { Database } from '@/types/database.types';
+
+type Project = Database['public']['Tables']['projects']['Row'];
+type TaskPriority = Database['public']['Enums']['task_priority'];
+type ServiceType = Database['public']['Enums']['service_type'];
+
+interface ProjectFormProps {
+  project?: ProjectWithRelations;
+  onSuccess?: () => void;
+}
+
+export function ProjectForm({ project, onSuccess }: ProjectFormProps) {
+  const [activeTab, setActiveTab] = useState('basic-info');
+  const {
+    form,
+    isSubmitting,
+    progress,
+    onServiceTypeChange,
+    onTemplateSelect,
+    onSubmit,
+    calculateProgress,
+  } = useProjectForm({
+    defaultValues: project ? {
+      name: project.name,
+      description: project.description,
+      client_id: project.client_id,
+      service_type: project.service_type as ServiceType | null,
+      status: project.status,
+      priority: project.priority as TaskPriority | undefined,
+      due_date: project.due_date,
+      start_date: project.start_date,
+      end_date: project.end_date,
+      tax_info: project.tax_info || null,
+      accounting_info: project.accounting_info || null,
+      payroll_info: project.payroll_info || null,
+      service_info: project.service_info || null,
+      template_id: project.template_id,
+      tax_return_id: project.tax_return_id,
+      parent_project_id: project.parent_project_id,
+      primary_manager: project.primary_manager,
+      stage: project.stage,
+      completed_tasks: project.completed_tasks,
+      completion_percentage: project.completion_percentage,
+      task_count: project.task_count
+    } : undefined,
+    onSubmit: async (data: ProjectFormValues) => {
+      await onSuccess?.();
+    },
+  });
+
+  return (
+    <ProjectFormProvider
+      form={form}
+      isSubmitting={isSubmitting}
+      progress={progress}
+      onServiceTypeChange={onServiceTypeChange}
+      onTemplateSelect={onTemplateSelect}
+    >
+      <ProjectFormTabs
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        getTabProgress={() => progress}
+      />
+    </ProjectFormProvider>
+  );
+} 
+```
+
+### `src\hooks\useWorkflows.ts`
+
+```typescript
+import { useState, useEffect } from 'react'
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { Database } from '@/types/database.types'
+import { 
+  DbWorkflowTemplate,
+  DbWorkflowTemplateInsert,
+  WorkflowTemplateWithRelations,
+  WorkflowStep,
+  WorkflowStatus,
+  WORKFLOW_STATUS
+} from '@/types/workflows'
+
+interface CreateWorkflowRequest {
+  name: string
+  description?: string | null
+  steps: WorkflowStep[]
+}
+
+interface UseWorkflowsOptions {
+  initialFilters?: {
+    status?: WorkflowStatus
+    search?: string
+  }
+  pageSize?: number
+}
+
+export function useWorkflows(options: UseWorkflowsOptions = {}) {
+  const [workflows, setWorkflows] = useState<WorkflowTemplateWithRelations[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<Error | null>(null)
+  const [filters, setFilters] = useState(options.initialFilters || {})
+  const [page, setPage] = useState(1)
+  const [pageSize] = useState(options.pageSize || 10)
+
+  const supabase = createClientComponentClient<Database>()
+
+  useEffect(() => {
+    fetchWorkflows()
+  }, [filters, page, pageSize])
+
+  async function fetchWorkflows() {
+    try {
+      let query = supabase
+        .from('workflow_templates')
+        .select(`
+          *,
+          workflows:client_onboarding_workflows(*)
+        `)
+
+      // Apply filters
+      if (filters.status) {
+        query = query.eq('status', filters.status)
+      }
+      if (filters.search) {
+        query = query.ilike('name', `%${filters.search}%`)
+      }
+
+      // Apply pagination
+      const from = (page - 1) * pageSize
+      const to = from + pageSize - 1
+      query = query.range(from, to)
+
+      // Execute query
+      const { data, error: fetchError } = await query
+        .order('created_at', { ascending: false })
+
+      if (fetchError) throw fetchError
+
+      setWorkflows(data || [])
+      setError(null)
+    } catch (err) {
+      console.error('Error fetching workflows:', err)
+      setError(err instanceof Error ? err : new Error('Failed to fetch workflows'))
+      setWorkflows([])
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function createWorkflow(workflowData: CreateWorkflowRequest): Promise<{ data: WorkflowTemplateWithRelations | null, error: Error | null }> {
+    try {
+      const { data, error: createError } = await supabase
+        .from('workflow_templates')
+        .insert({
+          name: workflowData.name,
+          description: workflowData.description,
+          steps: workflowData.steps
+        } satisfies DbWorkflowTemplateInsert)
+        .select(`
+          *,
+          workflows:client_onboarding_workflows(*)
+        `)
+        .single()
+
+      if (createError) throw createError
+
+      setWorkflows(prev => [data, ...prev])
+      return { data, error: null }
+    } catch (err) {
+      console.error('Error creating workflow:', err)
+      return { 
+        data: null, 
+        error: err instanceof Error ? err : new Error('Failed to create workflow')
+      }
+    }
+  }
+
+  async function updateWorkflow(
+    id: number,
+    updates: Partial<DbWorkflowTemplate>
+  ): Promise<{ data: WorkflowTemplateWithRelations | null, error: Error | null }> {
+    try {
+      const { data, error: updateError } = await supabase
+        .from('workflow_templates')
+        .update(updates)
+        .eq('id', id)
+        .select(`
+          *,
+          workflows:client_onboarding_workflows(*)
+        `)
+        .single()
+
+      if (updateError) throw updateError
+
+      setWorkflows(prev =>
+        prev.map(workflow =>
+          workflow.id === id ? data : workflow
+        )
+      )
+      return { data, error: null }
+    } catch (err) {
+      console.error('Error updating workflow:', err)
+      return { 
+        data: null, 
+        error: err instanceof Error ? err : new Error('Failed to update workflow')
+      }
+    }
+  }
+
+  async function deleteWorkflow(id: number): Promise<{ error: Error | null }> {
+    try {
+      const { error: deleteError } = await supabase
+        .from('workflow_templates')
+        .delete()
+        .eq('id', id)
+
+      if (deleteError) throw deleteError
+
+      setWorkflows(prev => prev.filter(workflow => workflow.id !== id))
+      return { error: null }
+    } catch (err) {
+      console.error('Error deleting workflow:', err)
+      return { 
+        error: err instanceof Error ? err : new Error('Failed to delete workflow')
+      }
+    }
+  }
+
+  return {
+    workflows,
+    loading,
+    error,
+    filters,
+    page,
+    pageSize,
+    setFilters,
+    setPage,
+    fetchWorkflows,
+    createWorkflow,
+    updateWorkflow,
+    deleteWorkflow
+  }
+}
+
+```
+
+### `src\types\hooks.ts`
+
+```typescript
+import { Project, ProjectTemplate, ProjectFormValues } from './projects'
+import { Task, TaskStatus, ReviewStatus } from './tasks'
+import { Client } from './clients'
+import { Database } from './database.types'
+
+// Re-export database enums
+export type ProjectStatus = Database['public']['Enums']['project_status']
+export type TaskPriority = Database['public']['Enums']['task_priority']
+export type ClientStatus = Database['public']['Enums']['client_status']
+export type ClientType = Database['public']['Enums']['client_type']
+export type ServiceType = Database['public']['Enums']['service_type']
+
+// Re-export all types to ensure they are available
+export type {
+  Project,
+  ProjectTemplate,
+  ProjectFormValues,
+  Task,
+  TaskStatus,
+  ReviewStatus,
+  Client,
+  Database
+}
+
+export type WorkflowTemplate = {
+  id: string
+  name: string
+  description?: string | null
+  steps: Array<{
+    title: string
+    description?: string
+    status?: 'pending' | 'in_progress' | 'completed'
+  }>
+  created_at?: string | null
+}
+
+export type TemplateTask = {
+  id: string
+  title: string
+  description: string
+  order_index: number
+  priority: 'low' | 'medium' | 'high' | 'urgent'
+  template_id: string
+  dependencies: string[]
+  created_at: string
+  updated_at: string
+}
+
+export type TaxReturn = {
+  id?: string
+  project_id?: string
+  tax_year: number
+  filing_type?: string
+  status?: string
+  filing_deadline?: string
+  extension_filed?: boolean
+  created_at?: string
+  updated_at?: string
+}
+
+export type WorkflowStatus = 'draft' | 'in_progress' | 'completed' | 'archived'
+export type WorkflowTask = Task & { workflow_id?: string }
+
+export type ClientOnboardingWorkflow = Database['public']['Tables']['client_onboarding_workflows']['Row'] & {
+  steps?: Array<{
+    title: string
+    description?: string
+    status: 'pending' | 'in_progress' | 'completed'
+  }>
+}
+
+export type Document = Database['public']['Tables']['client_documents']['Row'] & {
+  project?: Database['public']['Tables']['projects']['Row'] | null
+  client?: Database['public']['Tables']['clients']['Row'] | null
+}
+
+export type DocumentFormData = Omit<Document, 'id' | 'uploaded_at'>
+
+export type Note = Database['public']['Tables']['notes']['Row']
+
+export type PayrollService = Database['public']['Tables']['payroll_services']['Row']
+
+export type Priority = 'low' | 'medium' | 'high' | 'urgent'
+export type ServiceCategory = 'tax_returns' | 'payroll' | 'accounting' | 'tax_planning' | 'compliance' | 'uncategorized'
+
+export type ProjectFilters = {
+  search?: string
+  service?: string[]
+  serviceType?: string[]
+  service_category?: string[]
+  status?: string[]
+  priority?: string[]
+  dateRange?: { from: string; to: string }
+  dueDateRange?: { from: Date; to: Date }
+  clientId?: string
+  teamMemberId?: string
+  tags?: string[]
+  hasDocuments?: boolean
+  hasNotes?: boolean
+  hasTimeEntries?: boolean
+  returnType?: string[]
+  reviewStatus?: string[]
+  dueThisWeek?: boolean
+  dueThisMonth?: boolean
+  dueThisQuarter?: boolean
+}
+
+export type ProjectAnalytics = {
+  completionRate: number
+  riskLevel: string
+  predictedDelay: number
+  resourceUtilization: number
+  recommendations: string[]
+}
+
+```
+
+### `src\hooks\useTaxProjectManagement.ts`
+
+```typescript
+'use client'
+
+import { useState, useCallback } from 'react';
+import { addDays, isAfter, isBefore, startOfDay } from 'date-fns';
+import { ProjectWithRelations, TaxReturnType } from '@/types/projects';
+
+// Constants for tax deadlines
+const TAX_DEADLINES = {
+  '1040': {
+    normal: '04-15',
+    extended: '10-15'
+  },
+  '1120': {
+    normal: '03-15',
+    extended: '09-15'
+  },
+  '1065': {
+    normal: '03-15',
+    extended: '09-15'
+  },
+  '1120S': {
+    normal: '03-15',
+    extended: '09-15'
+  }
+};
+
+const ESTIMATED_TAX_DEADLINES = ['04-15', '06-15', '09-15', '01-15'];
+
+export function useTaxProjectManagement() {
+  const [view, setView] = useState<'deadline' | 'return_type' | 'review_status'>('deadline');
+
+  const getDeadline = useCallback((returnType: TaxReturnType, isExtended: boolean = false): Date => {
+    const currentYear = new Date().getFullYear();
+    const deadlineType = isExtended ? 'extended' : 'normal';
+    const monthDay = TAX_DEADLINES[returnType]?.[deadlineType] || '04-15';
+    return new Date(`${currentYear}-${monthDay}`);
+  }, []);
+
+  const getNextEstimatedTaxDeadline = useCallback(() => {
+    const today = startOfDay(new Date());
+    const currentYear = today.getFullYear();
+    
+    for (const deadline of ESTIMATED_TAX_DEADLINES) {
+      const deadlineDate = new Date(`${currentYear}-${deadline}`);
+      if (isAfter(deadlineDate, today)) {
+        return deadlineDate;
+      }
+    }
+    
+    // If all deadlines have passed, return first deadline of next year
+    return new Date(`${currentYear + 1}-${ESTIMATED_TAX_DEADLINES[0]}`);
+  }, []);
+
+  const groupProjectsByDeadline = useCallback((projects: ProjectWithRelations[]) => {
+    const groups: Record<string, ProjectWithRelations[]> = {
+      'Due This Week': [],
+      'Due This Month': [],
+      'Due Later': [],
+      'Past Due': [],
+    };
+
+    const today = startOfDay(new Date());
+    const nextWeek = addDays(today, 7);
+    const nextMonth = addDays(today, 30);
+
+    projects.forEach(project => {
+      if (!project.tax_info?.filing_deadline) return;
+
+      const deadline = new Date(project.tax_info.filing_deadline);
+      
+      if (isBefore(deadline, today)) {
+        groups['Past Due'].push(project);
+      } else if (isBefore(deadline, nextWeek)) {
+        groups['Due This Week'].push(project);
+      } else if (isBefore(deadline, nextMonth)) {
+        groups['Due This Month'].push(project);
+      } else {
+        groups['Due Later'].push(project);
+      }
+    });
+
+    return groups;
+  }, []);
+
+  const groupProjectsByReturnType = useCallback((projects: ProjectWithRelations[]) => {
+    return projects.reduce((groups, project) => {
+      const returnType = project.tax_info?.return_type || 'Other';
+      if (!groups[returnType]) {
+        groups[returnType] = [];
+      }
+      groups[returnType].push(project);
+      return groups;
+    }, {} as Record<string, ProjectWithRelations[]>);
+  }, []);
+
+  const groupProjectsByReviewStatus = useCallback((projects: ProjectWithRelations[]) => {
+    return projects.reduce((groups, project) => {
+      const status = project.tax_info?.review_status || 'Not Started';
+      if (!groups[status]) {
+        groups[status] = [];
+      }
+      groups[status].push(project);
+      return groups;
+    }, {} as Record<string, ProjectWithRelations[]>);
+  }, []);
+
+  return {
+    view,
+    setView,
+    getDeadline,
+    getNextEstimatedTaxDeadline,
+    groupProjectsByDeadline,
+    groupProjectsByReturnType,
+    groupProjectsByReviewStatus,
+  };
+}
+
+```
+
+### `src\lib\validations\schema.ts`
+
+```typescript
+import { z } from 'zod'
+import { 
+  CLIENT_STATUS, 
+  CLIENT_TYPE, 
+  FILING_TYPE 
+} from '@/types/clients'
+import {
+  PROJECT_STATUS,
+  SERVICE_TYPE
+} from '@/types/projects'
+import {
+  TASK_STATUS,
+  TASK_PRIORITY
+} from '@/types/tasks'
+
+// Client Schemas
+export const contactInfoSchema = z.object({
+  email: z.string().email(),
+  phone: z.string().optional(),
+  address: z.object({
+    street: z.string(),
+    city: z.string(),
+    state: z.string(),
+    zip: z.string()
+  }).optional(),
+  alternate_email: z.string().email().optional(),
+  alternate_phone: z.string().optional(),
+  preferred_contact_method: z.enum(['email', 'phone']).optional(),
+  notes: z.string().optional()
+})
+
+export const taxInfoSchema = z.object({
+  filing_type: z.enum(FILING_TYPE),
+  tax_id_type: z.enum(['ssn', 'ein']).optional(),
+  tax_id: z.string().optional(),
+  filing_status: z.string().optional(),
+  dependents: z.array(z.object({
+    name: z.string(),
+    ssn: z.string().optional(),
+    relationship: z.string().optional(),
+    birth_date: z.string().optional()
+  })).optional(),
+  previous_returns: z.array(z.object({
+    year: z.number(),
+    filed_date: z.string(),
+    preparer: z.string().optional(),
+    notes: z.string().optional()
+  })).optional()
+})
+
+export const clientSchema = z.object({
+  contact_email: z.string().email(),
+  full_name: z.string().optional(),
+  company_name: z.string().optional(),
+  status: z.enum(CLIENT_STATUS),
+  type: z.enum(CLIENT_TYPE),
+  contact_info: contactInfoSchema,
+  tax_info: taxInfoSchema.nullable(),
+  business_tax_id: z.string().optional(),
+  individual_tax_id: z.string().optional()
+})
+
+// Project Schemas
+export const projectTaxInfoSchema = z.object({
+  return_type: z.enum(FILING_TYPE),
+  tax_year: z.number(),
+  filing_status: z.string().optional(),
+  is_extension_filed: z.boolean().optional(),
+  extension_date: z.string().optional(),
+  documents_received: z.boolean().optional(),
+  last_filed_date: z.string().optional()
+})
+
+export const accountingInfoSchema = z.object({
+  fiscal_year_end: z.string().optional(),
+  accounting_method: z.enum(['cash', 'accrual']).optional(),
+  last_reconciliation_date: z.string().optional(),
+  software: z.string().optional(),
+  chart_of_accounts_setup: z.boolean().optional(),
+  notes: z.string().optional()
+})
+
+export const payrollInfoSchema = z.object({
+  frequency: z.enum(['weekly', 'bi-weekly', 'monthly']).optional(),
+  employee_count: z.number().optional(),
+  last_payroll_date: z.string().optional(),
+  next_payroll_date: z.string().optional(),
+  tax_deposit_schedule: z.enum(['monthly', 'semi-weekly']).optional(),
+  notes: z.string().optional()
+})
+
+export const projectSchema = z.object({
+  name: z.string(),
+  description: z.string().optional(),
+  status: z.enum(PROJECT_STATUS),
+  service_type: z.enum(SERVICE_TYPE),
+  client_id: z.string().optional(),
+  primary_manager: z.string().optional(),
+  start_date: z.string().optional(),
+  due_date: z.string().optional(),
+  end_date: z.string().optional(),
+  tax_info: projectTaxInfoSchema.nullable(),
+  accounting_info: accountingInfoSchema.nullable(),
+  payroll_info: payrollInfoSchema.nullable(),
+  service_info: z.record(z.unknown()).nullable()
+})
+
+// Task Schemas
+export const taskRecurringConfigSchema = z.object({
+  frequency: z.enum(['daily', 'weekly', 'monthly', 'yearly']),
+  interval: z.number(),
+  end_date: z.string().optional(),
+  end_occurrences: z.number().optional()
+})
+
+export const taskSchema = z.object({
+  title: z.string(),
+  description: z.string().optional(),
+  status: z.enum(TASK_STATUS),
+  priority: z.enum(TASK_PRIORITY).optional(),
+  project_id: z.string().optional(),
+  assignee_id: z.string().optional(),
+  due_date: z.string().optional(),
+  start_date: z.string().optional(),
+  progress: z.number().optional(),
+  recurring_config: taskRecurringConfigSchema.nullable(),
+  parent_task_id: z.string().optional(),
+  dependencies: z.array(z.string()).optional(),
+  category: z.string().optional(),
+  tax_form_type: z.string().optional(),
+  tax_return_id: z.string().optional(),
+  template_id: z.string().optional()
+}) 
+```
+
+### `src\components\forms\project\basic-info-form.tsx`
+
+```typescript
+'use client';
+
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { UseFormReturn } from 'react-hook-form';
+import { ProjectFormValues } from '@/lib/validations/project';
+import { Tables } from '@/types/database.types';
+
+type Client = Tables<'clients'>;
+type ProjectTemplate = Tables<'project_templates'> & {
+  tasks: Tables<'template_tasks'>[];
+};
+
+interface BasicInfoFormProps {
+  form: UseFormReturn<ProjectFormValues>;
+  clients: Client[];
+  templates?: ProjectTemplate[];
+  templatesLoading?: boolean;
+}
+
+export function BasicInfoForm({ 
+  form, 
+  clients,
+  templates = [],
+  templatesLoading = false 
+}: BasicInfoFormProps) {
+  // Group clients by type and create appropriate labels
+  const clientOptions = clients
+    .sort((a, b) => {
+      // Sort by type first, then by name
+      if (a.type !== b.type) {
+        return a.type === 'business' ? -1 : 1;
+      }
+      // For businesses, sort by company name
+      if (a.type === 'business') {
+        return (a.company_name || '').localeCompare(b.company_name || '');
+      }
+      // For individuals, sort by full name
+      return (a.full_name || '').localeCompare(b.full_name || '');
+    })
+    .map(client => ({
+      value: client.id,
+      label: client.type === 'business' 
+        ? `${client.company_name || 'Unnamed Business'}`
+        : `${client.full_name || 'Unnamed Individual'}`,
+      group: client.type === 'business' ? 'Business Clients' : 'Individual Clients'
+    }));
+
+  const templateOptions = templates.map(template => ({
+    value: template.id,
+    label: template.title
+  }));
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Basic Project Information</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <FormField
+          control={form.control}
+          name="name"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Project Name</FormLabel>
+              <FormControl>
+                <Input {...field} placeholder="Enter project name" />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="client_id"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Client</FormLabel>
+              <FormControl>
+                <Select
+                  value={field.value || ''}
+                  onValueChange={field.onChange}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a client" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      <SelectLabel>Business Clients</SelectLabel>
+                      {clientOptions
+                        .filter(option => option.group === 'Business Clients')
+                        .map(option => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))
+                      }
+                    </SelectGroup>
+                    <SelectGroup>
+                      <SelectLabel>Individual Clients</SelectLabel>
+                      {clientOptions
+                        .filter(option => option.group === 'Individual Clients')
+                        .map(option => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))
+                      }
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="template_id"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Project Template</FormLabel>
+              <FormControl>
+                <Select
+                  value={field.value || ''}
+                  onValueChange={field.onChange}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder={templatesLoading ? "Loading templates..." : "Select a template"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {templateOptions.map(option => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="description"
+          render={({ field: { value, onChange, ...field } }) => (
+            <FormItem>
+              <FormLabel>Description</FormLabel>
+              <FormControl>
+                <Textarea 
+                  value={value || ''}
+                  onChange={onChange}
+                  {...field}
+                  placeholder="Enter project description"
+                  className="min-h-[100px]"
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      </CardContent>
+    </Card>
+  );
+}
+
+```
+
+### `src\middleware.ts`
+
+```typescript
+import { createServerClient, type CookieOptions } from '@supabase/ssr'
+import { NextResponse, type NextRequest } from 'next/server'
+
+export async function middleware(request: NextRequest) {
+  let response = NextResponse.next({
+    request: {
+      headers: request.headers,
+    },
+  })
+
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name: string) {
+          return request.cookies.get(name)?.value
+        },
+        set(name: string, value: string, options: CookieOptions) {
+          request.cookies.set({
+            name,
+            value,
+            ...options,
+          })
+          response = NextResponse.next({
+            request: {
+              headers: request.headers,
+            },
+          })
+          response.cookies.set({
+            name,
+            value,
+            ...options,
+          })
+        },
+        remove(name: string, options: CookieOptions) {
+          request.cookies.set({
+            name,
+            value: '',
+            ...options,
+          })
+          response = NextResponse.next({
+            request: {
+              headers: request.headers,
+            },
+          })
+          response.cookies.set({
+            name,
+            value: '',
+            ...options,
+          })
+        },
+      },
+    }
+  )
+
+  const { data: { user } } = await supabase.auth.getUser()
+
+  // If user is not signed in and the current path is not /auth/login,
+  // redirect the user to /auth/login
+  if (!user && !request.nextUrl.pathname.startsWith('/auth')) {
+    return NextResponse.redirect(new URL('/auth/login', request.url))
+  }
+
+  // If user is signed in and the current path is /auth/login,
+  // redirect the user to /dashboard
+  if (user && request.nextUrl.pathname.startsWith('/auth')) {
+    return NextResponse.redirect(new URL('/dashboard', request.url))
+  }
+
+  return response
+}
+
+export const config = {
+  matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
+}
+
+```
+
+### `src\hooks\useClientOnboarding.ts`
+
+```typescript
+import { useState, useEffect } from 'react'
+import { supabase } from '@/lib/supabase'
+import { ClientOnboardingWorkflow, WorkflowTemplate } from '@/types/hooks'
+
+export function useClientOnboarding(clientId?: string) {
+  const [workflow, setWorkflow] = useState<ClientOnboardingWorkflow | null>(null)
+  const [templates, setTemplates] = useState<WorkflowTemplate[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (clientId) {
+      fetchWorkflow()
+    }
+    fetchTemplates()
+  }, [clientId])
+
+  async function fetchWorkflow() {
+    if (!clientId) return
+
+    try {
+      const { data, error } = await supabase
+        .from('client_onboarding_workflows')
+        .select('*')
+        .eq('client_id', clientId)
+        .single()
+
+      if (error && error.code !== 'PGRST116') throw error // PGRST116 is "no rows returned"
+      
+      // Transform the data to include steps if progress exists
+      if (data) {
+        const progressData = data.progress ? JSON.parse(data.progress) : null
+        const workflowData: ClientOnboardingWorkflow = {
+          ...data,
+          steps: progressData?.steps || []
+        }
+        setWorkflow(workflowData)
+      } else {
+        setWorkflow(null)
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function fetchTemplates() {
+    try {
+      const { data, error } = await supabase
+        .from('workflow_templates')
+        .select('*')
+        .order('name')
+
+      if (error) throw error
+      
+      // Transform the templates data to parse steps JSON
+      const transformedTemplates = (data || []).map(template => ({
+        ...template,
+        steps: Array.isArray(template.steps) 
+          ? template.steps 
+          : typeof template.steps === 'string'
+            ? JSON.parse(template.steps)
+            : []
+      })) as WorkflowTemplate[]
+      
+      setTemplates(transformedTemplates)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred')
+    }
+  }
+
+  async function startWorkflow(clientId: string, templateId: number) {
+    try {
+      if (!clientId || !templateId) {
+        throw new Error('Client ID and template ID are required')
+      }
+
+      const template = templates.find(t => t.id === templateId)
+      if (!template) {
+        throw new Error('Template not found')
+      }
+
+      const workflowData = {
+        client_id: clientId,
+        template_id: templateId,
+        status: 'in_progress',
+        progress: JSON.stringify({
+          currentStep: 0,
+          totalSteps: template.steps.length,
+          completedSteps: [],
+          steps: template.steps.map(step => ({
+            ...step,
+            status: 'pending'
+          }))
+        }),
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }
+
+      const { data, error } = await supabase
+        .from('client_onboarding_workflows')
+        .insert([workflowData])
+        .select()
+
+      if (error) throw error
+      if (data && data[0]) {
+        const progressData = JSON.parse(data[0].progress || '{}')
+        const workflowWithSteps: ClientOnboardingWorkflow = {
+          ...data[0],
+          steps: progressData.steps || []
+        }
+        setWorkflow(workflowWithSteps)
+        return workflowWithSteps
+      }
+      throw new Error('Failed to start workflow')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred')
+      throw err
+    }
+  }
+
+  async function updateWorkflow(
+    id: number,
+    updates: Partial<Omit<ClientOnboardingWorkflow, 'id' | 'created_at' | 'client_id'>>
+  ) {
+    try {
+      if (!id) {
+        throw new Error('Workflow ID is required')
+      }
+
+      const updateData = {
+        ...updates,
+        updated_at: new Date().toISOString()
+      }
+
+      const { data, error } = await supabase
+        .from('client_onboarding_workflows')
+        .update(updateData)
+        .eq('id', id)
+        .select()
+
+      if (error) throw error
+      if (data && data[0]) {
+        setWorkflow(data[0])
+        return data[0]
+      }
+      throw new Error('Failed to update workflow')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred')
+      throw err
+    }
+  }
+
+  async function deleteWorkflow(id: number) {
+    try {
+      if (!id) {
+        throw new Error('Workflow ID is required')
+      }
+
+      const { error } = await supabase
+        .from('client_onboarding_workflows')
+        .delete()
+        .eq('id', id)
+
+      if (error) throw error
+      setWorkflow(null)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred')
+      throw err
+    }
+  }
+
+  return {
+    workflow,
+    templates,
+    loading,
+    error,
+    startWorkflow,
+    updateWorkflow,
+    deleteWorkflow,
+    refresh: fetchWorkflow
+  }
 }
 
 ```
@@ -2064,6 +2048,146 @@ export function useProjects(initialFilters?: ProjectFilters) {
     deleteProject,
     fetchTaxReturnForProject
   }
+}
+
+```
+
+### `src\lib\utils.ts`
+
+```typescript
+import { type ClassValue, clsx } from 'clsx'
+import { twMerge } from 'tailwind-merge'
+import { type Task } from '@/types/tasks'
+import { type ProjectWithRelations } from '@/types/projects'
+
+export function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs))
+}
+
+export function filterTasks(tasks: Task[], filters: { dueDate?: Date }) {
+  if (!filters.dueDate) return tasks
+  
+  return tasks.filter(task => {
+    if (!task.due_date) return false
+    const taskDueDate = new Date(task.due_date)
+    return taskDueDate <= filters.dueDate
+  })
+}
+
+export function groupTasks(tasks: Task[], groupBy: string) {
+  if (!tasks?.length) return {}
+  
+  return tasks.reduce((groups, task) => {
+    const key = task[groupBy as keyof Task] as string
+    if (!key) return groups
+    
+    return {
+      ...groups,
+      [key]: [...(groups[key] || []), task]
+    }
+  }, {} as { [key: string]: Task[] })
+}
+
+export function calculateCompletionRate(project: ProjectWithRelations): number {
+  if (!project.tasks?.length) return 0
+  const completedTasks = project.tasks.filter(task => task.status === 'completed')
+  return (completedTasks.length / project.tasks.length) * 100
+}
+
+export function assessProjectRisk(project: ProjectWithRelations): string {
+  const completionRate = calculateCompletionRate(project)
+  const dueDate = project.due_date ? new Date(project.due_date) : null
+  const today = new Date()
+
+  if (!dueDate) return 'unknown'
+  if (dueDate < today && completionRate < 100) return 'high'
+  if (completionRate < 50 && dueDate.getTime() - today.getTime() < 7 * 24 * 60 * 60 * 1000) return 'high'
+  if (completionRate < 75) return 'medium'
+  return 'low'
+}
+
+export function predictDelay(project: ProjectWithRelations): number {
+  const completionRate = calculateCompletionRate(project)
+  if (completionRate === 100) return 0
+
+  const dueDate = project.due_date ? new Date(project.due_date) : null
+  if (!dueDate) return 0
+
+  const today = new Date()
+  const remainingWork = 100 - completionRate
+  const daysUntilDue = Math.ceil((dueDate.getTime() - today.getTime()) / (24 * 60 * 60 * 1000))
+  
+  if (daysUntilDue <= 0) return Math.ceil(remainingWork / 10)
+  return Math.max(0, Math.ceil(remainingWork / 10) - daysUntilDue)
+}
+
+export function analyzeResourceUtilization(project: ProjectWithRelations): number {
+  if (!project.team_members?.length || !project.tasks?.length) return 0
+
+  const assignedTasks = project.tasks.filter(task => task.assignee_id)
+  return (assignedTasks.length / project.tasks.length) * 100
+}
+
+export function generateRecommendations(project: ProjectWithRelations): string[] {
+  const recommendations: string[] = []
+  const completionRate = calculateCompletionRate(project)
+  const riskLevel = assessProjectRisk(project)
+  const resourceUtilization = analyzeResourceUtilization(project)
+
+  if (completionRate < 50) {
+    recommendations.push('Project progress is behind schedule. Consider allocating more resources.')
+  }
+
+  if (riskLevel === 'high') {
+    recommendations.push('High risk detected. Immediate attention required.')
+  }
+
+  if (resourceUtilization < 70) {
+    recommendations.push('Resource utilization is low. Consider optimizing task assignments.')
+  }
+
+  if (!project.tasks?.some(task => task.priority === 'high')) {
+    recommendations.push('No high-priority tasks identified. Review task prioritization.')
+  }
+
+  return recommendations
+}
+
+export const formatDate = (date: string | Date) => {
+  return new Date(date).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric'
+  })
+}
+
+export const formatDateTime = (date: string | Date) => {
+  return new Date(date).toLocaleString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit'
+  })
+}
+
+export const formatCurrency = (amount: number) => {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD'
+  }).format(amount)
+}
+
+export const generateSlug = (text: string) => {
+  return text
+    .toLowerCase()
+    .replace(/[^\w ]+/g, '')
+    .replace(/ +/g, '-')
+}
+
+export const truncateText = (text: string, maxLength: number) => {
+  if (text.length <= maxLength) return text
+  return text.slice(0, maxLength) + '...'
 }
 
 ```
@@ -3973,136 +4097,12 @@ export type CompositeTypes<
 
 ```
 
-### `src\components\tasks\task-form.tsx`
-
-```typescript
-'use client'
-
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
-import { taskSchema } from '@/lib/validations/task'
-import type { DbTask, TaskFormValues } from '@/types/tasks'
-import { PrioritySelect } from '@/components/ui/priority-select'
-import { StatusSelect } from '@/components/ui/status-select'
-
-interface TaskFormProps {
-  task?: DbTask | null
-  onSubmit: (data: TaskFormValues) => Promise<void>
-  onCancel?: () => void
-}
-
-export function TaskForm({ task, onSubmit, onCancel }: TaskFormProps) {
-  const form = useForm<TaskFormValues>({
-    resolver: zodResolver(taskSchema),
-    defaultValues: task ? {
-      ...task,
-      status: task.status,
-      priority: task.priority,
-    } : {
-      title: '',
-      description: '',
-      status: 'todo',
-      priority: undefined,
-      due_date: null,
-      start_date: null,
-      recurring_config: null,
-    }
-  })
-
-  const handleSubmit = async (data: TaskFormValues) => {
-    try {
-      await onSubmit(data)
-      form.reset()
-    } catch (error) {
-      console.error('Failed to submit task:', error)
-    }
-  }
-
-  return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
-        <FormField
-          control={form.control}
-          name="title"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Title</FormLabel>
-              <FormControl>
-                <Input {...field} placeholder="Enter task title" />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="description"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Description</FormLabel>
-              <FormControl>
-                <Textarea {...field} placeholder="Enter task description" />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <StatusSelect<TaskFormValues>
-          name="status"
-          control={form.control}
-        />
-
-        <PrioritySelect<TaskFormValues>
-          name="priority"
-          control={form.control}
-        />
-
-        <FormField
-          control={form.control}
-          name="due_date"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Due Date</FormLabel>
-              <FormControl>
-                <Input 
-                  type="datetime-local" 
-                  {...field} 
-                  value={field.value || ''} 
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <div className="flex justify-end space-x-2">
-          {onCancel && (
-            <Button type="button" variant="outline" onClick={onCancel}>
-              Cancel
-            </Button>
-          )}
-          <Button type="submit">
-            {task ? 'Update' : 'Create'}
-          </Button>
-        </div>
-      </form>
-    </Form>
-  )
-} 
-```
-
 ### `src\components\tasks\task-side-panel.tsx`
 
 ```typescript
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState } from 'react'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { Button } from '@/components/ui/button'
 import { 
@@ -4129,22 +4129,39 @@ import {
   SelectTrigger, 
   SelectValue 
 } from '@/components/ui/select'
-import { useForm } from 'react-hook-form'
+import { useForm, FormProvider } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
 import { useToast } from '@/components/ui/use-toast'
+import type { Json } from '@/types/database.types'
 import { 
   TaskWithRelations,
   TaskStatus,
   TaskPriority,
   taskStatusOptions, 
-  taskPriorityOptions,
-  DbChecklistItem,
-  DbActivityLogEntry
+  taskPriorityOptions
 } from '@/types/tasks'
 import { Database } from '@/types/database.types'
-import type { RecurringConfig } from '@/types/tasks'
-import { User } from '@/types/users'
+
+type ActivityLogEntry = Database['public']['Tables']['activity_log_entries']['Insert']
+
+type TaskWithRelationsResponse = Database['public']['Tables']['tasks']['Row'] & {
+  assignee: {
+    id: string
+    email: string
+    full_name: string
+    role: Database['public']['Enums']['user_role']
+  } | null
+  project: {
+    id: string
+    name: string
+  } | null
+  parent_task: {
+    id: string
+    title: string
+  } | null
+  activity_log_entries: Database['public']['Tables']['activity_log_entries']['Row'][]
+}
 
 const taskSchema = z.object({
   title: z.string().min(1, "Title is required"),
@@ -4153,10 +4170,15 @@ const taskSchema = z.object({
   priority: z.enum(['low', 'medium', 'high', 'urgent'] as const),
   progress: z.number().min(0).max(100).optional(),
   due_date: z.date().optional(),
-  checklist_items: z.array(z.object({
-    text: z.string(),
-    completed: z.boolean()
-  })).optional()
+  start_date: z.date().optional(),
+  category: z.string().optional(),
+  tax_form_type: z.string().optional(),
+  tax_return_id: z.string().optional(),
+  template_id: z.string().optional(),
+  assignee_id: z.string().optional(),
+  assigned_team: z.array(z.string()).optional(),
+  dependencies: z.array(z.string()).optional(),
+  parent_task_id: z.string().optional()
 })
 
 interface TaskSidePanelProps {
@@ -4164,7 +4186,6 @@ interface TaskSidePanelProps {
   onClose: () => void
   task: TaskWithRelations | null
   projectId?: string
-  clientId?: string
   onTaskUpdate?: (task: TaskWithRelations) => void
 }
 
@@ -4173,7 +4194,6 @@ export function TaskSidePanel({
   onClose, 
   task, 
   projectId,
-  clientId,
   onTaskUpdate
 }: TaskSidePanelProps) {
   const { toast } = useToast()
@@ -4186,13 +4206,18 @@ export function TaskSidePanel({
       title: task?.title || '',
       description: task?.description || '',
       status: (task?.status || 'todo') as TaskStatus,
-      priority: task?.priority || 'medium',
+      priority: (task?.priority || 'medium') as TaskPriority,
       progress: task?.progress || 0,
       due_date: task?.due_date ? new Date(task.due_date) : undefined,
-      checklist_items: task?.checklist_items?.map(item => ({
-        text: item.text,
-        completed: item.completed
-      })) || []
+      start_date: task?.start_date ? new Date(task.start_date) : undefined,
+      category: task?.category || undefined,
+      tax_form_type: task?.tax_form_type || undefined,
+      tax_return_id: task?.tax_return_id || undefined,
+      template_id: task?.template_id || undefined,
+      assignee_id: task?.assignee_id || undefined,
+      assigned_team: task?.assigned_team || undefined,
+      dependencies: task?.dependencies || undefined,
+      parent_task_id: task?.parent_task_id || undefined
     }
   })
 
@@ -4206,7 +4231,16 @@ export function TaskSidePanel({
         priority: values.priority,
         progress: values.progress,
         due_date: values.due_date?.toISOString(),
+        start_date: values.start_date?.toISOString(),
         project_id: projectId,
+        category: values.category,
+        tax_form_type: values.tax_form_type,
+        tax_return_id: values.tax_return_id,
+        template_id: values.template_id,
+        assignee_id: values.assignee_id,
+        assigned_team: values.assigned_team,
+        dependencies: values.dependencies,
+        parent_task_id: values.parent_task_id,
         updated_at: new Date().toISOString()
       }
 
@@ -4226,38 +4260,16 @@ export function TaskSidePanel({
 
         if (taskError) throw taskError
 
-        // Update checklist items
-        if (values.checklist_items) {
-          // Delete existing items
-          await supabase
-            .from('checklist_items')
-            .delete()
-            .eq('task_id', task.id)
-
-          // Insert new items
-          if (values.checklist_items.length > 0) {
-            const { error: checklistError } = await supabase
-              .from('checklist_items')
-              .insert(
-                values.checklist_items.map(item => ({
-                  task_id: task.id,
-                  text: item.text,
-                  completed: item.completed
-                }))
-              )
-
-            if (checklistError) throw checklistError
-          }
+        // Add activity log entry
+        const activityEntry: ActivityLogEntry = {
+          task_id: task.id,
+          action: 'updated',
+          details: { updates: baseData } as Json
         }
 
-        // Add activity log entry
         const { error: activityError } = await supabase
           .from('activity_log_entries')
-          .insert({
-            task_id: task.id,
-            type: 'updated',
-            details: { updates: baseData }
-          })
+          .insert(activityEntry)
 
         if (activityError) throw activityError
 
@@ -4269,7 +4281,6 @@ export function TaskSidePanel({
             assignee:users(id, email, full_name, role),
             project:projects(id, name),
             parent_task:tasks(id, title),
-            checklist_items(*),
             activity_log_entries(*)
           `)
           .eq('id', task.id)
@@ -4283,7 +4294,11 @@ export function TaskSidePanel({
         })
 
         if (onTaskUpdate && taskWithRelations) {
-          onTaskUpdate(taskWithRelations as TaskWithRelations)
+          const updatedTaskWithRelations = taskWithRelations as unknown as TaskWithRelationsResponse
+          onTaskUpdate({
+            ...updatedTaskWithRelations,
+            recurring_config: updatedTaskWithRelations.recurring_config as any,
+          } as TaskWithRelations)
         }
       } else {
         // Create new task
@@ -4303,29 +4318,16 @@ export function TaskSidePanel({
 
         if (taskError) throw taskError
 
-        // Add checklist items if provided
-        if (values.checklist_items?.length) {
-          const { error: checklistError } = await supabase
-            .from('checklist_items')
-            .insert(
-              values.checklist_items.map(item => ({
-                task_id: newTask.id,
-                text: item.text,
-                completed: item.completed
-              }))
-            )
-
-          if (checklistError) throw checklistError
+        // Add initial activity log entry
+        const activityEntry: ActivityLogEntry = {
+          task_id: newTask.id,
+          action: 'created',
+          details: { status: newTask.status } as Json
         }
 
-        // Add initial activity log entry
         const { error: activityError } = await supabase
           .from('activity_log_entries')
-          .insert({
-            task_id: newTask.id,
-            type: 'created',
-            details: { status: newTask.status }
-          })
+          .insert(activityEntry)
 
         if (activityError) throw activityError
 
@@ -4337,7 +4339,6 @@ export function TaskSidePanel({
             assignee:users(id, email, full_name, role),
             project:projects(id, name),
             parent_task:tasks(id, title),
-            checklist_items(*),
             activity_log_entries(*)
           `)
           .eq('id', newTask.id)
@@ -4351,7 +4352,11 @@ export function TaskSidePanel({
         })
 
         if (onTaskUpdate && taskWithRelations) {
-          onTaskUpdate(taskWithRelations as TaskWithRelations)
+          const createdTaskWithRelations = taskWithRelations as unknown as TaskWithRelationsResponse
+          onTaskUpdate({
+            ...createdTaskWithRelations,
+            recurring_config: createdTaskWithRelations.recurring_config as any,
+          } as TaskWithRelations)
         }
       }
 
@@ -4378,141 +4383,98 @@ export function TaskSidePanel({
           </SheetDescription>
         </SheetHeader>
 
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 mt-4">
-            <FormField
-              control={form.control}
-              name="title"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Title</FormLabel>
-                  <FormControl>
-                    <Input {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="description"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Description</FormLabel>
-                  <FormControl>
-                    <Textarea {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="status"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Status</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+        <div className="space-y-4 mt-4">
+          <Form form={form}>
+            <form onSubmit={form.handleSubmit(onSubmit)}>
+              <FormField
+                control={form.control}
+                name="title"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Title</FormLabel>
                     <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select status" />
-                      </SelectTrigger>
+                      <Input {...field} />
                     </FormControl>
-                    <SelectContent>
-                      {taskStatusOptions.map(status => (
-                        <SelectItem key={status} value={status}>
-                          {status}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-            <FormField
-              control={form.control}
-              name="priority"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Priority</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+              <FormField
+                control={form.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Description</FormLabel>
                     <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select priority" />
-                      </SelectTrigger>
+                      <Textarea {...field} />
                     </FormControl>
-                    <SelectContent>
-                      {taskPriorityOptions.map(priority => (
-                        <SelectItem key={priority} value={priority}>
-                          {priority}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-            <FormField
-              control={form.control}
-              name="checklist_items"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Checklist Items</FormLabel>
-                  <div className="space-y-2">
-                    {field.value?.map((item, index) => (
-                      <div key={index} className="flex items-center gap-2">
-                        <Input
-                          value={item.text}
-                          onChange={(e) => {
-                            const newItems = [...(field.value || [])]
-                            newItems[index] = { ...newItems[index], text: e.target.value }
-                            field.onChange(newItems)
-                          }}
-                          placeholder="Checklist item"
-                        />
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={() => {
-                            const newItems = field.value?.filter((_, i) => i !== index)
-                            field.onChange(newItems)
-                          }}
-                        >
-                          Remove
-                        </Button>
-                      </div>
-                    ))}
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => {
-                        field.onChange([...(field.value || []), { text: '', completed: false }])
-                      }}
-                    >
-                      Add Item
-                    </Button>
-                  </div>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+              <FormField
+                control={form.control}
+                name="status"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Status</FormLabel>
+                    <FormControl>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {taskStatusOptions.map(status => (
+                            <SelectItem key={status} value={status}>
+                              {status}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-            <div className="flex justify-end space-x-2">
-              <Button type="button" variant="outline" onClick={onClose}>
-                Cancel
-              </Button>
-              <Button type="submit" disabled={loading}>
-                {loading ? 'Saving...' : task ? 'Update' : 'Create'}
-              </Button>
-            </div>
-          </form>
-        </Form>
+              <FormField
+                control={form.control}
+                name="priority"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Priority</FormLabel>
+                    <FormControl>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select priority" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {taskPriorityOptions.map(priority => (
+                            <SelectItem key={priority} value={priority}>
+                              {priority}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <div className="flex justify-end space-x-2 mt-4">
+                <Button type="button" variant="outline" onClick={onClose}>
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={loading}>
+                  {loading ? 'Saving...' : task ? 'Update' : 'Create'}
+                </Button>
+              </div>
+            </form>
+          </Form>
+        </div>
       </SheetContent>
     </Sheet>
   )
@@ -5982,8 +5944,8 @@ export {
 |------|------------|
 | src/types/database.types.ts | 51.4 |
 | src\components\ui\sidebar.tsx | 22.8 |
-| src\components\tasks\task-side-panel.tsx | 12.6 |
 | src\components\templates\template-form.tsx | 11.9 |
+| src\components\tasks\task-side-panel.tsx | 11.8 |
 | src\components\templates\create-template-dialog.tsx | 10.1 |
 | src/hooks/useProjectManagement.ts | 10.0 |
 | src/hooks/useProjects.ts | 8.4 |

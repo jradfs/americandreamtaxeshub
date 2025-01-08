@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState } from 'react'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { Button } from '@/components/ui/button'
 import { 
@@ -27,22 +27,39 @@ import {
   SelectTrigger, 
   SelectValue 
 } from '@/components/ui/select'
-import { useForm } from 'react-hook-form'
+import { useForm, FormProvider } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
 import { useToast } from '@/components/ui/use-toast'
+import type { Json } from '@/types/database.types'
 import { 
   TaskWithRelations,
   TaskStatus,
   TaskPriority,
   taskStatusOptions, 
-  taskPriorityOptions,
-  DbChecklistItem,
-  DbActivityLogEntry
+  taskPriorityOptions
 } from '@/types/tasks'
 import { Database } from '@/types/database.types'
-import type { RecurringConfig } from '@/types/tasks'
-import { User } from '@/types/users'
+
+type ActivityLogEntry = Database['public']['Tables']['activity_log_entries']['Insert']
+
+type TaskWithRelationsResponse = Database['public']['Tables']['tasks']['Row'] & {
+  assignee: {
+    id: string
+    email: string
+    full_name: string
+    role: Database['public']['Enums']['user_role']
+  } | null
+  project: {
+    id: string
+    name: string
+  } | null
+  parent_task: {
+    id: string
+    title: string
+  } | null
+  activity_log_entries: Database['public']['Tables']['activity_log_entries']['Row'][]
+}
 
 const taskSchema = z.object({
   title: z.string().min(1, "Title is required"),
@@ -51,10 +68,15 @@ const taskSchema = z.object({
   priority: z.enum(['low', 'medium', 'high', 'urgent'] as const),
   progress: z.number().min(0).max(100).optional(),
   due_date: z.date().optional(),
-  checklist_items: z.array(z.object({
-    text: z.string(),
-    completed: z.boolean()
-  })).optional()
+  start_date: z.date().optional(),
+  category: z.string().optional(),
+  tax_form_type: z.string().optional(),
+  tax_return_id: z.string().optional(),
+  template_id: z.string().optional(),
+  assignee_id: z.string().optional(),
+  assigned_team: z.array(z.string()).optional(),
+  dependencies: z.array(z.string()).optional(),
+  parent_task_id: z.string().optional()
 })
 
 interface TaskSidePanelProps {
@@ -62,7 +84,6 @@ interface TaskSidePanelProps {
   onClose: () => void
   task: TaskWithRelations | null
   projectId?: string
-  clientId?: string
   onTaskUpdate?: (task: TaskWithRelations) => void
 }
 
@@ -71,7 +92,6 @@ export function TaskSidePanel({
   onClose, 
   task, 
   projectId,
-  clientId,
   onTaskUpdate
 }: TaskSidePanelProps) {
   const { toast } = useToast()
@@ -84,13 +104,18 @@ export function TaskSidePanel({
       title: task?.title || '',
       description: task?.description || '',
       status: (task?.status || 'todo') as TaskStatus,
-      priority: task?.priority || 'medium',
+      priority: (task?.priority || 'medium') as TaskPriority,
       progress: task?.progress || 0,
       due_date: task?.due_date ? new Date(task.due_date) : undefined,
-      checklist_items: task?.checklist_items?.map(item => ({
-        text: item.text,
-        completed: item.completed
-      })) || []
+      start_date: task?.start_date ? new Date(task.start_date) : undefined,
+      category: task?.category || undefined,
+      tax_form_type: task?.tax_form_type || undefined,
+      tax_return_id: task?.tax_return_id || undefined,
+      template_id: task?.template_id || undefined,
+      assignee_id: task?.assignee_id || undefined,
+      assigned_team: task?.assigned_team || undefined,
+      dependencies: task?.dependencies || undefined,
+      parent_task_id: task?.parent_task_id || undefined
     }
   })
 
@@ -104,7 +129,16 @@ export function TaskSidePanel({
         priority: values.priority,
         progress: values.progress,
         due_date: values.due_date?.toISOString(),
+        start_date: values.start_date?.toISOString(),
         project_id: projectId,
+        category: values.category,
+        tax_form_type: values.tax_form_type,
+        tax_return_id: values.tax_return_id,
+        template_id: values.template_id,
+        assignee_id: values.assignee_id,
+        assigned_team: values.assigned_team,
+        dependencies: values.dependencies,
+        parent_task_id: values.parent_task_id,
         updated_at: new Date().toISOString()
       }
 
@@ -124,38 +158,16 @@ export function TaskSidePanel({
 
         if (taskError) throw taskError
 
-        // Update checklist items
-        if (values.checklist_items) {
-          // Delete existing items
-          await supabase
-            .from('checklist_items')
-            .delete()
-            .eq('task_id', task.id)
-
-          // Insert new items
-          if (values.checklist_items.length > 0) {
-            const { error: checklistError } = await supabase
-              .from('checklist_items')
-              .insert(
-                values.checklist_items.map(item => ({
-                  task_id: task.id,
-                  text: item.text,
-                  completed: item.completed
-                }))
-              )
-
-            if (checklistError) throw checklistError
-          }
+        // Add activity log entry
+        const activityEntry: ActivityLogEntry = {
+          task_id: task.id,
+          action: 'updated',
+          details: { updates: baseData } as Json
         }
 
-        // Add activity log entry
         const { error: activityError } = await supabase
           .from('activity_log_entries')
-          .insert({
-            task_id: task.id,
-            type: 'updated',
-            details: { updates: baseData }
-          })
+          .insert(activityEntry)
 
         if (activityError) throw activityError
 
@@ -167,7 +179,6 @@ export function TaskSidePanel({
             assignee:users(id, email, full_name, role),
             project:projects(id, name),
             parent_task:tasks(id, title),
-            checklist_items(*),
             activity_log_entries(*)
           `)
           .eq('id', task.id)
@@ -181,7 +192,11 @@ export function TaskSidePanel({
         })
 
         if (onTaskUpdate && taskWithRelations) {
-          onTaskUpdate(taskWithRelations as TaskWithRelations)
+          const updatedTaskWithRelations = taskWithRelations as unknown as TaskWithRelationsResponse
+          onTaskUpdate({
+            ...updatedTaskWithRelations,
+            recurring_config: updatedTaskWithRelations.recurring_config as any,
+          } as TaskWithRelations)
         }
       } else {
         // Create new task
@@ -201,29 +216,16 @@ export function TaskSidePanel({
 
         if (taskError) throw taskError
 
-        // Add checklist items if provided
-        if (values.checklist_items?.length) {
-          const { error: checklistError } = await supabase
-            .from('checklist_items')
-            .insert(
-              values.checklist_items.map(item => ({
-                task_id: newTask.id,
-                text: item.text,
-                completed: item.completed
-              }))
-            )
-
-          if (checklistError) throw checklistError
+        // Add initial activity log entry
+        const activityEntry: ActivityLogEntry = {
+          task_id: newTask.id,
+          action: 'created',
+          details: { status: newTask.status } as Json
         }
 
-        // Add initial activity log entry
         const { error: activityError } = await supabase
           .from('activity_log_entries')
-          .insert({
-            task_id: newTask.id,
-            type: 'created',
-            details: { status: newTask.status }
-          })
+          .insert(activityEntry)
 
         if (activityError) throw activityError
 
@@ -235,7 +237,6 @@ export function TaskSidePanel({
             assignee:users(id, email, full_name, role),
             project:projects(id, name),
             parent_task:tasks(id, title),
-            checklist_items(*),
             activity_log_entries(*)
           `)
           .eq('id', newTask.id)
@@ -249,7 +250,11 @@ export function TaskSidePanel({
         })
 
         if (onTaskUpdate && taskWithRelations) {
-          onTaskUpdate(taskWithRelations as TaskWithRelations)
+          const createdTaskWithRelations = taskWithRelations as unknown as TaskWithRelationsResponse
+          onTaskUpdate({
+            ...createdTaskWithRelations,
+            recurring_config: createdTaskWithRelations.recurring_config as any,
+          } as TaskWithRelations)
         }
       }
 
@@ -276,141 +281,98 @@ export function TaskSidePanel({
           </SheetDescription>
         </SheetHeader>
 
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 mt-4">
-            <FormField
-              control={form.control}
-              name="title"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Title</FormLabel>
-                  <FormControl>
-                    <Input {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="description"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Description</FormLabel>
-                  <FormControl>
-                    <Textarea {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="status"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Status</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+        <div className="space-y-4 mt-4">
+          <Form form={form}>
+            <form onSubmit={form.handleSubmit(onSubmit)}>
+              <FormField
+                control={form.control}
+                name="title"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Title</FormLabel>
                     <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select status" />
-                      </SelectTrigger>
+                      <Input {...field} />
                     </FormControl>
-                    <SelectContent>
-                      {taskStatusOptions.map(status => (
-                        <SelectItem key={status} value={status}>
-                          {status}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-            <FormField
-              control={form.control}
-              name="priority"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Priority</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+              <FormField
+                control={form.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Description</FormLabel>
                     <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select priority" />
-                      </SelectTrigger>
+                      <Textarea {...field} />
                     </FormControl>
-                    <SelectContent>
-                      {taskPriorityOptions.map(priority => (
-                        <SelectItem key={priority} value={priority}>
-                          {priority}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-            <FormField
-              control={form.control}
-              name="checklist_items"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Checklist Items</FormLabel>
-                  <div className="space-y-2">
-                    {field.value?.map((item, index) => (
-                      <div key={index} className="flex items-center gap-2">
-                        <Input
-                          value={item.text}
-                          onChange={(e) => {
-                            const newItems = [...(field.value || [])]
-                            newItems[index] = { ...newItems[index], text: e.target.value }
-                            field.onChange(newItems)
-                          }}
-                          placeholder="Checklist item"
-                        />
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={() => {
-                            const newItems = field.value?.filter((_, i) => i !== index)
-                            field.onChange(newItems)
-                          }}
-                        >
-                          Remove
-                        </Button>
-                      </div>
-                    ))}
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => {
-                        field.onChange([...(field.value || []), { text: '', completed: false }])
-                      }}
-                    >
-                      Add Item
-                    </Button>
-                  </div>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+              <FormField
+                control={form.control}
+                name="status"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Status</FormLabel>
+                    <FormControl>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {taskStatusOptions.map(status => (
+                            <SelectItem key={status} value={status}>
+                              {status}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-            <div className="flex justify-end space-x-2">
-              <Button type="button" variant="outline" onClick={onClose}>
-                Cancel
-              </Button>
-              <Button type="submit" disabled={loading}>
-                {loading ? 'Saving...' : task ? 'Update' : 'Create'}
-              </Button>
-            </div>
-          </form>
-        </Form>
+              <FormField
+                control={form.control}
+                name="priority"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Priority</FormLabel>
+                    <FormControl>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select priority" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {taskPriorityOptions.map(priority => (
+                            <SelectItem key={priority} value={priority}>
+                              {priority}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <div className="flex justify-end space-x-2 mt-4">
+                <Button type="button" variant="outline" onClick={onClose}>
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={loading}>
+                  {loading ? 'Saving...' : task ? 'Update' : 'Create'}
+                </Button>
+              </div>
+            </form>
+          </Form>
+        </div>
       </SheetContent>
     </Sheet>
   )
