@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react'
-import { supabase } from '@/lib/supabase'
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { TaxReturn } from '@/types/hooks'
 import { useAuth } from '@/components/providers/auth-provider'
 import { toast } from '@/components/ui/use-toast'
+import type { Database } from '@/types/database.types'
 
 export function useTaxReturns(clientId?: string) {
+  const supabase = createClientComponentClient<Database>()
   const [taxReturns, setTaxReturns] = useState<TaxReturn[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)

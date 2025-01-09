@@ -18,13 +18,15 @@ export default async function DashboardPage() {
     return <DashboardTabs {...metrics} />;
   } catch (error) {
     console.error('Error loading dashboard:', error);
-    // Return a fallback UI with zero values
+    // Return a fallback UI with zero values and error message
     return (
       <DashboardTabs 
         totalActiveClients={0}
         pendingTaxReturns={0}
         activeProjects={0}
         upcomingDeadlines={0}
+        errorTitle="Error Loading Dashboard"
+        errorMessage="Unable to load dashboard metrics. Please try again later."
       />
     );
   }

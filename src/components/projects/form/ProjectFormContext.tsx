@@ -1,16 +1,11 @@
 'use client';
 
 import { createContext, useContext } from 'react';
-import { UseFormReturn } from 'react-hook-form';
-import { ProjectFormValues } from '@/lib/validations/project';
-import { ServiceType } from '@/types/projects';
+import type { UseFormReturn } from 'react-hook-form';
+import type { ProjectFormData } from '@/types/projects';
 
 interface ProjectFormContextType {
-  form: UseFormReturn<ProjectFormValues>;
-  isSubmitting: boolean;
-  progress: number;
-  onServiceTypeChange: (type: ServiceType | null) => void;
-  onTemplateSelect: (templateId: string) => void;
+  form: UseFormReturn<ProjectFormData>;
 }
 
 const ProjectFormContext = createContext<ProjectFormContextType | undefined>(
@@ -20,23 +15,12 @@ const ProjectFormContext = createContext<ProjectFormContextType | undefined>(
 export function ProjectFormProvider({
   children,
   form,
-  isSubmitting,
-  progress,
-  onServiceTypeChange,
-  onTemplateSelect,
-}: ProjectFormContextType & {
+}: {
   children: React.ReactNode;
+  form: UseFormReturn<ProjectFormData>;
 }) {
   return (
-    <ProjectFormContext.Provider
-      value={{
-        form,
-        isSubmitting,
-        progress,
-        onServiceTypeChange,
-        onTemplateSelect,
-      }}
-    >
+    <ProjectFormContext.Provider value={{ form }}>
       {children}
     </ProjectFormContext.Provider>
   );

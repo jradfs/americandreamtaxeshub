@@ -78,6 +78,7 @@ export const clientFormSchema = z.object({
   business_type: z.string().nullable(),
   tax_id: z.string().nullable(),
   notes: z.string().nullable(),
+  onboarding_notes: z.string().nullable(),
   business_tax_id: z.string().regex(/^\d{2}-?\d{7}$/, 'Invalid EIN format').nullable(),
   individual_tax_id: z.string().regex(/^\d{3}-?\d{2}-?\d{4}$/, 'Invalid SSN format').nullable(),
   industry_code: z.string().regex(/^\d{6}$/, 'Invalid NAICS code format').nullable(),
@@ -94,7 +95,13 @@ export const clientFormSchema = z.object({
   type: z.enum(['business', 'individual'] as const satisfies readonly DbEnums['client_type']).nullable(),
   
   // JSON fields
-  contact_info: contactInfoSchema,
+  contact_details: z.object({
+    phone: phoneSchema,
+    address: z.string().nullable(),
+    city: z.string().nullable(),
+    state: z.string().length(2, 'State should be a 2-letter code').nullable(),
+    zip: zipSchema,
+  }).nullable(),
   tax_info: taxInfoSchema,
 });
 

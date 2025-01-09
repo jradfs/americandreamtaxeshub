@@ -3,10 +3,12 @@
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form'
+import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage, FormProvider } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
 import { clientFormSchema, type ClientFormSchema } from '@/lib/validations/client'
 import { DbClient, DbClientContactDetails, TaxInfo } from '@/types/clients'
+import { Button } from '@/components/ui/button'
 
 interface ClientFormProps {
   client?: DbClient & {
@@ -14,9 +16,11 @@ interface ClientFormProps {
     tax_info?: TaxInfo | null
   } | null
   onSubmit: (data: ClientFormSchema) => Promise<void>
+  defaultValues?: Partial<ClientFormSchema>
+  isEditing?: boolean
 }
 
-export function ClientForm({ client, onSubmit }: ClientFormProps) {
+export function ClientForm({ client, onSubmit, defaultValues, isEditing = false }: ClientFormProps) {
   const form = useForm<ClientFormSchema>({
     resolver: zodResolver(clientFormSchema),
     defaultValues: {
@@ -26,6 +30,7 @@ export function ClientForm({ client, onSubmit }: ClientFormProps) {
       contact_email: client?.contact_email || '',
       status: client?.status || 'pending',
       type: client?.type || 'individual',
+      onboarding_notes: client?.onboarding_notes || '',
       contact_details: client?.contact_details || {
         phone: '',
         address: '',
@@ -55,11 +60,11 @@ export function ClientForm({ client, onSubmit }: ClientFormProps) {
   }
 
   return (
-    <Form form={form}>
+    <FormProvider {...form}>
       <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
         <Card>
           <CardHeader>
-            <CardTitle>Basic Information</CardTitle>
+            <CardTitle>Client Information</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <FormField
@@ -69,7 +74,7 @@ export function ClientForm({ client, onSubmit }: ClientFormProps) {
                 <FormItem>
                   <FormLabel>Full Name</FormLabel>
                   <FormControl>
-                    <Input {...field} placeholder="Enter full name" />
+                    <Input {...field} placeholder="Full name" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -83,7 +88,7 @@ export function ClientForm({ client, onSubmit }: ClientFormProps) {
                 <FormItem>
                   <FormLabel>Company Name</FormLabel>
                   <FormControl>
-                    <Input {...field} placeholder="Enter company name" />
+                    <Input {...field} placeholder="Company name (if applicable)" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -95,9 +100,23 @@ export function ClientForm({ client, onSubmit }: ClientFormProps) {
               name="contact_email"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Contact Email</FormLabel>
+                  <FormLabel>Email</FormLabel>
                   <FormControl>
-                    <Input {...field} type="email" placeholder="Enter contact email" />
+                    <Input {...field} type="email" placeholder="Email address" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="onboarding_notes"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Onboarding Notes</FormLabel>
+                  <FormControl>
+                    <Textarea {...field} placeholder="Add any onboarding notes" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -106,134 +125,12 @@ export function ClientForm({ client, onSubmit }: ClientFormProps) {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Contact Details</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <FormField
-              control={form.control}
-              name="contact_details.phone"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Phone</FormLabel>
-                  <FormControl>
-                    <Input {...field} type="tel" placeholder="Enter phone number" />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="contact_details.address"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Address</FormLabel>
-                  <FormControl>
-                    <Input {...field} placeholder="Enter street address" />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="contact_details.city"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>City</FormLabel>
-                    <FormControl>
-                      <Input {...field} placeholder="Enter city" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="contact_details.state"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>State</FormLabel>
-                    <FormControl>
-                      <Input {...field} placeholder="Enter state" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            <FormField
-              control={form.control}
-              name="contact_details.zip"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>ZIP Code</FormLabel>
-                  <FormControl>
-                    <Input {...field} placeholder="Enter ZIP code" />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Tax Information</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <FormField
-              control={form.control}
-              name="tax_info.tax_id"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Tax ID</FormLabel>
-                  <FormControl>
-                    <Input {...field} placeholder="Enter tax ID" />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="tax_info.filing_status"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Filing Status</FormLabel>
-                  <FormControl>
-                    <Input {...field} placeholder="Enter filing status" />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="tax_info.tax_year"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Tax Year</FormLabel>
-                  <FormControl>
-                    <Input {...field} type="number" placeholder="Enter tax year" />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </CardContent>
-        </Card>
+        <div className="flex justify-end space-x-2">
+          <Button type="submit">
+            {isEditing ? 'Update Client' : 'Create Client'}
+          </Button>
+        </div>
       </form>
-    </Form>
+    </FormProvider>
   )
 } 

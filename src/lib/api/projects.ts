@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { Tables } from '@/types/database.types';
 import { ProjectFormValues } from '@/types/projects';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 
 export async function createProject(
   projectData: ProjectFormValues
@@ -29,7 +30,7 @@ export async function createProjectFromTemplate(
   projectData: ProjectFormValues,
   templateId: string
 ): Promise<Tables<'projects'> | null> {
-  const supabase = createClient();
+  const supabase = createClientComponentClient();
   
   const { data: project, error } = await supabase
     .rpc('create_project_from_template', {
@@ -42,5 +43,12 @@ export async function createProjectFromTemplate(
     return null;
   }
 
-  return project;
+  // Validate returned project has required fields
+  if (!project || typeof project !== 'object' || !('id' in project)) {
+    console.error('Invalid project data returned from RPC create_project_from_template');
+    return null;
+  }
+
+  // Type assertion after validation
+  return project as Tables<'projects'>;
 }

@@ -16,21 +16,18 @@ import { cn } from "@/lib/utils"
 import { Label } from "@/components/ui/label"
 
 const Form = React.forwardRef<
-  HTMLDivElement,
-  React.ComponentProps<"div"> & {
-    form: any
-  }
->(({ form, className, children, ...props }, ref) => {
+  HTMLFormElement,
+  React.ComponentProps<"form">
+>(({ className, onSubmit, children, ...props }, ref) => {
   return (
-    <FormProvider {...form}>
-      <div
-        ref={ref}
-        className={cn("space-y-8", className)}
-        {...props}
-      >
-        {children}
-      </div>
-    </FormProvider>
+    <form
+      ref={ref}
+      className={cn("space-y-8", className)}
+      onSubmit={onSubmit}
+      {...props}
+    >
+      {children}
+    </form>
   )
 })
 Form.displayName = "Form"
@@ -204,4 +201,5 @@ export {
   FormField,
   FormFieldContext,
   FormItemContext,
+  FormProvider,
 }

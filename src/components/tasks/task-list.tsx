@@ -1,56 +1,155 @@
 'use client'
 
-import type { Database } from '@/types/database.types'
-
-type DbTaskInsert = Database['public']['Tables']['tasks']['Insert']
+import { useState, useEffect } from 'react'
+import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Skeleton } from '@/components/ui/skeleton'
+import { TaskDialog } from './task-dialog'
+import { TaskWithRelations, TaskFormData, toTaskFormData } from '@/types/tasks'
+import { ErrorBoundary } from '@/components/error-boundary'
 
 interface TaskListProps {
-  tasks: DbTaskInsert[]
+  tasks: TaskWithRelations[]
   isLoading?: boolean
-  onUpdate?: (task: DbTaskInsert, index: number) => void
-  onDelete?: (index: number) => void
-  onReorder?: (tasks: DbTaskInsert[]) => void
+  totalTasks: number
+  currentPage: number
+  totalPages: number
+  onUpdate: (taskId: string, data: TaskFormData) => Promise<void>
+  onDelete: (taskId: string) => Promise<void>
+  onCreate?: (data: TaskFormData) => Promise<void>
+  onPageChange: (page: number) => void
 }
 
-export function TaskList({ 
-  tasks, 
+export function TaskList({
+  tasks,
   isLoading = false,
+  totalTasks,
+  currentPage,
+  totalPages,
   onUpdate,
   onDelete,
-  onReorder 
+  onCreate,
+  onPageChange
 }: TaskListProps) {
-  if (isLoading) {
-    return <div>Loading tasks...</div>
+  const [dialogOpen, setDialogOpen] = useState(false)
+  const [selectedTask, setSelectedTask] = useState<TaskWithRelations | null>(null)
+
+  const handleSubmit = async (data: TaskFormData) => {
+    if (selectedTask) {
+      await onUpdate(selectedTask.id, data)
+    } else if (onCreate) {
+      await onCreate(data)
+    }
+    setDialogOpen(false)
+    setSelectedTask(null)
   }
 
-  if (!tasks.length) {
-    return <div>No tasks found</div>
+  // Prefetch next page when near the end of the list
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && currentPage < totalPages) {
+          onPageChange(currentPage + 1)
+        }
+      },
+      { threshold: 0.5 }
+    )
+
+    const sentinel = document.getElementById('task-list-sentinel')
+    if (sentinel) {
+      observer.observe(sentinel)
+    }
+
+    return () => observer.disconnect()
+  }, [currentPage, totalPages, onPageChange])
+
+  if (isLoading && tasks.length === 0) {
+    return (
+      <div className="space-y-4">
+        {[...Array(3)].map((_, i) => (
+          <Card key={i} className="p-4">
+            <Skeleton className="h-6 w-2/3 mb-2" />
+            <Skeleton className="h-4 w-1/2" />
+          </Card>
+        ))}
+      </div>
+    )
   }
 
   return (
-    <div className="space-y-2">
-      {tasks.map((task, index) => (
-        <div key={index} className="p-4 border rounded-lg">
-          <div className="flex justify-between items-center">
-            <div>
-              <h4 className="font-medium">{task.title}</h4>
-              {task.description && <p className="text-sm text-gray-500">{task.description}</p>}
-            </div>
-            <div className="flex gap-2">
-              {onUpdate && (
-                <button onClick={() => onUpdate(task, index)} className="text-blue-500">
-                  Edit
-                </button>
-              )}
-              {onDelete && (
-                <button onClick={() => onDelete(index)} className="text-red-500">
-                  Delete
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-      ))}
-    </div>
+    <ErrorBoundary>
+      <div className="space-y-4">
+        {tasks.length === 0 ? (
+          <Card className="p-4">
+            <CardHeader>
+              <CardTitle>No tasks found</CardTitle>
+              <CardDescription>
+                {onCreate ? 'Create a new task to get started.' : 'No tasks match your criteria.'}
+              </CardDescription>
+            </CardHeader>
+          </Card>
+        ) : (
+          <>
+            {tasks.map((task) => (
+              <Card key={task.id} className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="font-medium">{task.title}</h3>
+                    {task.description && (
+                      <p className="text-sm text-gray-500">{task.description}</p>
+                    )}
+                    <div className="mt-2 flex gap-2">
+                      <span className="text-xs px-2 py-1 rounded-full bg-gray-100">
+                        {task.status}
+                      </span>
+                      {task.priority && (
+                        <span className="text-xs px-2 py-1 rounded-full bg-gray-100">
+                          {task.priority}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setSelectedTask(task)
+                        setDialogOpen(true)
+                      }}
+                    >
+                      Edit
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => onDelete(task.id)}
+                    >
+                      Delete
+                    </Button>
+                  </div>
+                </div>
+              </Card>
+            ))}
+            {currentPage < totalPages && (
+              <div id="task-list-sentinel" className="h-4" />
+            )}
+            {isLoading && (
+              <Card className="p-4">
+                <Skeleton className="h-6 w-2/3 mb-2" />
+                <Skeleton className="h-4 w-1/2" />
+              </Card>
+            )}
+          </>
+        )}
+
+        <TaskDialog
+          isOpen={dialogOpen}
+          setIsOpen={setDialogOpen}
+          taskData={selectedTask}
+          onSubmit={handleSubmit}
+        />
+      </div>
+    </ErrorBoundary>
   )
 }

@@ -40,6 +40,8 @@ import {
   taskPriorityOptions
 } from '@/types/tasks'
 import { Database } from '@/types/database.types'
+import { taskSchema } from '@/lib/validations/task'
+import type { TaskFormSchema } from '@/lib/validations/task'
 
 type ActivityLogEntry = Database['public']['Tables']['activity_log_entries']['Insert']
 
@@ -61,23 +63,11 @@ type TaskWithRelationsResponse = Database['public']['Tables']['tasks']['Row'] & 
   activity_log_entries: Database['public']['Tables']['activity_log_entries']['Row'][]
 }
 
-const taskSchema = z.object({
-  title: z.string().min(1, "Title is required"),
-  description: z.string().optional(),
-  status: z.enum(['todo', 'in_progress', 'review', 'completed'] as const),
-  priority: z.enum(['low', 'medium', 'high', 'urgent'] as const),
-  progress: z.number().min(0).max(100).optional(),
-  due_date: z.date().optional(),
-  start_date: z.date().optional(),
-  category: z.string().optional(),
-  tax_form_type: z.string().optional(),
-  tax_return_id: z.string().optional(),
-  template_id: z.string().optional(),
-  assignee_id: z.string().optional(),
-  assigned_team: z.array(z.string()).optional(),
-  dependencies: z.array(z.string()).optional(),
-  parent_task_id: z.string().optional()
-})
+type DbTask = Database['public']['Tables']['tasks']['Row']
+type DbTaskInsert = Database['public']['Tables']['tasks']['Insert']
+type DbTaskUpdate = Database['public']['Tables']['tasks']['Update']
+
+type FormData = TaskFormSchema
 
 interface TaskSidePanelProps {
   isOpen: boolean
@@ -98,163 +88,147 @@ export function TaskSidePanel({
   const [loading, setLoading] = useState(false)
   const supabase = createClientComponentClient<Database>()
   
-  const form = useForm<z.infer<typeof taskSchema>>({
+  const form = useForm<FormData>({
     resolver: zodResolver(taskSchema),
-    defaultValues: {
-      title: task?.title || '',
-      description: task?.description || '',
-      status: (task?.status || 'todo') as TaskStatus,
-      priority: (task?.priority || 'medium') as TaskPriority,
-      progress: task?.progress || 0,
-      due_date: task?.due_date ? new Date(task.due_date) : undefined,
-      start_date: task?.start_date ? new Date(task.start_date) : undefined,
-      category: task?.category || undefined,
-      tax_form_type: task?.tax_form_type || undefined,
-      tax_return_id: task?.tax_return_id || undefined,
-      template_id: task?.template_id || undefined,
-      assignee_id: task?.assignee_id || undefined,
-      assigned_team: task?.assigned_team || undefined,
-      dependencies: task?.dependencies || undefined,
-      parent_task_id: task?.parent_task_id || undefined
+    defaultValues: task ? {
+      title: task.title,
+      description: task.description || '',
+      project_id: task.project_id,
+      assignee_id: task.assignee_id || undefined,
+      status: task.status as TaskStatus || 'todo',
+      priority: task.priority as TaskPriority || 'medium',
+      due_date: task.due_date || null,
+      start_date: task.start_date || null,
+      checklist: {
+        items: task.checklist_items?.map(item => ({
+          id: item.id,
+          title: item.title,
+          completed: item.completed,
+          description: item.description || null,
+          task_id: item.task_id
+        })) || null,
+        completed_count: task.checklist_items?.filter(item => item.completed).length || 0,
+        total_count: task.checklist_items?.length || 0
+      },
+      activity_log: task.activity_log_entries?.map(entry => ({
+        action: entry.action,
+        timestamp: entry.created_at || '',
+        user_id: entry.performed_by,
+        details: entry.details?.toString() || ''
+      })) || null,
+      recurring_config: task.recurring_config
+    } : {
+      title: '',
+      description: '',
+      project_id: '', // This should be provided by the parent component
+      status: 'todo' as TaskStatus,
+      priority: 'medium' as TaskPriority,
+      due_date: null,
+      start_date: null,
+      checklist: null,
+      activity_log: null,
+      recurring_config: null
     }
   })
 
-  const onSubmit = async (values: z.infer<typeof taskSchema>) => {
+  const onSubmit = async (data: FormData) => {
     setLoading(true)
     try {
-      const baseData = {
-        title: values.title,
-        description: values.description,
-        status: values.status,
-        priority: values.priority,
-        progress: values.progress,
-        due_date: values.due_date?.toISOString(),
-        start_date: values.start_date?.toISOString(),
-        project_id: projectId,
-        category: values.category,
-        tax_form_type: values.tax_form_type,
-        tax_return_id: values.tax_return_id,
-        template_id: values.template_id,
-        assignee_id: values.assignee_id,
-        assigned_team: values.assigned_team,
-        dependencies: values.dependencies,
-        parent_task_id: values.parent_task_id,
+      const taskData = {
+        title: data.title,
+        description: data.description,
+        project_id: data.project_id,
+        assignee_id: data.assignee_id,
+        status: data.status,
+        priority: data.priority,
+        due_date: data.due_date,
+        start_date: data.start_date,
+        recurring_config: data.recurring_config,
         updated_at: new Date().toISOString()
-      }
+      } satisfies DbTaskUpdate
 
-      if (task) {
-        // Update task
-        const { data: updatedTask, error: taskError } = await supabase
+      if (task?.id) {
+        const { error } = await supabase
           .from('tasks')
-          .update(baseData)
+          .update(taskData)
           .eq('id', task.id)
-          .select(`
-            *, 
-            assignee:users(id, email, full_name, role), 
-            project:projects(id, name), 
-            parent_task:tasks(id, title)
-          `)
-          .single()
+        
+        if (error) throw error
 
-        if (taskError) throw taskError
+        // Update checklist items
+        if (data.checklist?.items) {
+          const checklistItems = data.checklist.items.map(item => ({
+            id: item.id,
+            title: item.title,
+            completed: item.completed,
+            description: item.description,
+            task_id: task.id,
+            updated_at: new Date().toISOString()
+          })) satisfies Database['public']['Tables']['checklist_items']['Insert'][]
+
+          const { error: checklistError } = await supabase
+            .from('checklist_items')
+            .upsert(checklistItems)
+          
+          if (checklistError) throw checklistError
+        }
 
         // Add activity log entry
-        const activityEntry: ActivityLogEntry = {
-          task_id: task.id,
-          action: 'updated',
-          details: { updates: baseData } as Json
-        }
-
         const { error: activityError } = await supabase
           .from('activity_log_entries')
-          .insert(activityEntry)
-
-        if (activityError) throw activityError
-
-        // Fetch updated task with relations
-        const { data: taskWithRelations, error: relationsError } = await supabase
-          .from('tasks')
-          .select(`
-            *,
-            assignee:users(id, email, full_name, role),
-            project:projects(id, name),
-            parent_task:tasks(id, title),
-            activity_log_entries(*)
-          `)
-          .eq('id', task.id)
-          .single()
-
-        if (relationsError) throw relationsError
-
-        toast({
-          title: 'Task updated',
-          description: 'The task has been successfully updated.'
-        })
-
-        if (onTaskUpdate && taskWithRelations) {
-          const updatedTaskWithRelations = taskWithRelations as unknown as TaskWithRelationsResponse
-          onTaskUpdate({
-            ...updatedTaskWithRelations,
-            recurring_config: updatedTaskWithRelations.recurring_config as any,
-          } as TaskWithRelations)
-        }
-      } else {
-        // Create new task
-        const { data: newTask, error: taskError } = await supabase
-          .from('tasks')
           .insert({
-            ...baseData,
+            task_id: task.id,
+            action: 'updated',
+            details: taskData,
             created_at: new Date().toISOString()
           })
-          .select(`
-            *,
-            assignee:users(id, email, full_name, role),
-            project:projects(id, name),
-            parent_task:tasks(id, title)
-          `)
+        
+        if (activityError) throw activityError
+      } else {
+        const insertData = {
+          ...taskData,
+          title: data.title, // Explicitly include required fields
+          created_at: new Date().toISOString()
+        } satisfies DbTaskInsert
+
+        const { data: newTask, error } = await supabase
+          .from('tasks')
+          .insert([insertData])
+          .select()
           .single()
+        
+        if (error) throw error
 
-        if (taskError) throw taskError
+        // Create checklist items
+        if (data.checklist?.items && newTask) {
+          const checklistItems = data.checklist.items.map(item => ({
+            title: item.title,
+            completed: item.completed,
+            description: item.description,
+            task_id: newTask.id,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          })) satisfies Database['public']['Tables']['checklist_items']['Insert'][]
 
-        // Add initial activity log entry
-        const activityEntry: ActivityLogEntry = {
-          task_id: newTask.id,
-          action: 'created',
-          details: { status: newTask.status } as Json
+          const { error: checklistError } = await supabase
+            .from('checklist_items')
+            .insert(checklistItems)
+          
+          if (checklistError) throw checklistError
         }
 
-        const { error: activityError } = await supabase
-          .from('activity_log_entries')
-          .insert(activityEntry)
-
-        if (activityError) throw activityError
-
-        // Fetch created task with relations
-        const { data: taskWithRelations, error: relationsError } = await supabase
-          .from('tasks')
-          .select(`
-            *,
-            assignee:users(id, email, full_name, role),
-            project:projects(id, name),
-            parent_task:tasks(id, title),
-            activity_log_entries(*)
-          `)
-          .eq('id', newTask.id)
-          .single()
-
-        if (relationsError) throw relationsError
-
-        toast({
-          title: 'Task created',
-          description: 'The task has been successfully created.'
-        })
-
-        if (onTaskUpdate && taskWithRelations) {
-          const createdTaskWithRelations = taskWithRelations as unknown as TaskWithRelationsResponse
-          onTaskUpdate({
-            ...createdTaskWithRelations,
-            recurring_config: createdTaskWithRelations.recurring_config as any,
-          } as TaskWithRelations)
+        // Add initial activity log entry
+        if (newTask) {
+          const { error: activityError } = await supabase
+            .from('activity_log_entries')
+            .insert({
+              task_id: newTask.id,
+              action: 'created',
+              details: { status: newTask.status },
+              created_at: new Date().toISOString()
+            })
+          
+          if (activityError) throw activityError
         }
       }
 
@@ -263,7 +237,7 @@ export function TaskSidePanel({
       console.error('Error saving task:', error)
       toast({
         title: 'Error',
-        description: 'There was an error saving the task.',
+        description: 'Failed to save task. Please try again.',
         variant: 'destructive'
       })
     } finally {
@@ -317,21 +291,19 @@ export function TaskSidePanel({
                 name="status"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Status</FormLabel>
-                    <FormControl>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select status" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {taskStatusOptions.map(status => (
-                            <SelectItem key={status} value={status}>
-                              {status}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </FormControl>
+                    <FormLabel id="status-label">Status</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <SelectTrigger aria-labelledby="status-label">
+                        <SelectValue placeholder="Select status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {taskStatusOptions.map((status) => (
+                          <SelectItem key={status} value={status}>
+                            {status}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -342,21 +314,19 @@ export function TaskSidePanel({
                 name="priority"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Priority</FormLabel>
-                    <FormControl>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select priority" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {taskPriorityOptions.map(priority => (
-                            <SelectItem key={priority} value={priority}>
-                              {priority}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </FormControl>
+                    <FormLabel id="priority-label">Priority</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <SelectTrigger aria-labelledby="priority-label">
+                        <SelectValue placeholder="Select priority" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {taskPriorityOptions.map((priority) => (
+                          <SelectItem key={priority} value={priority}>
+                            {priority}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}

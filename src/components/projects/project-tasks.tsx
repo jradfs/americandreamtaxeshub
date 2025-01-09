@@ -4,10 +4,13 @@ import { ProjectWithRelations } from "@/types/projects"
 import { TaskDialog } from "@/components/tasks/task-dialog"
 import { TaskList } from "@/components/tasks/task-list"
 import { useTasks } from "@/hooks/useTasks"
-import { TaskFormSchema } from "@/lib/validations/task"
 import { Button } from "@/components/ui/button"
 import { Plus } from "lucide-react"
 import { useState } from "react"
+import { Database } from "@/types/database.types"
+import { TaskWithRelations } from "@/types/tasks"
+
+type DbTaskInsert = Database['public']['Tables']['tasks']['Insert']
 
 interface ProjectTasksProps {
   project: ProjectWithRelations
@@ -17,10 +20,16 @@ export function ProjectTasks({ project }: ProjectTasksProps) {
   const [dialogOpen, setDialogOpen] = useState(false)
   const { tasks, isLoading, error, mutate } = useTasks(project.id)
 
-  const handleCreateTask = async (data: TaskFormSchema) => {
+  const handleCreateTask = async (data: DbTaskInsert) => {
     // Handle task creation
     console.log('Create task:', data)
     setDialogOpen(false)
+  }
+
+  const handleUpdateTask = async (task: DbTaskInsert, taskId: string) => {
+    // Handle task update
+    console.log('Update task:', task)
+    await mutate()
   }
 
   return (
@@ -33,20 +42,24 @@ export function ProjectTasks({ project }: ProjectTasksProps) {
         </Button>
       </div>
 
-      <TaskList
-        tasks={tasks}
-        isLoading={isLoading}
-        error={error}
-        onTaskUpdate={mutate}
-      />
+      {error ? (
+        <div className="text-red-500">Error loading tasks: {error.message}</div>
+      ) : (
+        <TaskList
+          tasks={tasks}
+          isLoading={isLoading}
+          onUpdate={handleUpdateTask}
+        />
+      )}
 
       <TaskDialog
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         onSubmit={handleCreateTask}
-        defaultValues={{
+        initialData={{
           project_id: project.id,
           status: 'todo',
+          priority: 'medium'
         }}
       />
     </div>

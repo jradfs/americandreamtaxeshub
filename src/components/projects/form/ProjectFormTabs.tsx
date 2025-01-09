@@ -21,23 +21,18 @@ export function ProjectFormTabs({ activeTab, onTabChange, getTabProgress }: Proj
 
   const handleAddTask = (task: DbTaskInsert) => {
     const tasks = form.getValues('template_tasks') || [];
-    form.setValue('template_tasks', [...tasks, { ...task, activity_log: [], checklist: [] }]);
+    form.setValue('template_tasks', [...tasks, task]);
   };
 
-  const handleEditTask = (task: DbTaskInsert, index: number) => {
+  const handleEditTask = (task: DbTaskInsert, taskId: string) => {
     const tasks = form.getValues('template_tasks') || [];
-    const updatedTasks = [...tasks];
-    updatedTasks[index] = task;
+    const updatedTasks = tasks.map(t => t.id === taskId ? task : t);
     form.setValue('template_tasks', updatedTasks);
   };
 
-  const handleDeleteTask = (index: number) => {
+  const handleDeleteTask = (taskId: string) => {
     const tasks = form.getValues('template_tasks') || [];
-    form.setValue('template_tasks', tasks.filter((_, i) => i !== index));
-  };
-
-  const handleReorderTasks = (tasks: DbTaskInsert[]) => {
-    form.setValue('template_tasks', tasks);
+    form.setValue('template_tasks', tasks.filter(t => t.id !== taskId));
   };
 
   return (
@@ -48,22 +43,23 @@ export function ProjectFormTabs({ activeTab, onTabChange, getTabProgress }: Proj
         <TabsTrigger value="tasks">Tasks</TabsTrigger>
       </TabsList>
 
-      <TabsContent value="basic" className="space-y-4 mt-4">
+      <div className="mt-4">
+        <Progress value={getTabProgress(activeTab)} className="w-full" />
+      </div>
+
+      <TabsContent value="basic" className="mt-4">
         <BasicInfoSection />
       </TabsContent>
 
-      <TabsContent value="service" className="space-y-4 mt-4">
+      <TabsContent value="service" className="mt-4">
         <ServiceDetailsSection />
       </TabsContent>
 
-      <TabsContent value="tasks" className="space-y-4 mt-4">
+      <TabsContent value="tasks" className="mt-4">
         <TaskSection
-          projectId={form.getValues('client_id') || ''}
-          tasks={form.getValues('template_tasks') || []}
           onAddTask={handleAddTask}
           onEditTask={handleEditTask}
           onDeleteTask={handleDeleteTask}
-          onReorderTasks={handleReorderTasks}
         />
       </TabsContent>
     </Tabs>

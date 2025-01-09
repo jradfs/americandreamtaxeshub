@@ -7,31 +7,6 @@
   | Json[]
 
 export type Database = {
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          operationName?: string
-          query?: string
-          variables?: Json
-          extensions?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
-  }
   public: {
     Tables: {
       activity_log_entries: {
@@ -251,6 +226,7 @@ export type Database = {
           last_filed_date: string | null
           next_appointment: string | null
           notes: string | null
+          onboarding_notes: string | null
           phone: string | null
           primary_contact_name: string | null
           state: string | null
@@ -286,6 +262,7 @@ export type Database = {
           last_filed_date?: string | null
           next_appointment?: string | null
           notes?: string | null
+          onboarding_notes?: string | null
           phone?: string | null
           primary_contact_name?: string | null
           state?: string | null
@@ -321,6 +298,7 @@ export type Database = {
           last_filed_date?: string | null
           next_appointment?: string | null
           notes?: string | null
+          onboarding_notes?: string | null
           phone?: string | null
           primary_contact_name?: string | null
           state?: string | null
@@ -911,6 +889,7 @@ export type Database = {
           assigned_team: string[] | null
           assignee_id: string | null
           category: string | null
+          completed_at: string | null
           created_at: string | null
           dependencies: string[] | null
           description: string | null
@@ -933,6 +912,7 @@ export type Database = {
           assigned_team?: string[] | null
           assignee_id?: string | null
           category?: string | null
+          completed_at?: string | null
           created_at?: string | null
           dependencies?: string[] | null
           description?: string | null
@@ -955,6 +935,7 @@ export type Database = {
           assigned_team?: string[] | null
           assignee_id?: string | null
           category?: string | null
+          completed_at?: string | null
           created_at?: string | null
           dependencies?: string[] | null
           description?: string | null

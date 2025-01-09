@@ -19,7 +19,7 @@ export const projectSchema = z.object({
   accounting_info: z.any().nullable(),
   payroll_info: z.any().nullable(),
   service_info: z.any().nullable(),
-  tax_return_id: z.number().nullable(),
+  tax_return_id: z.string().uuid('Invalid tax return ID').nullable(),
   parent_project_id: z.string().uuid('Invalid parent project ID').nullable(),
   primary_manager: z.string().uuid('Invalid manager ID').nullable(),
   stage: z.string().nullable(),

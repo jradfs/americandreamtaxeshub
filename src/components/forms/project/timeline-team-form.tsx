@@ -73,12 +73,15 @@ export function TimelineTeamForm({ form, teamMembers }: TimelineTeamFormProps) {
           {form.watch('template_tasks')?.map((_, index) => (
             <TaskForm
               key={index}
-              form={form}
-              index={index}
-              teamMembers={teamMembers}
-              onRemove={() => {
-                const tasks = form.getValues('template_tasks') || [];
-                form.setValue('template_tasks', tasks.filter((_, i) => i !== index));
+              defaultValues={{
+                title: '',
+                description: '',
+                status: 'todo',
+                priority: 'medium'
+              }}
+              onSubmit={async (data) => {
+                // Handle task submission
+                console.log('Task submitted:', data)
               }}
             />
           ))}

@@ -1,99 +1,86 @@
 'use client';
 
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useProjectForm } from '@/hooks/useProjectForm';
-import { ProjectFormProvider } from './ProjectFormContext';
-import { BasicInfoSection } from './BasicInfoSection';
-import { ServiceDetailsSection } from './ServiceDetailsSection';
-import { TaskSection } from './TaskSection';
-import { Progress } from '@/components/ui/progress';
-import { ProjectFormValues } from '@/lib/validations/project';
-import type { Database } from '@/types/database.types';
-
-type DbTaskInsert = Database['public']['Tables']['tasks']['Insert'];
+import { useEffect } from 'react'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Button } from '@/components/ui/button'
+import { Form } from '@/components/ui/form'
+import { ProjectFormProvider } from './ProjectFormContext'
+import { BasicInfoSection } from './BasicInfoSection'
+import { TaskSection } from './TaskSection'
+import { projectSchema } from '@/lib/validations/project'
+import type { ProjectFormData, ProjectWithRelations, ServiceType } from '@/types/projects'
 
 interface ProjectFormProps {
-  defaultValues?: Partial<ProjectFormValues>;
-  onSubmit: (data: ProjectFormValues) => Promise<void>;
+  initialData?: Partial<ProjectWithRelations>
+  onSubmit: (data: ProjectFormData) => Promise<void>
+  isSubmitting?: boolean
 }
 
-export function ProjectForm({ defaultValues, onSubmit }: ProjectFormProps) {
-  const {
-    form,
-    isSubmitting,
-    progress,
-    onServiceTypeChange,
-    onTemplateSelect,
-    onSubmit: handleSubmit,
-  } = useProjectForm({
-    defaultValues,
-    onSubmit,
-  });
+export function ProjectForm({
+  initialData,
+  onSubmit,
+  isSubmitting = false,
+}: ProjectFormProps) {
+  const form = useForm<ProjectFormData>({
+    resolver: zodResolver(projectSchema),
+    defaultValues: {
+      name: initialData?.name || '',
+      description: initialData?.description || '',
+      status: initialData?.status || 'not_started',
+      service_type: (initialData?.service_type as ServiceType) || 'tax_return',
+      priority: initialData?.priority || 'medium',
+      start_date: initialData?.start_date || null,
+      due_date: initialData?.due_date || null,
+      client_id: initialData?.client_id || null,
+    },
+  })
 
-  const handleAddTask = (task: DbTaskInsert) => {
-    const tasks = form.getValues('template_tasks') || [];
-    form.setValue('template_tasks', [...tasks, { ...task, activity_log: [], checklist: [] }]);
-  };
-
-  const handleEditTask = (task: DbTaskInsert, index: number) => {
-    const tasks = form.getValues('template_tasks') || [];
-    const updatedTasks = [...tasks];
-    updatedTasks[index] = task;
-    form.setValue('template_tasks', updatedTasks);
-  };
-
-  const handleDeleteTask = (index: number) => {
-    const tasks = form.getValues('template_tasks') || [];
-    form.setValue('template_tasks', tasks.filter((_, i) => i !== index));
-  };
-
-  const handleReorderTasks = (tasks: DbTaskInsert[]) => {
-    form.setValue('template_tasks', tasks);
-  };
+  const handleSubmit = async (data: ProjectFormData) => {
+    try {
+      await onSubmit(data)
+      form.reset()
+    } catch (error) {
+      form.setError('root', {
+        message: error instanceof Error ? error.message : 'Failed to submit project',
+      })
+    }
+  }
 
   return (
-    <ProjectFormProvider
-      form={form}
-      isSubmitting={isSubmitting}
-      onServiceTypeChange={onServiceTypeChange}
-      onTemplateSelect={onTemplateSelect}
-      progress={progress}
-    >
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="flex items-center justify-between">
-          <h2 className="text-2xl font-bold">
-            {defaultValues?.name ? 'Edit Project' : 'New Project'}
-          </h2>
-          <Progress value={progress} className="w-[200px]" />
-        </div>
+    <ProjectFormProvider form={form}>
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-8">
+          <Tabs defaultValue="basic" className="w-full">
+            <TabsList>
+              <TabsTrigger value="basic">Basic Info</TabsTrigger>
+              <TabsTrigger value="tasks">Tasks</TabsTrigger>
+            </TabsList>
+            <TabsContent value="basic">
+              <BasicInfoSection />
+            </TabsContent>
+            <TabsContent value="tasks">
+              <TaskSection projectId={initialData?.id ?? ''} />
+            </TabsContent>
+          </Tabs>
 
-        <Tabs defaultValue="basic" className="w-full">
-          <TabsList>
-            <TabsTrigger value="basic">Basic Info</TabsTrigger>
-            <TabsTrigger value="service">Service Details</TabsTrigger>
-            <TabsTrigger value="tasks">Tasks</TabsTrigger>
-          </TabsList>
+          {form.formState.errors.root && (
+            <div className="text-sm font-medium text-destructive">
+              {form.formState.errors.root.message}
+            </div>
+          )}
 
-          <TabsContent value="basic" className="space-y-4 mt-4">
-            <BasicInfoSection />
-          </TabsContent>
-
-          <TabsContent value="service" className="space-y-4 mt-4">
-            <ServiceDetailsSection />
-          </TabsContent>
-
-          <TabsContent value="tasks" className="space-y-4 mt-4">
-            <TaskSection
-              projectId={form.getValues('client_id') || ''}
-              tasks={form.getValues('template_tasks') || []}
-              onAddTask={handleAddTask}
-              onEditTask={handleEditTask}
-              onDeleteTask={handleDeleteTask}
-              onReorderTasks={handleReorderTasks}
-            />
-          </TabsContent>
-        </Tabs>
-      </form>
+          <div className="flex justify-end space-x-2">
+            <Button
+              type="submit"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? 'Saving...' : 'Save Project'}
+            </Button>
+          </div>
+        </form>
+      </Form>
     </ProjectFormProvider>
-  );
+  )
 } 

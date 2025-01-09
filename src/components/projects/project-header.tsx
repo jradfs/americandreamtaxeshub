@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
 import { useState } from "react"
 import { CreateProjectDialog } from "./create-project-dialog"
+import { ProjectFormData } from "@/types/projects"
 
 type DbProject = Database['public']['Tables']['projects']['Row']
 type DbClient = Database['public']['Tables']['clients']['Row']
@@ -20,8 +21,6 @@ interface ProjectHeaderProps {
 
 export function ProjectHeader({ project }: ProjectHeaderProps) {
   const [editDialogOpen, setEditDialogOpen] = useState(false)
-
-  const clientContactInfo = project.client?.contact_info as { email?: string } | null
 
   return (
     <div className="space-y-4">
@@ -63,9 +62,9 @@ export function ProjectHeader({ project }: ProjectHeaderProps) {
           </div>
         </div>
         <div className="flex gap-2">
-          {clientContactInfo?.email && (
+          {project.client?.contact_email && (
             <Button variant="outline" size="sm" asChild>
-              <Link href={`mailto:${clientContactInfo.email}`}>
+              <Link href={`mailto:${project.client.contact_email}`}>
                 <Mail className="mr-2 h-4 w-4" />
                 Email Client
               </Link>
@@ -112,7 +111,7 @@ export function ProjectHeader({ project }: ProjectHeaderProps) {
       <CreateProjectDialog
         open={editDialogOpen}
         onOpenChange={setEditDialogOpen}
-        onSubmit={async (data) => {
+        onSubmit={async (data: ProjectFormData) => {
           // Handle project update
           console.log('Update project:', data)
         }}

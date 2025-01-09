@@ -1,0 +1,191 @@
+/* High Contrast Theme */
+[data-theme="high-contrast"] {
+  /* Base colors */
+  --background: #000000;
+  --foreground: #ffffff;
+  --muted: #1a1a1a;
+  --muted-foreground: #ffffff;
+  
+  /* Primary colors */
+  --primary: #ffff00;
+  --primary-foreground: #000000;
+  
+  /* Secondary colors */
+  --secondary: #00ffff;
+  --secondary-foreground: #000000;
+  
+  /* Accent colors */
+  --accent: #ff00ff;
+  --accent-foreground: #000000;
+  
+  /* Border colors */
+  --border: #ffffff;
+  --input: #ffffff;
+  --ring: #ffff00;
+  
+  /* Status colors */
+  --destructive: #ff0000;
+  --destructive-foreground: #ffffff;
+  --success: #00ff00;
+  --success-foreground: #000000;
+  --warning: #ffff00;
+  --warning-foreground: #000000;
+  
+  /* Focus styles */
+  --focus-ring: 0 0 0 3px var(--ring);
+  --focus-visible-ring: 0 0 0 3px var(--ring);
+  
+  /* Card styles */
+  --card: #1a1a1a;
+  --card-foreground: #ffffff;
+  --card-border: #ffffff;
+  
+  /* Popover styles */
+  --popover: #000000;
+  --popover-foreground: #ffffff;
+  
+  /* Button styles */
+  --btn-background: #ffffff;
+  --btn-foreground: #000000;
+  --btn-border: #ffffff;
+  --btn-hover: #ffff00;
+  --btn-hover-foreground: #000000;
+  --btn-focus: #00ffff;
+  --btn-focus-foreground: #000000;
+  --btn-active: #ff00ff;
+  --btn-active-foreground: #000000;
+  --btn-disabled: #666666;
+  --btn-disabled-foreground: #ffffff;
+}
+
+/* High contrast focus styles */
+[data-theme="high-contrast"] *:focus-visible {
+  outline: 3px solid var(--ring) !important;
+  outline-offset: 2px !important;
+}
+
+/* High contrast button styles */
+[data-theme="high-contrast"] .btn {
+  border: 2px solid var(--btn-border);
+}
+
+[data-theme="high-contrast"] .btn:hover {
+  background-color: var(--btn-hover);
+  color: var(--btn-hover-foreground);
+}
+
+[data-theme="high-contrast"] .btn:focus {
+  background-color: var(--btn-focus);
+  color: var(--btn-focus-foreground);
+}
+
+[data-theme="high-contrast"] .btn:active {
+  background-color: var(--btn-active);
+  color: var(--btn-active-foreground);
+}
+
+[data-theme="high-contrast"] .btn:disabled {
+  background-color: var(--btn-disabled);
+  color: var(--btn-disabled-foreground);
+  border-color: var(--btn-disabled);
+}
+
+/* High contrast form styles */
+[data-theme="high-contrast"] input,
+[data-theme="high-contrast"] textarea,
+[data-theme="high-contrast"] select {
+  border: 2px solid var(--border);
+  background-color: var(--background);
+  color: var(--foreground);
+}
+
+[data-theme="high-contrast"] input:focus,
+[data-theme="high-contrast"] textarea:focus,
+[data-theme="high-contrast"] select:focus {
+  border-color: var(--ring);
+  box-shadow: var(--focus-ring);
+}
+
+/* High contrast error states */
+[data-theme="high-contrast"] .error {
+  color: var(--destructive);
+  border-color: var(--destructive);
+}
+
+/* High contrast success states */
+[data-theme="high-contrast"] .success {
+  color: var(--success);
+  border-color: var(--success);
+}
+
+/* High contrast warning states */
+[data-theme="high-contrast"] .warning {
+  color: var(--warning);
+  border-color: var(--warning);
+}
+
+/* High contrast badge styles */
+[data-theme="high-contrast"] .badge {
+  border: 2px solid var(--border);
+}
+
+/* High contrast dialog styles */
+[data-theme="high-contrast"] .dialog {
+  border: 2px solid var(--border);
+  background-color: var(--background);
+  color: var(--foreground);
+}
+
+/* High contrast tooltip styles */
+[data-theme="high-contrast"] .tooltip {
+  background-color: var(--foreground);
+  color: var(--background);
+  border: 2px solid var(--border);
+}
+
+/* High contrast link styles */
+[data-theme="high-contrast"] a {
+  color: var(--primary);
+  text-decoration: underline;
+}
+
+[data-theme="high-contrast"] a:hover {
+  color: var(--secondary);
+}
+
+[data-theme="high-contrast"] a:focus {
+  color: var(--accent);
+  outline: 3px solid var(--ring);
+  outline-offset: 2px;
+}
+
+/* High contrast icon styles */
+[data-theme="high-contrast"] .icon {
+  color: var(--foreground);
+}
+
+/* High contrast loading states */
+[data-theme="high-contrast"] .skeleton {
+  background-color: var(--muted);
+  border: 1px solid var(--border);
+}
+
+/* High contrast scrollbar styles */
+[data-theme="high-contrast"] ::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+[data-theme="high-contrast"] ::-webkit-scrollbar-track {
+  background: var(--background);
+  border: 1px solid var(--border);
+}
+
+[data-theme="high-contrast"] ::-webkit-scrollbar-thumb {
+  background: var(--foreground);
+  border: 1px solid var(--border);
+}
+
+[data-theme="high-contrast"] ::-webkit-scrollbar-thumb:hover {
+  background: var(--primary);
+} 

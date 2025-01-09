@@ -11,6 +11,7 @@ import { Tables } from '@/types/database.types';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Textarea } from '../ui/textarea';
+import { Form, FormProvider } from '../ui/form';
 import {
   Select,
   SelectContent,
@@ -165,7 +166,7 @@ export default function TemplateForm({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <Form onSubmit={handleSubmit} className="space-y-6">
       <div className="space-y-4">
         <div>
           <label htmlFor="title" className="block text-sm font-medium mb-2">
@@ -382,6 +383,6 @@ export default function TemplateForm({
           {mode === 'create' ? 'Create Template' : 'Save Changes'}
         </Button>
       </div>
-    </form>
+    </Form>
   );
 }

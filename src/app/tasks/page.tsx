@@ -1,41 +1,39 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState } from 'react'
 import { Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { TaskDialog } from '@/components/tasks/task-dialog'
 import { useTasks } from '@/hooks/useTasks'
 import { toast } from '@/components/ui/use-toast'
-import type { TaskWithRelations, DbTaskInsert } from '@/types/tasks'
+import type { TaskWithRelations, TaskFormData } from '@/types/tasks'
+import { TaskErrorBoundary } from '@/components/tasks/task-error-boundary'
+import { Skeleton } from '@/components/ui/skeleton'
 
 export default function TasksPage() {
-  const router = useRouter()
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [selectedTask, setSelectedTask] = useState<TaskWithRelations | null>(null)
-  const { tasks, createTask, updateTask, deleteTask } = useTasks()
+  const { 
+    tasks, 
+    isLoading, 
+    error,
+    createTask, 
+    updateTask, 
+    deleteTask,
+    isCreating,
+    isUpdating,
+    isDeleting
+  } = useTasks()
 
-  const handleCreateTask = async (data: DbTaskInsert) => {
+  const handleCreateTask = async (data: TaskFormData) => {
     try {
-      await createTask({
-        title: data.title || '',
-        status: data.status || 'todo',
-        assignee_id: data.assignee_id || null,
-        category: data.category || null,
-        description: data.description || null,
-        due_date: data.due_date || null,
-        parent_task_id: data.parent_task_id || null,
-        priority: data.priority || 'medium',
-        project_id: data.project_id || null,
-        template_id: data.template_id || null
-      })
+      await createTask(data)
       setIsDialogOpen(false)
       toast({
         title: 'Success',
         description: 'Task created successfully.',
       })
     } catch (error) {
-      console.error('Error creating task:', error)
       toast({
         title: 'Error',
         description: 'Failed to create task.',
@@ -44,29 +42,18 @@ export default function TasksPage() {
     }
   }
 
-  const handleUpdateTask = async (data: DbTaskInsert) => {
+  const handleUpdateTask = async (data: TaskFormData) => {
     if (!selectedTask?.id) return
 
     try {
-      await updateTask(selectedTask.id, {
-        title: data.title || '',
-        status: data.status || 'todo',
-        assignee_id: data.assignee_id || null,
-        category: data.category || null,
-        description: data.description || null,
-        due_date: data.due_date || null,
-        parent_task_id: data.parent_task_id || null,
-        priority: data.priority || 'medium',
-        project_id: data.project_id || null,
-        template_id: data.template_id || null
-      })
+      await updateTask({ id: selectedTask.id, ...data })
       setSelectedTask(null)
+      setIsDialogOpen(false)
       toast({
         title: 'Success',
         description: 'Task updated successfully.',
       })
     } catch (error) {
-      console.error('Error updating task:', error)
       toast({
         title: 'Error',
         description: 'Failed to update task.',
@@ -78,13 +65,11 @@ export default function TasksPage() {
   const handleDeleteTask = async (taskId: string) => {
     try {
       await deleteTask(taskId)
-      setSelectedTask(null)
       toast({
         title: 'Success',
         description: 'Task deleted successfully.',
       })
     } catch (error) {
-      console.error('Error deleting task:', error)
       toast({
         title: 'Error',
         description: 'Failed to delete task.',
@@ -93,53 +78,89 @@ export default function TasksPage() {
     }
   }
 
-  return (
-    <div className="container mx-auto py-10">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Tasks</h1>
-        <Button onClick={() => setIsDialogOpen(true)}>
-          <Plus className="mr-2 h-4 w-4" />
-          New Task
-        </Button>
+  if (error) {
+    return (
+      <div className="container py-6">
+        <TaskErrorBoundary>
+          <div>Error loading tasks: {error.message}</div>
+        </TaskErrorBoundary>
       </div>
-      <div className="mt-8 grid gap-4">
-        {tasks.map((task) => (
-          <div
-            key={task.id}
-            className="flex items-center justify-between rounded-lg border p-4"
-          >
-            <div>
-              <h3 className="font-semibold">{task.title}</h3>
-              <p className="text-sm text-muted-foreground">{task.description}</p>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                onClick={() => setSelectedTask(task)}
-              >
-                Edit
-              </Button>
-              <Button
-                variant="destructive"
-                onClick={() => handleDeleteTask(task.id)}
-              >
-                Delete
-              </Button>
-            </div>
+    )
+  }
+
+  if (isLoading) {
+    return (
+      <div className="container py-6 space-y-4">
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="border rounded-lg p-4">
+            <Skeleton className="h-6 w-[200px]" />
+            <Skeleton className="h-4 w-[300px] mt-2" />
           </div>
         ))}
       </div>
-      <TaskDialog
-        open={isDialogOpen || !!selectedTask}
-        onOpenChange={(open) => {
-          setIsDialogOpen(open)
-          if (!open) {
-            setSelectedTask(null)
-          }
-        }}
-        task={selectedTask}
-        onSubmit={selectedTask ? handleUpdateTask : handleCreateTask}
-      />
-    </div>
+    )
+  }
+
+  return (
+    <TaskErrorBoundary>
+      <div className="container py-6">
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-semibold">Tasks</h1>
+          <Button 
+            onClick={() => {
+              setSelectedTask(null)
+              setIsDialogOpen(true)
+            }}
+            disabled={isCreating}
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            New Task
+          </Button>
+        </div>
+
+        <div className="space-y-4">
+          {tasks.map((task) => (
+            <div
+              key={task.id}
+              className="border rounded-lg p-4 hover:bg-muted/50 transition-colors"
+              onClick={() => {
+                setSelectedTask(task)
+                setIsDialogOpen(true)
+              }}
+            >
+              <div className="flex justify-between items-start">
+                <div>
+                  <h3 className="font-medium">{task.title}</h3>
+                  {task.description && (
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {task.description}
+                    </p>
+                  )}
+                </div>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    handleDeleteTask(task.id)
+                  }}
+                  disabled={isDeleting}
+                >
+                  Delete
+                </Button>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <TaskDialog
+          isOpen={isDialogOpen}
+          setIsOpen={setIsDialogOpen}
+          taskData={selectedTask}
+          onSubmit={selectedTask ? handleUpdateTask : handleCreateTask}
+          isSubmitting={selectedTask ? isUpdating : isCreating}
+        />
+      </div>
+    </TaskErrorBoundary>
   )
 }

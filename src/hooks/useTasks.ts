@@ -1,173 +1,261 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { createClient } from '@/lib/supabase/client'
-import { Database } from '@/types/database.types'
-import { TaskWithRelations } from '@/types/tasks'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { TaskWithRelations, TaskFormData, toDbTaskInsert } from '@/types/tasks'
+import { supabase } from '@/lib/supabase/client'
+import { useToast } from '@/components/ui/use-toast'
 
-type DbTask = Database['public']['Tables']['tasks']['Row']
-type DbTaskInsert = Database['public']['Tables']['tasks']['Insert']
-type DbTaskUpdate = Database['public']['Tables']['tasks']['Update']
-type DbChecklistItem = Database['public']['Tables']['checklist_items']['Row']
-type DbActivityLogEntry = Database['public']['Tables']['activity_log_entries']['Row']
+const TASKS_QUERY_KEY = 'tasks'
+const TASKS_PER_PAGE = 10
 
-export function useTasks(projectId?: string) {
-  const [tasks, setTasks] = useState<TaskWithRelations[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<Error | null>(null)
-  const supabase = createClient()
+interface UseTasksOptions {
+  projectId?: string
+  enabled?: boolean
+  page?: number
+  perPage?: number
+  includeRelations?: boolean
+}
 
-  const fetchTasks = async () => {
-    try {
-      setIsLoading(true)
-      setError(null)
+interface TasksResponse {
+  tasks: TaskWithRelations[]
+  count: number
+}
 
-      // Fetch tasks
-      const taskQuery = supabase
+export function useTasks({ 
+  projectId, 
+  enabled = true,
+  page = 1,
+  perPage = TASKS_PER_PAGE,
+  includeRelations = false
+}: UseTasksOptions = {}) {
+  const queryClient = useQueryClient()
+  const { toast } = useToast()
+
+  // Calculate pagination range
+  const from = (page - 1) * perPage
+  const to = from + perPage - 1
+
+  // Build select query based on whether relationships should be included
+  const selectQuery = includeRelations
+    ? `
+      *,
+      project:projects(id, name),
+      assignee:users(id, email, full_name, role),
+      parent_task:tasks(id, title),
+      checklist_items:checklist_items(*),
+      activity_log_entries:activity_log_entries(*)
+    `
+    : '*'
+
+  // Fetch tasks with optional relationships and pagination
+  const { data, isLoading, error } = useQuery<TasksResponse>({
+    queryKey: [TASKS_QUERY_KEY, projectId, page, perPage, includeRelations],
+    queryFn: async () => {
+      const query = supabase
         .from('tasks')
-        .select(`
-          *,
-          project:projects(*),
-          assignee:users(*),
-          parent_task:tasks!parent_task_id(*),
-          template:task_templates(*)
-        `)
+        .select(selectQuery, { count: 'exact' })
         .order('created_at', { ascending: false })
+        .range(from, to)
 
       if (projectId) {
-        taskQuery.eq('project_id', projectId)
+        query.eq('project_id', projectId)
       }
 
-      const { data: taskData, error: taskError } = await taskQuery
+      const { data, error, count } = await query
+      if (error) throw error
+      return { tasks: data || [], count: count || 0 }
+    },
+    enabled,
+    staleTime: 1000 * 60, // Cache for 1 minute
+    cacheTime: 1000 * 60 * 5, // Keep in cache for 5 minutes
+    keepPreviousData: true // Keep showing previous data while fetching new page
+  })
 
-      if (taskError) throw taskError
+  // Prefetch next page
+  const prefetchNextPage = async () => {
+    if (data && data.tasks.length === perPage) {
+      await queryClient.prefetchQuery({
+        queryKey: [TASKS_QUERY_KEY, projectId, page + 1, perPage, includeRelations],
+        queryFn: async () => {
+          const nextFrom = page * perPage
+          const nextTo = nextFrom + perPage - 1
 
-      // For each task, fetch related items
-      const tasksWithRelations = await Promise.all((taskData || []).map(async (task) => {
-        const [checklistItems, activityLogEntries] = await Promise.all([
-          // Fetch checklist items
-          supabase
-            .from('checklist_items')
-            .select('*')
-            .eq('task_id', task.id)
-            .then(({ data }) => data || []),
-
-          // Fetch activity log entries
-          supabase
-            .from('activity_log_entries')
-            .select('*')
-            .eq('task_id', task.id)
+          const query = supabase
+            .from('tasks')
+            .select(selectQuery, { count: 'exact' })
             .order('created_at', { ascending: false })
-            .then(({ data }) => data || [])
-        ])
+            .range(nextFrom, nextTo)
 
-        return {
-          ...task,
-          checklist_items: checklistItems,
-          activity_log_entries: activityLogEntries
-        }
+          if (projectId) {
+            query.eq('project_id', projectId)
+          }
+
+          const { data, error, count } = await query
+          if (error) throw error
+          return { tasks: data || [], count: count || 0 }
+        },
+        staleTime: 1000 * 60
+      })
+    }
+  }
+
+  // Create task mutation with optimistic update
+  const createTaskMutation = useMutation({
+    mutationFn: async (newTask: TaskFormData) => {
+      const { data, error } = await supabase
+        .from('tasks')
+        .insert(toDbTaskInsert(newTask))
+        .select(selectQuery)
+        .single()
+
+      if (error) throw error
+      return data
+    },
+    onMutate: async (newTask) => {
+      await queryClient.cancelQueries({ queryKey: [TASKS_QUERY_KEY, projectId, page, perPage, includeRelations] })
+      const previousData = queryClient.getQueryData<TasksResponse>([TASKS_QUERY_KEY, projectId, page, perPage, includeRelations])
+      
+      const optimisticTask: TaskWithRelations = {
+        id: crypto.randomUUID(),
+        ...toDbTaskInsert(newTask),
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        completed_at: null,
+        assigned_team: null,
+        dependencies: null,
+        parent_task_id: null,
+        progress: null,
+        recurring_config: null,
+        tax_return_id: null,
+        template_id: null,
+        project: newTask.project_id ? { id: newTask.project_id, name: 'Loading...' } : null,
+        assignee: null,
+        parent_task: null,
+        checklist_items: null,
+        activity_log_entries: null
+      }
+
+      queryClient.setQueryData<TasksResponse>([TASKS_QUERY_KEY, projectId, page, perPage, includeRelations], old => ({
+        tasks: [optimisticTask, ...(old?.tasks || []).slice(0, perPage - 1)],
+        count: (old?.count || 0) + 1
       }))
 
-      setTasks(tasksWithRelations)
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error('Failed to fetch tasks'))
-    } finally {
-      setIsLoading(false)
+      return { previousData }
+    },
+    onError: (_err, _newTask, context) => {
+      queryClient.setQueryData([TASKS_QUERY_KEY, projectId, page, perPage, includeRelations], context?.previousData)
+      toast({
+        title: 'Error',
+        description: 'Failed to create task. Please try again.',
+        variant: 'destructive'
+      })
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Success',
+        description: 'Task created successfully.'
+      })
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: [TASKS_QUERY_KEY, projectId] })
     }
-  }
+  })
 
-  const createTask = async (taskData: DbTaskInsert) => {
-    try {
-      setError(null)
-      const { data: task, error: taskError } = await supabase
-        .from('tasks')
-        .insert([taskData])
-        .select()
-        .single()
-
-      if (taskError) throw taskError
-
-      // Add initial activity log entry
-      await supabase
-        .from('activity_log_entries')
-        .insert({
-          task_id: task.id,
-          action: 'created',
-          details: { status: task.status }
-        })
-
-      await fetchTasks()
-      return task
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error('Failed to create task'))
-      throw err
-    }
-  }
-
-  const updateTask = async (taskId: string, updates: DbTaskUpdate) => {
-    try {
-      setError(null)
-      const { data: task, error: taskError } = await supabase
+  // Update task mutation with optimistic update
+  const updateTaskMutation = useMutation({
+    mutationFn: async ({ id, ...updates }: Partial<TaskWithRelations> & { id: string }) => {
+      const { data, error } = await supabase
         .from('tasks')
         .update(updates)
-        .eq('id', taskId)
-        .select()
+        .eq('id', id)
+        .select(selectQuery)
         .single()
 
-      if (taskError) throw taskError
+      if (error) throw error
+      return data
+    },
+    onMutate: async (updatedTask) => {
+      await queryClient.cancelQueries({ queryKey: [TASKS_QUERY_KEY, projectId, page, perPage, includeRelations] })
+      const previousData = queryClient.getQueryData<TasksResponse>([TASKS_QUERY_KEY, projectId, page, perPage, includeRelations])
 
-      // Add activity log entry
-      await supabase
-        .from('activity_log_entries')
-        .insert({
-          task_id: taskId,
-          action: 'updated',
-          details: { updates }
-        })
+      queryClient.setQueryData<TasksResponse>([TASKS_QUERY_KEY, projectId, page, perPage, includeRelations], old => ({
+        tasks: old?.tasks.map(task => task.id === updatedTask.id ? { ...task, ...updatedTask } : task) || [],
+        count: old?.count || 0
+      }))
 
-      await fetchTasks()
-      return task
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error('Failed to update task'))
-      throw err
+      return { previousData }
+    },
+    onError: (_err, _updatedTask, context) => {
+      queryClient.setQueryData([TASKS_QUERY_KEY, projectId, page, perPage, includeRelations], context?.previousData)
+      toast({
+        title: 'Error',
+        description: 'Failed to update task. Please try again.',
+        variant: 'destructive'
+      })
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Success',
+        description: 'Task updated successfully.'
+      })
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: [TASKS_QUERY_KEY, projectId] })
     }
-  }
+  })
 
-  const deleteTask = async (taskId: string) => {
-    try {
-      setError(null)
-      // Delete related records first
-      await Promise.all([
-        supabase.from('checklist_items').delete().eq('task_id', taskId),
-        supabase.from('activity_log_entries').delete().eq('task_id', taskId)
-      ])
-
-      // Then delete the task
-      const { error: taskError } = await supabase
+  // Delete task mutation with optimistic update
+  const deleteTaskMutation = useMutation({
+    mutationFn: async (taskId: string) => {
+      const { error } = await supabase
         .from('tasks')
         .delete()
         .eq('id', taskId)
+      if (error) throw error
+    },
+    onMutate: async (taskId) => {
+      await queryClient.cancelQueries({ queryKey: [TASKS_QUERY_KEY, projectId, page, perPage, includeRelations] })
+      const previousData = queryClient.getQueryData<TasksResponse>([TASKS_QUERY_KEY, projectId, page, perPage, includeRelations])
 
-      if (taskError) throw taskError
+      queryClient.setQueryData<TasksResponse>([TASKS_QUERY_KEY, projectId, page, perPage, includeRelations], old => ({
+        tasks: old?.tasks.filter(task => task.id !== taskId) || [],
+        count: Math.max(0, (old?.count || 0) - 1)
+      }))
 
-      await fetchTasks()
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error('Failed to delete task'))
-      throw err
+      return { previousData }
+    },
+    onError: (_err, _taskId, context) => {
+      queryClient.setQueryData([TASKS_QUERY_KEY, projectId, page, perPage, includeRelations], context?.previousData)
+      toast({
+        title: 'Error',
+        description: 'Failed to delete task. Please try again.',
+        variant: 'destructive'
+      })
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Success',
+        description: 'Task deleted successfully.'
+      })
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: [TASKS_QUERY_KEY, projectId] })
     }
-  }
-
-  useEffect(() => {
-    fetchTasks()
-  }, [projectId])
+  })
 
   return {
-    tasks,
+    tasks: data?.tasks || [],
+    totalTasks: data?.count || 0,
+    currentPage: page,
+    totalPages: Math.ceil((data?.count || 0) / perPage),
     isLoading,
     error,
-    mutate: fetchTasks,
-    createTask,
-    updateTask,
-    deleteTask
+    createTask: createTaskMutation.mutateAsync,
+    updateTask: updateTaskMutation.mutateAsync,
+    deleteTask: deleteTaskMutation.mutateAsync,
+    isCreating: createTaskMutation.isLoading,
+    isUpdating: updateTaskMutation.isLoading,
+    isDeleting: deleteTaskMutation.isLoading,
+    prefetchNextPage
   }
 }

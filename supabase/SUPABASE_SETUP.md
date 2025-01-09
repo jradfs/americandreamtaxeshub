@@ -10,133 +10,84 @@
    ```
 2. Database password: `QBQmOUyqqgJXCpSo`
 
-## Steps to Access Supabase
+## IMPORTANT: Database Changes Process
+ALL database changes MUST follow this process:
 
-### Environment Variables Setup
+1. NEVER make changes directly in the Supabase dashboard
+2. ALWAYS create and use migration files
+3. Apply migrations to remote database
+4. Generate fresh TypeScript types
+5. Commit all changes
 
-#### Linux/MacOS (Bash)
+## Steps for Making Database Changes
+
+### 1. Create Migration File
 ```bash
-export SUPABASE_ACCESS_TOKEN='sbp_829505ecb6492198977d14392b9272cf9723c08f'
-export SUPABASE_DB_PASSWORD='QBQmOUyqqgJXCpSo'
+npx supabase migration new your_migration_name
 ```
 
-#### Windows (CMD/PowerShell)
-```cmd
-setx SUPABASE_ACCESS_TOKEN "sbp_829505ecb6492198977d14392b9272cf9723c08f"
-setx SUPABASE_DB_PASSWORD "QBQmOUyqqgJXCpSo"
-```
+### 2. Edit Migration File
+Edit the newly created SQL file in `supabase/migrations/` with your changes
 
-### 1. Initialize Supabase Project
+### 3. Apply Migration to Remote
 ```bash
-npx supabase init --force
-```
-This creates the necessary Supabase configuration files in your project.
-
-### 2. Environment Variables
-Set environment variables in WSL:
-```bash
-export SUPABASE_ACCESS_TOKEN='sbp_829505ecb6492198977d14392b9272cf9723c08f'
-export SUPABASE_DB_PASSWORD='QBQmOUyqqgJXCpSo'
-```
-
-### 3. Link Project
-```bash
+# First ensure you're linked to the project
 npx supabase link --project-ref fnjkkmwmpxqvezqextxg
-```
-This command:
-- Connects to your remote Supabase project
-- Pulls the configuration
-- Creates a diff between local and remote configs
-- Establishes the link for future operations
 
-### 4. Generate Types
-
-#### Linux/MacOS (Bash)
-```bash
-# First, set the access token
-export SUPABASE_ACCESS_TOKEN='sbp_829505ecb6492198977d14392b9272cf9723c08f'
-
-# Then generate types
-npx supabase gen types typescript --project-id fnjkkmwmpxqvezqextxg > src/types/database.types.ts
+# Then push migrations
+npx supabase db push
 ```
 
-#### Windows (CMD)
-```cmd
-REM First, set the access token
-set SUPABASE_ACCESS_TOKEN=sbp_829505ecb6492198977d14392b9272cf9723c08f
+### 4. Generate Fresh Types
+After migrations are applied, ALWAYS regenerate types:
 
-REM Then generate types
-npx supabase gen types typescript --project-id fnjkkmwmpxqvezqextxg > src/types/database.types.ts
-```
-
-#### Windows (PowerShell)
 ```powershell
-# Set access token and generate types in one command to ensure proper encoding
+# Windows (PowerShell)
 $env:SUPABASE_ACCESS_TOKEN="sbp_829505ecb6492198977d14392b9272cf9723c08f"; npx supabase gen types typescript --project-id fnjkkmwmpxqvezqextxg | Out-File -Encoding UTF8 src/types/database.types.ts
 ```
 
-**Important Note**: When using PowerShell, always use the `Out-File -Encoding UTF8` command instead of the redirect operator (`>`) to ensure proper file encoding and avoid any binary file issues.
-
-**Note**: Make sure you have `prettier` installed globally (`npm install -g prettier`) or as a dev dependency in your project before running these commands.
-
-## Important Notes
-1. **Environment Variables**: 
-   - `SUPABASE_ACCESS_TOKEN`: Required for authentication with Supabase
-   - `SUPABASE_DB_PASSWORD`: Required for database operations
-
-2. **Environment Variables**:
-   - **Linux/MacOS**:
-     - Use `export VARIABLE_NAME='value'` to set environment variables
-     - Variables can be added to `~/.bashrc` for persistence
-     - Use `source ~/.bashrc` to reload environment variables
-   - **Windows**:
-     - Use `setx VARIABLE_NAME "value"` for permanent environment variables
-     - Use `set VARIABLE_NAME=value` for temporary session variables (CMD)
-     - Use `$env:VARIABLE_NAME="value"` in PowerShell
-     - Variables set with `setx` require restarting the terminal
-
-3. **Common Issues We Solved**:
-   - Token format errors were resolved by setting the environment variable directly in WSL
-   - Database access was simplified by setting `SUPABASE_DB_PASSWORD`
-   - Using `--force` with init ensures clean configuration
-
-4. **Configuration Files**:
-   - `supabase/config.toml`: Contains your project configuration
-   - `.env.local`: Stores your environment variables
-   - `src/types/database.types.ts`: Generated TypeScript types
-
-## Schema Management
-
-### Using Supabase MCP Server
-For quick schema updates and queries, you can use the Supabase MCP server:
-```typescript
-// Example: Adding a new column
-<use_mcp_tool>
-<server_name>supabase-server</server_name>
-<tool_name>query</tool_name>
-<arguments>
-{
-  "sql": "ALTER TABLE your_table ADD COLUMN new_column type;"
-}
-</arguments>
-</use_mcp_tool>
+```bash
+# Linux/MacOS
+export SUPABASE_ACCESS_TOKEN='sbp_829505ecb6492198977d14392b9272cf9723c08f'
+npx supabase gen types typescript --project-id fnjkkmwmpxqvezqextxg > src/types/database.types.ts
 ```
 
-### Schema Update Process
-1. Make changes using either:
-   - Supabase MCP server for quick updates
-   - Migration files for complex changes
-2. Update types:
-   ```bash
-   # Set access token and generate types
-   export SUPABASE_ACCESS_TOKEN='sbp_829505ecb6492198977d14392b9272cf9723c08f' && \
-   npx supabase gen types typescript --project-id fnjkkmwmpxqvezqextxg > src/types/database.types.ts
-   ```
-3. Test the changes in your application
+### 5. Commit Changes
+Commit both the migration file and the updated types file.
 
-## For Future Reference
-To access Supabase in a new environment:
-1. Set environment variables in WSL using `export`
-2. Initialize Supabase if needed
-3. Link your project
-4. Generate types
+## Environment Setup
+
+### Windows (PowerShell)
+```powershell
+$env:SUPABASE_ACCESS_TOKEN="sbp_829505ecb6492198977d14392b9272cf9723c08f"
+$env:SUPABASE_DB_PASSWORD="QBQmOUyqqgJXCpSo"
+```
+
+### Linux/MacOS (Bash)
+```bash
+export SUPABASE_ACCESS_TOKEN='sbp_829505ecb6492198977d14392b9272cf9723c08f'
+export SUPABASE_DB_PASSWORD='QBQmOUyqqgJXCpSo'
+```
+
+## Troubleshooting
+
+### Migration Issues
+If migrations are out of sync:
+```bash
+# Check status
+npx supabase migration list
+
+# Repair if needed
+npx supabase migration repair --status reverted TIMESTAMP_migration_name
+
+# Pull current schema
+npx supabase db pull
+```
+
+## Common Mistakes to Avoid
+1. ❌ NEVER modify database.types.ts directly
+2. ❌ NEVER make changes in Supabase dashboard
+3. ❌ NEVER skip generating fresh types after migrations
+4. ✅ ALWAYS use migration files for ALL database changes
+5. ✅ ALWAYS generate fresh types after applying migrations
+6. ✅ ALWAYS commit both migration and updated types files
