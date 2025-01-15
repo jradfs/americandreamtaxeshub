@@ -1,8 +1,10 @@
-import { NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
+import { NextResponse } from 'next/server'
+import { cookies } from 'next/headers'
+import { Database } from '@/types/database.types'
 
 export async function GET() {
-  const supabase = createClient();
+  const supabase = createRouteHandlerClient<Database>({ cookies })
   
   const workflowStages = [
     {

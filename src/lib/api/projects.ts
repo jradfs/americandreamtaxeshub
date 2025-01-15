@@ -1,54 +1,48 @@
-import { createClient } from '@/lib/supabase/server';
-import { Tables } from '@/types/database.types';
-import { ProjectFormValues } from '@/types/projects';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { getRouteClient } from '@/lib/supabase/server-client'
+import type { Database } from '@/types/database.types'
 
-export async function createProject(
-  projectData: ProjectFormValues
-): Promise<Tables<'projects'> | null> {
-  const supabase = createClient();
-  
-  const { data: project, error } = await supabase
+export async function getProjects() {
+  const supabase = getRouteClient()
+  const { data, error } = await supabase
     .from('projects')
-    .insert({
-      ...projectData,
-      status: projectData.status || 'not_started',
-      priority: projectData.priority || 'medium'
-    })
-    .select()
-    .single();
+    .select('*')
+    .order('created_at', { ascending: false })
 
-  if (error) {
-    console.error('Error creating project:', error);
-    return null;
-  }
-
-  return project;
+  if (error) throw error
+  return data
 }
 
-export async function createProjectFromTemplate(
-  projectData: ProjectFormValues,
-  templateId: string
-): Promise<Tables<'projects'> | null> {
-  const supabase = createClientComponentClient();
-  
-  const { data: project, error } = await supabase
-    .rpc('create_project_from_template', {
-      project_data: projectData,
-      template_id: templateId
-    });
+export async function createProject(project: any) {
+  const supabase = getRouteClient()
+  const { data, error } = await supabase
+    .from('projects')
+    .insert(project)
+    .select()
+    .single()
 
-  if (error) {
-    console.error('Error creating project from template:', error);
-    return null;
-  }
+  if (error) throw error
+  return data
+}
 
-  // Validate returned project has required fields
-  if (!project || typeof project !== 'object' || !('id' in project)) {
-    console.error('Invalid project data returned from RPC create_project_from_template');
-    return null;
-  }
+export async function updateProject(id: string, project: any) {
+  const supabase = getRouteClient()
+  const { data, error } = await supabase
+    .from('projects')
+    .update(project)
+    .eq('id', id)
+    .select()
+    .single()
 
-  // Type assertion after validation
-  return project as Tables<'projects'>;
+  if (error) throw error
+  return data
+}
+
+export async function deleteProject(id: string) {
+  const supabase = getRouteClient()
+  const { error } = await supabase
+    .from('projects')
+    .delete()
+    .eq('id', id)
+
+  if (error) throw error
 }

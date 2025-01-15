@@ -1,112 +1,110 @@
-import { useState, useCallback } from 'react'
-import { useSupabase } from '@/lib/supabase/supabase-provider'
-import { DbUser, DbUserInsert, DbUserUpdate, UserWithRelations } from '@/types/users'
+'use client'
+
+import { useState } from 'react'
+import { supabaseBrowserClient } from '@/lib/supabaseBrowserClient'
+import type { Database } from '@/types/database.types'
+
+type User = Database['public']['Tables']['users']['Row']
+type UserInsert = Database['public']['Tables']['users']['Insert']
 
 export function useUsers() {
-  const supabase = useSupabase()
-  const [users, setUsers] = useState<UserWithRelations[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<Error | null>(null)
 
-  const fetchUsers = useCallback(async () => {
+  async function getCurrentUser() {
     setLoading(true)
     try {
-      const { data, error } = await supabase
-        .from('users')
-        .select(`
-          *,
-          profile:profiles(*),
-          managed_projects:projects(*),
-          assigned_tasks:tasks(*),
-          team_memberships:project_team_members(*)
-        `)
-
+      const { data: { user }, error } = await supabaseBrowserClient.auth.getUser()
       if (error) throw error
-      setUsers(data || [])
+      if (!user) throw new Error('No user found')
+      return user
     } catch (err) {
-      setError(err instanceof Error ? err : new Error('Failed to fetch users'))
+      setError(err as Error)
+      throw err
     } finally {
       setLoading(false)
     }
-  }, [supabase])
+  }
 
-  const createUser = useCallback(async (userData: DbUserInsert) => {
+  async function getUsers() {
     setLoading(true)
     try {
-      const { data, error } = await supabase
+      const { data, error } = await supabaseBrowserClient
         .from('users')
-        .insert(userData)
-        .select(`
-          *,
-          profile:profiles(*),
-          managed_projects:projects(*),
-          assigned_tasks:tasks(*),
-          team_memberships:project_team_members(*)
-        `)
+        .select('*')
+        .order('created_at', { ascending: false })
 
       if (error) throw error
-      if (data) setUsers(prev => [...prev, data[0]])
-      return data?.[0]
+      return data
     } catch (err) {
-      setError(err instanceof Error ? err : new Error('Failed to create user'))
-      return null
+      setError(err as Error)
+      throw err
     } finally {
       setLoading(false)
     }
-  }, [supabase])
+  }
 
-  const updateUser = useCallback(async (userId: string, updates: DbUserUpdate) => {
+  async function createUser(user: UserInsert) {
     setLoading(true)
     try {
-      const { data, error } = await supabase
+      const { data, error } = await supabaseBrowserClient
+        .from('users')
+        .insert(user)
+        .select()
+        .single()
+
+      if (error) throw error
+      return data
+    } catch (err) {
+      setError(err as Error)
+      throw err
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function updateUser(id: string, updates: Partial<User>) {
+    setLoading(true)
+    try {
+      const { data, error } = await supabaseBrowserClient
         .from('users')
         .update(updates)
-        .eq('id', userId)
-        .select(`
-          *,
-          profile:profiles(*),
-          managed_projects:projects(*),
-          assigned_tasks:tasks(*),
-          team_memberships:project_team_members(*)
-        `)
+        .eq('id', id)
+        .select()
+        .single()
 
       if (error) throw error
-      if (data) {
-        setUsers(prev => 
-          prev.map(user => user.id === userId ? { ...user, ...data[0] } : user)
-        )
-      }
-      return data?.[0]
+      return data
     } catch (err) {
-      setError(err instanceof Error ? err : new Error('Failed to update user'))
-      return null
+      setError(err as Error)
+      throw err
     } finally {
       setLoading(false)
     }
-  }, [supabase])
+  }
 
-  const deleteUser = useCallback(async (userId: string) => {
+  async function deleteUser(id: string) {
     setLoading(true)
     try {
-      const { error } = await supabase
+      const { error } = await supabaseBrowserClient
         .from('users')
         .delete()
-        .eq('id', userId)
+        .eq('id', id)
 
       if (error) throw error
-      setUsers(prev => prev.filter(user => user.id !== userId))
     } catch (err) {
-      setError(err instanceof Error ? err : new Error('Failed to delete user'))
+      setError(err as Error)
+      throw err
     } finally {
       setLoading(false)
     }
-  }, [supabase])
+  }
 
   return {
-    users,
     loading,
     error,
-    fetchUsers,
+    getCurrentUser,
+    getUsers,
     createUser,
     updateUser,
     deleteUser

@@ -1,173 +1,105 @@
-import { useState, useEffect } from 'react'
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
-import { Database } from '@/types/database.types'
-import { 
-  DbWorkflowTemplate,
-  DbWorkflowTemplateInsert,
-  WorkflowTemplateWithRelations,
-  WorkflowStep,
-  WorkflowStatus,
-  WORKFLOW_STATUS
-} from '@/types/workflows'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Workflow, WorkflowStatus } from '@/types';
+import { supabaseBrowserClient as supabase } from '@/lib/supabaseBrowserClient';
 
-interface CreateWorkflowRequest {
-  name: string
-  description?: string | null
-  steps: WorkflowStep[]
-}
+const WORKFLOWS_KEY = 'workflows';
 
-interface UseWorkflowsOptions {
-  initialFilters?: {
-    status?: WorkflowStatus
-    search?: string
-  }
-  pageSize?: number
-}
+export const useWorkflows = () => {
+  const queryClient = useQueryClient();
 
-export function useWorkflows(options: UseWorkflowsOptions = {}) {
-  const [workflows, setWorkflows] = useState<WorkflowTemplateWithRelations[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<Error | null>(null)
-  const [filters, setFilters] = useState(options.initialFilters || {})
-  const [page, setPage] = useState(1)
-  const [pageSize] = useState(options.pageSize || 10)
+  const fetchWorkflows = async (): Promise<Workflow[]> => {
+    const { data, error } = await supabase
+      .from('workflows')
+      .select('*')
+      .order('created_at', { ascending: false });
 
-  const supabase = createClientComponentClient<Database>()
+    if (error) throw error;
+    return data;
+  };
 
-  useEffect(() => {
-    fetchWorkflows()
-  }, [filters, page, pageSize])
+  const createWorkflow = async (workflow: Omit<Workflow, 'id' | 'created_at' | 'updated_at'>) => {
+    const { data, error } = await supabase
+      .from('workflows')
+      .insert(workflow)
+      .select()
+      .single();
 
-  async function fetchWorkflows() {
-    try {
-      let query = supabase
-        .from('workflow_templates')
-        .select(`
-          *,
-          workflows:client_onboarding_workflows(*)
-        `)
+    if (error) throw error;
+    return data;
+  };
 
-      // Apply filters
-      if (filters.status) {
-        query = query.eq('status', filters.status)
-      }
-      if (filters.search) {
-        query = query.ilike('name', `%${filters.search}%`)
-      }
+  const updateWorkflow = async (workflow: Workflow) => {
+    const { data, error } = await supabase
+      .from('workflows')
+      .update(workflow)
+      .eq('id', workflow.id)
+      .select()
+      .single();
 
-      // Apply pagination
-      const from = (page - 1) * pageSize
-      const to = from + pageSize - 1
-      query = query.range(from, to)
+    if (error) throw error;
+    return data;
+  };
 
-      // Execute query
-      const { data, error: fetchError } = await query
-        .order('created_at', { ascending: false })
+  const changeWorkflowStatus = async (id: string, status: WorkflowStatus) => {
+    const { data, error } = await supabase
+      .from('workflows')
+      .update({ status })
+      .eq('id', id)
+      .select()
+      .single();
 
-      if (fetchError) throw fetchError
+    if (error) throw error;
+    return data;
+  };
 
-      setWorkflows(data || [])
-      setError(null)
-    } catch (err) {
-      console.error('Error fetching workflows:', err)
-      setError(err instanceof Error ? err : new Error('Failed to fetch workflows'))
-      setWorkflows([])
-    } finally {
-      setLoading(false)
-    }
-  }
+  const deleteWorkflow = async (id: string) => {
+    const { error } = await supabase
+      .from('workflows')
+      .delete()
+      .eq('id', id);
 
-  async function createWorkflow(workflowData: CreateWorkflowRequest): Promise<{ data: WorkflowTemplateWithRelations | null, error: Error | null }> {
-    try {
-      const { data, error: createError } = await supabase
-        .from('workflow_templates')
-        .insert({
-          name: workflowData.name,
-          description: workflowData.description,
-          steps: workflowData.steps
-        } satisfies DbWorkflowTemplateInsert)
-        .select(`
-          *,
-          workflows:client_onboarding_workflows(*)
-        `)
-        .single()
+    if (error) throw error;
+  };
 
-      if (createError) throw createError
+  const useWorkflowsQuery = () => useQuery({
+    queryKey: [WORKFLOWS_KEY],
+    queryFn: fetchWorkflows,
+  });
 
-      setWorkflows(prev => [data, ...prev])
-      return { data, error: null }
-    } catch (err) {
-      console.error('Error creating workflow:', err)
-      return { 
-        data: null, 
-        error: err instanceof Error ? err : new Error('Failed to create workflow')
-      }
-    }
-  }
+  const useCreateWorkflow = () => useMutation({
+    mutationFn: createWorkflow,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [WORKFLOWS_KEY] });
+    },
+  });
 
-  async function updateWorkflow(
-    id: number,
-    updates: Partial<DbWorkflowTemplate>
-  ): Promise<{ data: WorkflowTemplateWithRelations | null, error: Error | null }> {
-    try {
-      const { data, error: updateError } = await supabase
-        .from('workflow_templates')
-        .update(updates)
-        .eq('id', id)
-        .select(`
-          *,
-          workflows:client_onboarding_workflows(*)
-        `)
-        .single()
+  const useUpdateWorkflow = () => useMutation({
+    mutationFn: updateWorkflow,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [WORKFLOWS_KEY] });
+    },
+  });
 
-      if (updateError) throw updateError
+  const useChangeWorkflowStatus = () => useMutation({
+    mutationFn: ({ id, status }: { id: string; status: WorkflowStatus }) => 
+      changeWorkflowStatus(id, status),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [WORKFLOWS_KEY] });
+    },
+  });
 
-      setWorkflows(prev =>
-        prev.map(workflow =>
-          workflow.id === id ? data : workflow
-        )
-      )
-      return { data, error: null }
-    } catch (err) {
-      console.error('Error updating workflow:', err)
-      return { 
-        data: null, 
-        error: err instanceof Error ? err : new Error('Failed to update workflow')
-      }
-    }
-  }
-
-  async function deleteWorkflow(id: number): Promise<{ error: Error | null }> {
-    try {
-      const { error: deleteError } = await supabase
-        .from('workflow_templates')
-        .delete()
-        .eq('id', id)
-
-      if (deleteError) throw deleteError
-
-      setWorkflows(prev => prev.filter(workflow => workflow.id !== id))
-      return { error: null }
-    } catch (err) {
-      console.error('Error deleting workflow:', err)
-      return { 
-        error: err instanceof Error ? err : new Error('Failed to delete workflow')
-      }
-    }
-  }
+  const useDeleteWorkflow = () => useMutation({
+    mutationFn: deleteWorkflow,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [WORKFLOWS_KEY] });
+    },
+  });
 
   return {
-    workflows,
-    loading,
-    error,
-    filters,
-    page,
-    pageSize,
-    setFilters,
-    setPage,
-    fetchWorkflows,
-    createWorkflow,
-    updateWorkflow,
-    deleteWorkflow
-  }
-}
+    useWorkflowsQuery,
+    useCreateWorkflow,
+    useUpdateWorkflow,
+    useChangeWorkflowStatus,
+    useDeleteWorkflow,
+  };
+};

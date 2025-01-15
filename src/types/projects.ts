@@ -2,18 +2,19 @@ import { Database } from './database.types';
 import type { Json } from './database.types';
 import { z } from 'zod';
 import { projectSchema } from '@/lib/validations/project';
+import { TaskWithRelations } from './tasks';
 
-// Database types
+// Database types with explicit nullability
 export type DbProject = Database['public']['Tables']['projects']['Row'];
 export type DbProjectInsert = Database['public']['Tables']['projects']['Insert'];
 export type DbProjectUpdate = Database['public']['Tables']['projects']['Update'];
 
-// Enums from database
+// Enums from database with explicit values
 export type ProjectStatus = Database['public']['Enums']['project_status'];
 export type ServiceType = Database['public']['Enums']['service_type'];
 export type TaskPriority = Database['public']['Enums']['task_priority'];
 
-// Strongly typed JSON fields
+// Strongly typed JSON fields with explicit optional fields
 export interface TaxInfo {
   return_type?: Database['public']['Enums']['filing_type']
   filing_status?: string
@@ -64,42 +65,34 @@ export interface ProjectWithRelations extends Omit<DbProject, 'tax_info' | 'acco
   accounting_info: AccountingInfo | null
   payroll_info: PayrollInfo | null
   service_info: ServiceInfo | null
-  client?: Database['public']['Tables']['clients']['Row'] | null
-  template?: Database['public']['Tables']['project_templates']['Row'] | null
-  tasks?: Database['public']['Tables']['tasks']['Row'][]
-  team_members?: Database['public']['Tables']['project_team_members']['Row'][]
-  primary_manager_details?: Database['public']['Tables']['users']['Row'] | null
+  client: Database['public']['Tables']['clients']['Row'] | null
+  template: Database['public']['Tables']['project_templates']['Row'] | null
+  tasks: TaskWithRelations[]
+  team_members: Database['public']['Tables']['project_team_members']['Row'][]
+  primary_manager_details: Database['public']['Tables']['users']['Row'] | null
 }
 
-// Type guards
-export function isTaxInfo(value: unknown): value is TaxInfo {
-  return value !== null &&
-    typeof value === 'object' &&
-    (!('tax_year' in value) || typeof value.tax_year === 'number') &&
-    (!('estimated_refund' in value) || typeof value.estimated_refund === 'number') &&
-    (!('estimated_liability' in value) || typeof value.estimated_liability === 'number')
-}
+// Constants with explicit typing
+export const PROJECT_STATUS = {
+  NOT_STARTED: 'not_started',
+  ON_HOLD: 'on_hold',
+  CANCELLED: 'cancelled',
+  TODO: 'todo',
+  IN_PROGRESS: 'in_progress',
+  REVIEW: 'review',
+  BLOCKED: 'blocked',
+  COMPLETED: 'completed',
+  ARCHIVED: 'archived',
+} as const satisfies Record<string, ProjectStatus>
 
-export function isAccountingInfo(value: unknown): value is AccountingInfo {
-  return value !== null &&
-    typeof value === 'object' &&
-    (!('chart_of_accounts_setup' in value) || typeof value.chart_of_accounts_setup === 'boolean') &&
-    (!('accounting_method' in value) || ['cash', 'accrual'].includes(value.accounting_method as string))
-}
+export const SERVICE_TYPE = {
+  TAX_RETURN: 'tax_return',
+  BOOKKEEPING: 'bookkeeping',
+  PAYROLL: 'payroll',
+  ADVISORY: 'advisory',
+} as const satisfies Record<string, ServiceType>
 
-export function isPayrollInfo(value: unknown): value is PayrollInfo {
-  return value !== null &&
-    typeof value === 'object' &&
-    (!('employee_count' in value) || typeof value.employee_count === 'number') &&
-    (!('payroll_schedule' in value) || ['weekly', 'bi-weekly', 'semi-monthly', 'monthly'].includes(value.payroll_schedule as string))
-}
-
-export function isServiceInfo(value: unknown): value is ServiceInfo {
-  return value !== null &&
-    typeof value === 'object' &&
-    (!('frequency' in value) || ['one-time', 'weekly', 'monthly', 'quarterly', 'annually'].includes(value.frequency as string))
-}
-
+// Type guards with proper type narrowing
 export function isDbProject(project: unknown): project is DbProject {
   return project !== null &&
     typeof project === 'object' &&
@@ -108,7 +101,15 @@ export function isDbProject(project: unknown): project is DbProject {
     'status' in project
 }
 
-// Conversion utilities
+export function hasClient(project: ProjectWithRelations): project is ProjectWithRelations & { client: NonNullable<ProjectWithRelations['client']> } {
+  return project.client !== null
+}
+
+export function hasTemplate(project: ProjectWithRelations): project is ProjectWithRelations & { template: NonNullable<ProjectWithRelations['template']> } {
+  return project.template !== null
+}
+
+// Conversion utilities with strict type checking
 export function toProjectFormData(project: DbProject): Omit<ProjectFormData, 'service_type' | 'priority'> & {
   service_type?: ServiceType | null
   priority?: TaskPriority | null
@@ -126,10 +127,10 @@ export function toProjectFormData(project: DbProject): Omit<ProjectFormData, 'se
     ...formData,
     priority: priority as TaskPriority,
     service_type: service_type as ServiceType,
-    tax_info: isTaxInfo(project.tax_info) ? project.tax_info : null,
-    accounting_info: isAccountingInfo(project.accounting_info) ? project.accounting_info : null,
-    payroll_info: isPayrollInfo(project.payroll_info) ? project.payroll_info : null,
-    service_info: isServiceInfo(project.service_info) ? project.service_info : null,
+    tax_info: project.tax_info as TaxInfo | null,
+    accounting_info: project.accounting_info as AccountingInfo | null,
+    payroll_info: project.payroll_info as PayrollInfo | null,
+    service_info: project.service_info as ServiceInfo | null,
   }
 }
 
@@ -151,33 +152,4 @@ export function toDbProject(formData: ProjectFormData): DbProjectInsert {
     payroll_info: payroll_info as Json,
     service_info: service_info as Json,
   }
-}
-
-// Constants
-export const PROJECT_STATUS = {
-  NOT_STARTED: 'not_started',
-  ON_HOLD: 'on_hold',
-  CANCELLED: 'cancelled',
-  TODO: 'todo',
-  IN_PROGRESS: 'in_progress',
-  REVIEW: 'review',
-  BLOCKED: 'blocked',
-  COMPLETED: 'completed',
-  ARCHIVED: 'archived',
-} as const satisfies Record<string, ProjectStatus>
-
-export const SERVICE_TYPE = {
-  TAX_RETURN: 'tax_return',
-  BOOKKEEPING: 'bookkeeping',
-  PAYROLL: 'payroll',
-  ADVISORY: 'advisory',
-} as const satisfies Record<string, ServiceType>
-
-// Helper functions for type checking
-export function isValidProjectStatus(status: string): status is ProjectStatus {
-  return Object.values(PROJECT_STATUS).includes(status as ProjectStatus)
-}
-
-export function isValidServiceType(type: string): type is ServiceType {
-  return Object.values(SERVICE_TYPE).includes(type as ServiceType)
 }

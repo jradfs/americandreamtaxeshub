@@ -1,77 +1,61 @@
-import { createBrowserClient } from '@supabase/ssr'
-import { Database } from '@/types/database.types'
-import { toast } from "@/components/ui/use-toast"
+"use client"
 
-const supabase = createBrowserClient<Database>(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
+import { supabaseBrowserClient } from '@/lib/supabaseBrowserClient'
+import type { Database } from '@/types/database.types'
 
-export async function updateTask(
-  taskId: string, 
-  updates: Partial<Database['public']['Tables']['tasks']['Row']>
-) {
-  // Prepare updates, removing any undefined or null values
-  const filteredUpdates = Object.fromEntries(
-    Object.entries(updates).filter(([_, v]) => v !== undefined && v !== null)
-  )
-
-  const { data, error } = await supabase
-    .from('tasks')
-    .update({
-      ...filteredUpdates,
-      updated_at: new Date().toISOString()
-    })
-    .eq('id', taskId)
-
-  if (error) {
-    toast({
-      title: "Error updating task",
-      description: error.message,
-      variant: "destructive"
-    })
-    throw error
-  }
-
-  return data
-}
+type Task = Database['public']['Tables']['tasks']['Row']
+type TaskInsert = Database['public']['Tables']['tasks']['Insert']
+type TaskUpdate = Database['public']['Tables']['tasks']['Update']
 
 export async function getTasks() {
-  const { data, error } = await supabase
+  const { data, error } = await supabaseBrowserClient
     .from('tasks')
     .select('*')
+    .order('created_at', { ascending: false })
 
-  if (error) {
-    toast({
-      title: "Error fetching tasks",
-      description: error.message,
-      variant: "destructive"
-    })
-    throw error
-  }
-
+  if (error) throw error
   return data
 }
 
-export async function createTask(
-  taskData: Omit<Database['public']['Tables']['tasks']['Insert'], 'id' | 'created_at' | 'updated_at'>
-) {
-  const { data, error } = await supabase
+export async function getTasksByProject(projectId: string) {
+  const { data, error } = await supabaseBrowserClient
     .from('tasks')
-    .insert({
-      ...taskData,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    })
+    .select('*')
+    .eq('project_id', projectId)
+    .order('created_at', { ascending: false })
 
-  if (error) {
-    toast({
-      title: "Error creating task",
-      description: error.message,
-      variant: "destructive"
-    })
-    throw error
-  }
-
+  if (error) throw error
   return data
+}
+
+export async function createTask(task: TaskInsert) {
+  const { data, error } = await supabaseBrowserClient
+    .from('tasks')
+    .insert(task)
+    .select()
+    .single()
+
+  if (error) throw error
+  return data
+}
+
+export async function updateTask(id: string, updates: Partial<TaskUpdate>) {
+  const { data, error } = await supabaseBrowserClient
+    .from('tasks')
+    .update(updates)
+    .eq('id', id)
+    .select()
+    .single()
+
+  if (error) throw error
+  return data
+}
+
+export async function deleteTask(id: string) {
+  const { error } = await supabaseBrowserClient
+    .from('tasks')
+    .delete()
+    .eq('id', id)
+
+  if (error) throw error
 }

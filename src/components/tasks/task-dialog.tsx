@@ -1,160 +1,131 @@
 'use client'
 
-import { useEffect } from 'react'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
+import { useState } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
-import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { TaskFormData, taskSchema, TaskWithRelations } from '@/types/tasks'
-import { taskStatusOptions, taskPriorityOptions } from '@/lib/constants'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { TaskWithRelations, TaskFormData, taskSchema, TASK_STATUS, TASK_PRIORITY } from '@/types/tasks'
+import { ErrorBoundary } from '@/components/error-boundary'
+import { useToast } from '@/components/ui/use-toast'
 
 interface TaskDialogProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
+  isOpen: boolean
+  setIsOpen: (open: boolean) => void
+  taskData?: TaskWithRelations | null
   onSubmit: (data: TaskFormData) => Promise<void>
-  taskData?: TaskWithRelations
-  projectId?: string
+  isSubmitting?: boolean
 }
 
 export function TaskDialog({
-  open,
-  onOpenChange,
-  onSubmit,
+  isOpen,
+  setIsOpen,
   taskData,
-  projectId
+  onSubmit,
+  isSubmitting = false
 }: TaskDialogProps) {
+  const { toast } = useToast()
+  const [error, setError] = useState<Error | null>(null)
+
   const form = useForm<TaskFormData>({
     resolver: zodResolver(taskSchema),
     defaultValues: {
-      title: '',
-      description: '',
-      status: 'todo',
-      priority: 'medium',
-      project_id: projectId || null,
-      assignee_id: null
+      title: taskData?.title || '',
+      description: taskData?.description || '',
+      status: taskData?.status || TASK_STATUS.TODO,
+      priority: taskData?.priority || TASK_PRIORITY.MEDIUM,
+      project_id: taskData?.project_id || null,
+      assignee_id: taskData?.assignee_id || null,
+      due_date: taskData?.due_date || null,
+      start_date: taskData?.start_date || null,
+      tax_form_type: taskData?.tax_form_type || null,
+      category: taskData?.category || null
     }
   })
 
-  useEffect(() => {
-    if (taskData) {
-      form.reset({
-        title: taskData.title,
-        description: taskData.description || '',
-        status: taskData.status,
-        priority: taskData.priority || 'medium',
-        project_id: taskData.project_id,
-        assignee_id: taskData.assignee_id
-      })
-    } else {
-      form.reset({
-        title: '',
-        description: '',
-        status: 'todo',
-        priority: 'medium',
-        project_id: projectId || null,
-        assignee_id: null
-      })
-    }
-  }, [taskData, projectId, form])
-
   const handleSubmit = async (data: TaskFormData) => {
     try {
+      setError(null)
       await onSubmit(data)
+      setIsOpen(false)
       form.reset()
-      onOpenChange(false)
-    } catch (error) {
-      // Error will be handled by the error boundary
-      throw error
+      toast({
+        title: `Task ${taskData ? 'updated' : 'created'} successfully`,
+        variant: 'default'
+      })
+    } catch (err) {
+      setError(err as Error)
+      toast({
+        title: 'Error',
+        description: (err as Error).message || `Failed to ${taskData ? 'update' : 'create'} task`,
+        variant: 'destructive'
+      })
     }
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>{taskData ? 'Edit Task' : 'Create Task'}</DialogTitle>
-        </DialogHeader>
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <DialogContent className="sm:max-w-[425px]">
+        <ErrorBoundary>
+          <DialogHeader>
+            <DialogTitle>{taskData ? 'Edit Task' : 'Create Task'}</DialogTitle>
+          </DialogHeader>
 
-        <Form {...form}>
-          <form 
-            onSubmit={form.handleSubmit(handleSubmit)}
-            className="space-y-4"
-            aria-label={taskData ? 'Edit task form' : 'Create task form'}
-          >
-            <FormField
-              control={form.control}
-              name="title"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Title</FormLabel>
-                  <FormControl>
-                    <Input
-                      {...field}
-                      placeholder="Enter task title"
-                      aria-required="true"
-                      aria-invalid={!!form.formState.errors.title}
-                      aria-describedby={form.formState.errors.title ? 'title-error' : undefined}
-                    />
-                  </FormControl>
-                  <FormMessage id="title-error" role="alert" />
-                </FormItem>
-              )}
-            />
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+              <FormField
+                control={form.control}
+                name="title"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Title</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="Enter task title" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-            <FormField
-              control={form.control}
-              name="description"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Description</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      {...field}
-                      placeholder="Enter task description"
-                      aria-invalid={!!form.formState.errors.description}
-                      aria-describedby={form.formState.errors.description ? 'description-error' : undefined}
-                    />
-                  </FormControl>
-                  <FormMessage id="description-error" role="alert" />
-                </FormItem>
-              )}
-            />
+              <FormField
+                control={form.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Description</FormLabel>
+                    <FormControl>
+                      <Textarea {...field} placeholder="Enter task description" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-            <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
                 name="status"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Status</FormLabel>
-                    <Select
-                      value={field.value}
-                      onValueChange={field.onChange}
-                      aria-invalid={!!form.formState.errors.status}
-                      aria-describedby={form.formState.errors.status ? 'status-error' : undefined}
-                    >
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select status" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {taskStatusOptions.map((status) => (
-                          <SelectItem 
-                            key={status.value} 
-                            value={status.value}
-                            aria-label={status.label}
-                          >
-                            {status.label}
+                        {Object.entries(TASK_STATUS).map(([key, value]) => (
+                          <SelectItem key={key} value={value}>
+                            {key.replace(/_/g, ' ')}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
-                    <FormMessage id="status-error" role="alert" />
+                    <FormMessage />
                   </FormItem>
                 )}
               />
@@ -165,53 +136,47 @@ export function TaskDialog({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Priority</FormLabel>
-                    <Select
-                      value={field.value}
-                      onValueChange={field.onChange}
-                      aria-invalid={!!form.formState.errors.priority}
-                      aria-describedby={form.formState.errors.priority ? 'priority-error' : undefined}
-                    >
+                    <Select onValueChange={field.onChange} defaultValue={field.value || undefined}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select priority" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {taskPriorityOptions.map((priority) => (
-                          <SelectItem 
-                            key={priority.value} 
-                            value={priority.value}
-                            aria-label={priority.label}
-                          >
-                            {priority.label}
+                        {Object.entries(TASK_PRIORITY).map(([key, value]) => (
+                          <SelectItem key={key} value={value}>
+                            {key.replace(/_/g, ' ')}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
-                    <FormMessage id="priority-error" role="alert" />
+                    <FormMessage />
                   </FormItem>
                 )}
               />
-            </div>
 
-            <div className="flex justify-end gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => onOpenChange(false)}
-              >
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                disabled={form.formState.isSubmitting}
-                aria-disabled={form.formState.isSubmitting}
-              >
-                {form.formState.isSubmitting ? 'Saving...' : taskData ? 'Save Changes' : 'Create Task'}
-              </Button>
-            </div>
-          </form>
-        </Form>
+              {error && (
+                <div className="text-sm text-destructive">
+                  {error.message}
+                </div>
+              )}
+
+              <div className="flex justify-end space-x-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsOpen(false)}
+                  disabled={isSubmitting}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={isSubmitting}>
+                  {isSubmitting ? 'Saving...' : taskData ? 'Update' : 'Create'}
+                </Button>
+              </div>
+            </form>
+          </Form>
+        </ErrorBoundary>
       </DialogContent>
     </Dialog>
   )

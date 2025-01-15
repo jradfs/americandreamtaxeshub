@@ -10,7 +10,7 @@ const nextConfig = {
     '@tanstack/react-table',
     'lucide-react',
   ],
-  webpack: (config) => {
+  webpack: (config, { isServer }) => {
     config.resolve = {
       ...config.resolve,
       alias: {
@@ -19,6 +19,12 @@ const nextConfig = {
       },
       extensions: ['.ts', '.tsx', '.js', '.jsx', '.json'],
     };
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        punycode: false,
+      };
+    }
     return config;
   },
   poweredByHeader: false,
@@ -32,15 +38,16 @@ const nextConfig = {
       '@supabase/ssr',
       '@tanstack/react-table'
     ],
-    serverComponentsExternalPackages: ['pg', 'postgres'],
+    serverActions: {
+      bodySizeLimit: '2mb',
+      allowedOrigins: ['localhost:3000', 'localhost:3001'],
+    },
   },
   compiler: {
     removeConsole: process.env.NODE_ENV === 'production',
-    styledComponents: true,
   },
   productionBrowserSourceMaps: false,
-  swcMinify: true,
 }
 
-export default nextConfig;
+module.exports = nextConfig;
 

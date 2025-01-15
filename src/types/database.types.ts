@@ -1,4 +1,4 @@
-﻿export type Json =
+﻿﻿export type Json =
   | string
   | number
   | boolean
@@ -206,6 +206,7 @@ export type Database = {
       clients: {
         Row: {
           accounting_method: string | null
+          active_services: Database["public"]["Enums"]["service_type"][] | null
           address: string | null
           assigned_preparer_id: string | null
           business_tax_id: string | null
@@ -213,11 +214,15 @@ export type Database = {
           city: string | null
           company_name: string | null
           contact_email: string
+          contact_info: Json | null
           created_at: string | null
           document_deadline: string | null
+          document_requirements: Json | null
+          ein: string | null
           email: string | null
           filing_status: string | null
           fiscal_year_end: string | null
+          fts_search: unknown | null
           full_name: string | null
           id: string
           individual_tax_id: string | null
@@ -227,8 +232,12 @@ export type Database = {
           next_appointment: string | null
           notes: string | null
           onboarding_notes: string | null
+          onboarding_progress: Json | null
+          owner_id: string | null
           phone: string | null
           primary_contact_name: string | null
+          service_config: Json | null
+          service_history: Json | null
           state: string | null
           status: Database["public"]["Enums"]["client_status"]
           tax_id: string | null
@@ -242,6 +251,7 @@ export type Database = {
         }
         Insert: {
           accounting_method?: string | null
+          active_services?: Database["public"]["Enums"]["service_type"][] | null
           address?: string | null
           assigned_preparer_id?: string | null
           business_tax_id?: string | null
@@ -249,11 +259,15 @@ export type Database = {
           city?: string | null
           company_name?: string | null
           contact_email: string
+          contact_info?: Json | null
           created_at?: string | null
           document_deadline?: string | null
+          document_requirements?: Json | null
+          ein?: string | null
           email?: string | null
           filing_status?: string | null
           fiscal_year_end?: string | null
+          fts_search?: unknown | null
           full_name?: string | null
           id: string
           individual_tax_id?: string | null
@@ -263,8 +277,12 @@ export type Database = {
           next_appointment?: string | null
           notes?: string | null
           onboarding_notes?: string | null
+          onboarding_progress?: Json | null
+          owner_id?: string | null
           phone?: string | null
           primary_contact_name?: string | null
+          service_config?: Json | null
+          service_history?: Json | null
           state?: string | null
           status: Database["public"]["Enums"]["client_status"]
           tax_id?: string | null
@@ -278,6 +296,7 @@ export type Database = {
         }
         Update: {
           accounting_method?: string | null
+          active_services?: Database["public"]["Enums"]["service_type"][] | null
           address?: string | null
           assigned_preparer_id?: string | null
           business_tax_id?: string | null
@@ -285,11 +304,15 @@ export type Database = {
           city?: string | null
           company_name?: string | null
           contact_email?: string
+          contact_info?: Json | null
           created_at?: string | null
           document_deadline?: string | null
+          document_requirements?: Json | null
+          ein?: string | null
           email?: string | null
           filing_status?: string | null
           fiscal_year_end?: string | null
+          fts_search?: unknown | null
           full_name?: string | null
           id?: string
           individual_tax_id?: string | null
@@ -299,8 +322,12 @@ export type Database = {
           next_appointment?: string | null
           notes?: string | null
           onboarding_notes?: string | null
+          onboarding_progress?: Json | null
+          owner_id?: string | null
           phone?: string | null
           primary_contact_name?: string | null
+          service_config?: Json | null
+          service_history?: Json | null
           state?: string | null
           status?: Database["public"]["Enums"]["client_status"]
           tax_id?: string | null
@@ -311,6 +338,39 @@ export type Database = {
           updated_at?: string | null
           user_id?: string | null
           zip?: string | null
+        }
+        Relationships: []
+      }
+      document_templates: {
+        Row: {
+          business_types: Database["public"]["Enums"]["business_type"][] | null
+          category: Database["public"]["Enums"]["document_category"]
+          created_at: string | null
+          id: string
+          name: string
+          required_for: Database["public"]["Enums"]["service_type"][] | null
+          updated_at: string | null
+          validation_rules: Json | null
+        }
+        Insert: {
+          business_types?: Database["public"]["Enums"]["business_type"][] | null
+          category: Database["public"]["Enums"]["document_category"]
+          created_at?: string | null
+          id?: string
+          name: string
+          required_for?: Database["public"]["Enums"]["service_type"][] | null
+          updated_at?: string | null
+          validation_rules?: Json | null
+        }
+        Update: {
+          business_types?: Database["public"]["Enums"]["business_type"][] | null
+          category?: Database["public"]["Enums"]["document_category"]
+          created_at?: string | null
+          id?: string
+          name?: string
+          required_for?: Database["public"]["Enums"]["service_type"][] | null
+          updated_at?: string | null
+          validation_rules?: Json | null
         }
         Relationships: []
       }
@@ -356,6 +416,89 @@ export type Database = {
           },
           {
             foreignKeyName: "document_tracking_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      documents: {
+        Row: {
+          category: Database["public"]["Enums"]["document_category"]
+          client_id: string | null
+          document_timeline: Json | null
+          extracted_data: Json | null
+          file_name: string
+          file_path: string
+          id: string
+          metadata: Json | null
+          processing_status: string | null
+          project_id: string | null
+          related_documents: string[] | null
+          tax_year: number | null
+          uploaded_at: string | null
+          uploaded_by: string | null
+          verification_status: string | null
+        }
+        Insert: {
+          category: Database["public"]["Enums"]["document_category"]
+          client_id?: string | null
+          document_timeline?: Json | null
+          extracted_data?: Json | null
+          file_name: string
+          file_path: string
+          id?: string
+          metadata?: Json | null
+          processing_status?: string | null
+          project_id?: string | null
+          related_documents?: string[] | null
+          tax_year?: number | null
+          uploaded_at?: string | null
+          uploaded_by?: string | null
+          verification_status?: string | null
+        }
+        Update: {
+          category?: Database["public"]["Enums"]["document_category"]
+          client_id?: string | null
+          document_timeline?: Json | null
+          extracted_data?: Json | null
+          file_name?: string
+          file_path?: string
+          id?: string
+          metadata?: Json | null
+          processing_status?: string | null
+          project_id?: string | null
+          related_documents?: string[] | null
+          tax_year?: number | null
+          uploaded_at?: string | null
+          uploaded_by?: string | null
+          verification_status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "documents_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documents_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "project_dashboard"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documents_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "project_progress"
+            referencedColumns: ["project_id"]
+          },
+          {
+            foreignKeyName: "documents_project_id_fkey"
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"
@@ -689,15 +832,18 @@ export type Database = {
       projects: {
         Row: {
           accounting_info: Json | null
+          automation_config: Json | null
           client_id: string | null
           completed_tasks: number | null
           completion_percentage: number | null
           created_at: string | null
+          deadline: string | null
           description: string | null
           due_date: string | null
           end_date: string | null
           id: string
           name: string
+          owner_id: string | null
           parent_project_id: string | null
           payroll_info: Json | null
           primary_manager: string | null
@@ -707,23 +853,30 @@ export type Database = {
           stage: string | null
           start_date: string | null
           status: Database["public"]["Enums"]["project_status"]
+          status_history: Json | null
           task_count: number | null
           tax_info: Json | null
           tax_return_id: string | null
+          team_members: string[] | null
+          template_data: Json | null
           template_id: string | null
           updated_at: string | null
+          workflow_state: Json | null
         }
         Insert: {
           accounting_info?: Json | null
+          automation_config?: Json | null
           client_id?: string | null
           completed_tasks?: number | null
           completion_percentage?: number | null
           created_at?: string | null
+          deadline?: string | null
           description?: string | null
           due_date?: string | null
           end_date?: string | null
           id?: string
           name: string
+          owner_id?: string | null
           parent_project_id?: string | null
           payroll_info?: Json | null
           primary_manager?: string | null
@@ -733,23 +886,30 @@ export type Database = {
           stage?: string | null
           start_date?: string | null
           status: Database["public"]["Enums"]["project_status"]
+          status_history?: Json | null
           task_count?: number | null
           tax_info?: Json | null
           tax_return_id?: string | null
+          team_members?: string[] | null
+          template_data?: Json | null
           template_id?: string | null
           updated_at?: string | null
+          workflow_state?: Json | null
         }
         Update: {
           accounting_info?: Json | null
+          automation_config?: Json | null
           client_id?: string | null
           completed_tasks?: number | null
           completion_percentage?: number | null
           created_at?: string | null
+          deadline?: string | null
           description?: string | null
           due_date?: string | null
           end_date?: string | null
           id?: string
           name?: string
+          owner_id?: string | null
           parent_project_id?: string | null
           payroll_info?: Json | null
           primary_manager?: string | null
@@ -759,11 +919,15 @@ export type Database = {
           stage?: string | null
           start_date?: string | null
           status?: Database["public"]["Enums"]["project_status"]
+          status_history?: Json | null
           task_count?: number | null
           tax_info?: Json | null
           tax_return_id?: string | null
+          team_members?: string[] | null
+          template_data?: Json | null
           template_id?: string | null
           updated_at?: string | null
+          workflow_state?: Json | null
         }
         Relationships: [
           {
@@ -1199,6 +1363,67 @@ export type Database = {
           steps?: Json
         }
         Relationships: []
+      },
+      workflows: {
+        Row: {
+          id: string
+          name: string
+          description: string | null
+          version: string
+          status: string
+          steps: Json
+          triggers: Json
+          conditions: Json
+          actions: Json
+          created_at: string
+          updated_at: string
+          created_by: string | null
+          updated_by: string | null
+        }
+        Insert: {
+          id?: string
+          name: string
+          description?: string | null
+          version?: string
+          status?: string
+          steps?: Json
+          triggers?: Json
+          conditions?: Json
+          actions?: Json
+          created_at?: string
+          updated_at?: string
+          created_by?: string | null
+          updated_by?: string | null
+        }
+        Update: {
+          id?: string
+          name?: string
+          description?: string | null
+          version?: string
+          status?: string
+          steps?: Json
+          triggers?: Json
+          conditions?: Json
+          actions?: Json
+          created_at?: string
+          updated_at?: string
+          created_by?: string | null
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workflows_created_by_fkey"
+            columns: ["created_by"]
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workflows_updated_by_fkey"
+            columns: ["updated_by"]
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          }
+        ]
       }
     }
     Views: {
@@ -1279,13 +1504,30 @@ export type Database = {
             }
             Returns: unknown
           }
-      clone_project_template: {
+      clone_project_template:
+        | {
+            Args: {
+              template_id: string
+              client_id: string
+              custom_config?: Json
+            }
+            Returns: string
+          }
+        | {
+            Args: {
+              template_id: string
+              new_client_id: string
+              new_tax_year: number
+            }
+            Returns: string
+          }
+      clone_workflow_template: {
         Args: {
           template_id: string
-          new_client_id: string
-          new_tax_year: number
+          project_id: string
+          custom_config?: Json
         }
-        Returns: string
+        Returns: Json
       }
       commit_transaction: {
         Args: Record<PropertyKey, never>
@@ -1717,6 +1959,21 @@ export type Database = {
           updated_at: string | null
         }
       }
+      update_workflow_state: {
+        Args: {
+          project_id: string
+          step_name: string
+          step_status: string
+          step_data?: Json
+        }
+        Returns: Json
+      }
+      validate_document_requirements: {
+        Args: {
+          project_id: string
+        }
+        Returns: Json
+      }
       validate_json_data: {
         Args: {
           data: Json
@@ -1768,8 +2025,21 @@ export type Database = {
       }
     }
     Enums: {
+      business_type:
+        | "individual"
+        | "sole_proprietorship"
+        | "partnership"
+        | "llc"
+        | "s_corporation"
+        | "c_corporation"
       client_status: "active" | "inactive" | "pending" | "archived"
       client_type: "business" | "individual"
+      document_category:
+        | "tax_return"
+        | "financial_statement"
+        | "payroll"
+        | "corporate"
+        | "supporting"
       document_status: "pending" | "uploaded" | "verified" | "rejected"
       filing_type:
         | "individual"
@@ -1791,7 +2061,7 @@ export type Database = {
         | "archived"
       service_type: "tax_return" | "bookkeeping" | "payroll" | "advisory"
       task_priority: "low" | "medium" | "high" | "urgent"
-      task_status: "todo" | "in_progress" | "review" | "completed"
+      task_status: "not_started" | "in_progress" | "review" | "completed"
       tax_return_status:
         | "not_started"
         | "gathering_documents"

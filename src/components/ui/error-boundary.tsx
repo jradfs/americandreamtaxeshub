@@ -1,53 +1,55 @@
 'use client';
 
-import React from 'react';
-import { AlertTriangle } from 'lucide-react';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Button } from '@/components/ui/button';
+import { Component, ErrorInfo, ReactNode } from 'react';
+import { Card, CardContent } from './card';
+import { Button } from './button';
+import { AlertCircle } from 'lucide-react';
 
-interface ErrorBoundaryProps {
-  children: React.ReactNode;
+interface Props {
+  children: ReactNode;
 }
 
-interface ErrorBoundaryState {
+interface State {
   hasError: boolean;
-  error?: Error;
+  error: Error | null;
 }
 
-export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
-  constructor(props: ErrorBoundaryProps) {
-    super(props);
-    this.state = { hasError: false };
+export class ErrorBoundary extends Component<Props, State> {
+  public state: State = {
+    hasError: false,
+    error: null,
+  };
+
+  public static getDerivedStateFromError(error: Error): State {
+    return { hasError: true, error };
   }
 
-  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
-    return {
-      hasError: true,
-      error
-    };
+  public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    console.error('Uncaught error:', error, errorInfo);
   }
 
-  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('Error caught by boundary:', error, errorInfo);
-  }
-
-  render() {
+  public render() {
     if (this.state.hasError) {
       return (
-        <Alert variant="destructive">
-          <AlertTriangle className="h-4 w-4" />
-          <AlertTitle>Something went wrong</AlertTitle>
-          <AlertDescription>
-            {this.state.error?.message || 'An unexpected error occurred.'}
-          </AlertDescription>
-          <Button
-            variant="outline"
-            className="mt-4"
-            onClick={() => this.setState({ hasError: false })}
-          >
-            Try Again
-          </Button>
-        </Alert>
+        <Card className="border-destructive">
+          <CardContent className="pt-6">
+            <div className="flex flex-col items-center justify-center space-y-4">
+              <AlertCircle className="h-12 w-12 text-destructive" />
+              <div className="text-center">
+                <h2 className="text-lg font-semibold">Something went wrong</h2>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {this.state.error?.message || 'An unexpected error occurred'}
+                </p>
+              </div>
+              <Button
+                variant="outline"
+                onClick={() => this.setState({ hasError: false, error: null })}
+              >
+                Try again
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       );
     }
 

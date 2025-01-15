@@ -1,12 +1,12 @@
 'use client'
 
 import { useCallback, useState } from 'react'
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { supabaseBrowserClient } from '@/lib/supabaseBrowserClient'
 import type { Tables } from '@/types/database.types'
 import type { ProjectFormData } from '@/lib/validations/project'
 
 export function useProjects() {
-  const supabase = createClientComponentClient()
+  const supabase = supabaseBrowserClient
   const [sorting, setSorting] = useState({ column: 'created_at', direction: 'desc' })
   const [filters, setFilters] = useState({})
   const [pagination, setPagination] = useState({ page: 1, pageSize: 10 })
@@ -49,9 +49,17 @@ export function useProjects() {
 
   const createProject = useCallback(async (data: ProjectFormData) => {
     try {
+      // Ensure required fields are present
+      const projectData = {
+        ...data,
+        name: data.name || 'Unnamed Project', // Fallback if somehow undefined
+        client_id: data.client_id,
+        status: data.status || 'not_started'
+      }
+
       const { error } = await supabase
         .from('projects')
-        .insert(data)
+        .insert(projectData)
         .select()
         .single()
 

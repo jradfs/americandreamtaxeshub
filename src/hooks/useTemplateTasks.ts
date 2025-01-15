@@ -1,64 +1,69 @@
-import { useCallback, useEffect, useState } from 'react'
-import { useSupabase } from 'src/lib/supabase/supabase-provider'
-import { TemplateTask } from 'src/types/hooks'
+'use client'
+
+import { useState, useCallback, useEffect } from 'react'
+import { useAuth } from '@/providers/unified-auth-provider'
+import type { Database } from '@/types/database.types'
+
+type TemplateTask = Database['public']['Tables']['template_tasks']['Row']
 
 export function useTemplateTasks(templateId: string) {
-  const { supabase } = useSupabase()
+  const { supabase } = useAuth()
   const [tasks, setTasks] = useState<TemplateTask[]>([])
-  const [loading, setLoading] = useState(true)
+  const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
 
   const fetchTasks = useCallback(async () => {
     try {
-      setLoading(true)
+      setIsLoading(true)
       const { data, error } = await supabase
         .from('template_tasks')
         .select('*')
         .eq('template_id', templateId)
-        .order('order_index', { ascending: true })
+        .order('created_at', { ascending: false })
 
       if (error) throw error
-
-      setTasks(data)
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error('Failed to fetch template tasks'))
+      setTasks(data || [])
+    } catch (e) {
+      setError(e instanceof Error ? e : new Error('Failed to fetch template tasks'))
     } finally {
-      setLoading(false)
+      setIsLoading(false)
     }
   }, [supabase, templateId])
 
-  const createTask = useCallback(async (task: Omit<TemplateTask, 'id' | 'created_at' | 'updated_at'>) => {
+  useEffect(() => {
+    fetchTasks()
+  }, [fetchTasks])
+
+  const createTask = useCallback(async (taskData: Partial<TemplateTask>) => {
     try {
       const { data, error } = await supabase
         .from('template_tasks')
-        .insert(task)
+        .insert([{ ...taskData, template_id: templateId }])
         .select()
         .single()
 
       if (error) throw error
-
-      setTasks(prev => [...prev, data])
+      setTasks(prev => [data, ...prev])
       return data
-    } catch (err) {
-      throw err instanceof Error ? err : new Error('Failed to create template task')
+    } catch (e) {
+      throw e instanceof Error ? e : new Error('Failed to create template task')
     }
-  }, [supabase])
+  }, [supabase, templateId])
 
-  const updateTask = useCallback(async (id: string, updates: Partial<TemplateTask>) => {
+  const updateTask = useCallback(async (id: string, taskData: Partial<TemplateTask>) => {
     try {
       const { data, error } = await supabase
         .from('template_tasks')
-        .update(updates)
+        .update(taskData)
         .eq('id', id)
         .select()
         .single()
 
       if (error) throw error
-
-      setTasks(prev => prev.map(t => t.id === id ? data : t))
+      setTasks(prev => prev.map(task => task.id === id ? data : task))
       return data
-    } catch (err) {
-      throw err instanceof Error ? err : new Error('Failed to update template task')
+    } catch (e) {
+      throw e instanceof Error ? e : new Error('Failed to update template task')
     }
   }, [supabase])
 
@@ -70,42 +75,19 @@ export function useTemplateTasks(templateId: string) {
         .eq('id', id)
 
       if (error) throw error
-
-      setTasks(prev => prev.filter(t => t.id !== id))
-    } catch (err) {
-      throw err instanceof Error ? err : new Error('Failed to delete template task')
+      setTasks(prev => prev.filter(task => task.id !== id))
+    } catch (e) {
+      throw e instanceof Error ? e : new Error('Failed to delete template task')
     }
   }, [supabase])
 
-  const reorderTask = useCallback(async (taskId: string, newOrderIndex: number) => {
-    try {
-      const { data, error } = await supabase
-        .from('template_tasks')
-        .update({ order_index: newOrderIndex })
-        .eq('id', taskId)
-        .select()
-        .single()
-
-      if (error) throw error
-
-      await fetchTasks() // Refresh the list to get the correct order
-    } catch (err) {
-      throw err instanceof Error ? err : new Error('Failed to reorder template task')
-    }
-  }, [supabase, fetchTasks])
-
-  useEffect(() => {
-    fetchTasks()
-  }, [fetchTasks])
-
   return {
     tasks,
-    loading,
+    isLoading,
     error,
     createTask,
     updateTask,
     deleteTask,
-    reorderTask,
-    refreshTasks: fetchTasks,
+    refetch: fetchTasks
   }
 }

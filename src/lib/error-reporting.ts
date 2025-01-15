@@ -1,54 +1,41 @@
-import * as Sentry from '@sentry/nextjs'
+/**
+ * Simple error reporting utility
+ */
 
-interface ErrorInfo {
-  componentStack?: string
-  digest?: string
-  message?: string
+export type ErrorDetails = {
+  message: string
+  stack?: string
+  context?: Record<string, unknown>
 }
 
-export function initErrorReporting() {
-  if (process.env.NEXT_PUBLIC_SENTRY_DSN) {
-    Sentry.init({
-      dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
-      tracesSampleRate: 1.0,
-      environment: process.env.NODE_ENV,
-    })
-  }
-}
-
-export function captureError(error: Error, errorInfo?: ErrorInfo) {
+export const captureError = (error: Error | unknown, context?: Record<string, unknown>) => {
   if (process.env.NODE_ENV === 'development') {
-    console.error('Error:', error)
-    if (errorInfo) {
-      console.error('Error Info:', errorInfo)
+    console.error('Error captured:', error)
+    if (context) {
+      console.error('Error context:', context)
     }
   }
 
-  if (process.env.NEXT_PUBLIC_SENTRY_DSN) {
-    Sentry.withScope((scope) => {
-      if (errorInfo) {
-        scope.setExtras(errorInfo)
-      }
-      Sentry.captureException(error)
-    })
+  // In production, you could add error logging to your backend
+  // or use a simple analytics service
+  
+  if (error instanceof Error) {
+    return {
+      message: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined,
+      context
+    }
+  }
+
+  return {
+    message: 'An unknown error occurred',
+    context
   }
 }
 
-export function captureMessage(message: string, level: Sentry.SeverityLevel = 'info') {
-  if (process.env.NODE_ENV === 'development') {
-    console.log(`[${level}] ${message}`)
+export const formatErrorMessage = (error: Error | unknown): string => {
+  if (error instanceof Error) {
+    return error.message
   }
-
-  if (process.env.NEXT_PUBLIC_SENTRY_DSN) {
-    Sentry.captureMessage(message, level)
-  }
-}
-
-export function setUserContext(user: { id: string; email?: string }) {
-  if (process.env.NEXT_PUBLIC_SENTRY_DSN) {
-    Sentry.setUser({
-      id: user.id,
-      email: user.email,
-    })
-  }
+  return 'An unknown error occurred'
 } 

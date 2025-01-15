@@ -1,7 +1,7 @@
 'use client'
 
 import React from 'react'
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { getBrowserClient } from '@/lib/supabase/browser-client'
 import { Check, ChevronsUpDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -42,7 +42,7 @@ export function ClientCombobox({
   const [open, setOpen] = React.useState(false)
   const [clients, setClients] = React.useState<Client[]>([])
   const [loading, setLoading] = React.useState(true)
-  const supabase = createClientComponentClient<Database>()
+  const supabase = getBrowserClient()
 
   React.useEffect(() => {
     async function loadClients() {

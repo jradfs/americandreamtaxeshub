@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
+import { cookies } from 'next/headers'
 import { Database } from '@/types/database.types'
 
 type TemplateRow = Database['public']['Tables']['project_templates']['Row']
@@ -7,7 +8,7 @@ type TemplateInsert = Database['public']['Tables']['project_templates']['Insert'
 
 export async function GET() {
   try {
-    const supabase = createClient()
+    const supabase = createRouteHandlerClient<Database>({ cookies })
     const { data: templates, error } = await supabase
       .from('project_templates')
       .select('*')
@@ -24,7 +25,7 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const supabase = createClient()
+    const supabase = createRouteHandlerClient<Database>({ cookies })
     const template = await request.json() as TemplateInsert
 
     const { data, error } = await supabase

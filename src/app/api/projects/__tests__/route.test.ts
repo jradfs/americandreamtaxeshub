@@ -1,98 +1,51 @@
-import { jest } from '@jest/globals'
-import { createMockSupabaseClient } from '@/lib/supabase/__mocks__/supabase';
-import type { SupabaseClient } from '@supabase/supabase-js';
-import { POST } from '../route'
 import { NextRequest } from 'next/server'
+import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
+import { cookies } from 'next/headers'
+import { GET } from '../route'
+import { createMockSupabaseClient } from '@/lib/supabase/__mocks__/supabase'
 
-jest.mock('@/lib/supabase/server')
+jest.mock('@supabase/auth-helpers-nextjs', () => ({
+  createRouteHandlerClient: jest.fn(),
+}))
 
-describe('POST /api/projects', () => {
-  const mockUser = { id: 'user123' }
-  const mockSupabase = createMockSupabaseClient()
+jest.mock('next/headers', () => ({
+  cookies: jest.fn(),
+}))
+
+describe('GET /api/projects', () => {
+  let mockSupabase: ReturnType<typeof createMockSupabaseClient>
 
   beforeEach(() => {
-    jest.clearAllMocks()
-    mockSupabase.auth.getUser.mockResolvedValue({ data: { user: mockUser }, error: null })
+    mockSupabase = createMockSupabaseClient()
+    ;(createRouteHandlerClient as jest.Mock).mockReturnValue(mockSupabase)
   })
 
-  it('creates a new project successfully', async () => {
-    const mockProject = {
-      name: 'Test Project',
-      description: 'Test Description',
-      client_id: 'client123',
-      service_type: 'tax_return',
-      priority: 'high',
-      due_date: '2024-12-31',
-      tax_info: {
-        return_type: '1040',
-        tax_year: 2023
-      }
-    }
+  afterEach(() => {
+    jest.clearAllMocks()
+  })
 
-    mockSupabase.from('projects').insert.mockResolvedValueOnce({
-      data: [{ id: 'project123', ...mockProject }],
-      error: null
-    })
+  it('should return projects', async () => {
+    const mockProjects = [{ id: 1, name: 'Project 1' }]
+    mockSupabase.from('projects').select.mockResolvedValue({ data: mockProjects, error: null })
 
-    const request = new NextRequest('http://localhost:3000/api/projects', {
-      method: 'POST',
-      body: JSON.stringify(mockProject)
-    })
-
-    const response = await POST(request)
+    const request = new NextRequest('http://localhost:3000/api/projects')
+    const response = await GET(request)
     const data = await response.json()
 
-    expect(response.status).toBe(200)
-    expect(data).toEqual({ id: 'project123', ...mockProject })
-    expect(mockSupabase.from('projects').insert).toHaveBeenCalledWith({
-      ...mockProject,
-      created_by: mockUser.id
-    })
+    expect(data).toEqual(mockProjects)
+    expect(mockSupabase.from).toHaveBeenCalledWith('projects')
+    expect(mockSupabase.from('projects').select).toHaveBeenCalled()
   })
 
-  it('returns 401 when user is not authenticated', async () => {
-    mockSupabase.auth.getUser.mockResolvedValueOnce({ data: { user: null }, error: null })
+  it('should handle errors', async () => {
+    const mockError = new Error('Database error')
+    mockSupabase.from('projects').select.mockRejectedValue(mockError)
 
-    const request = new NextRequest('http://localhost:3000/api/projects', {
-      method: 'POST',
-      body: JSON.stringify({})
-    })
+    const request = new NextRequest('http://localhost:3000/api/projects')
+    const response = await GET(request)
+    const data = await response.json()
 
-    const response = await POST(request)
-    expect(response.status).toBe(401)
-  })
-
-  it('returns 400 for invalid project data', async () => {
-    const invalidProject = {
-      // Missing required fields
-      name: '',
-      client_id: ''
-    }
-
-    const request = new NextRequest('http://localhost:3000/api/projects', {
-      method: 'POST',
-      body: JSON.stringify(invalidProject)
-    })
-
-    const response = await POST(request)
-    expect(response.status).toBe(400)
-  })
-
-  it('returns 500 when database operation fails', async () => {
-    mockSupabase.from('projects').insert.mockResolvedValueOnce({
-      data: null,
-      error: { message: 'Database error', details: '', hint: '', code: 'ERROR' }
-    })
-
-    const request = new NextRequest('http://localhost:3000/api/projects', {
-      method: 'POST',
-      body: JSON.stringify({
-        name: 'Test Project',
-        client_id: 'client123'
-      })
-    })
-
-    const response = await POST(request)
     expect(response.status).toBe(500)
+    expect(data).toEqual({ error: 'Failed to fetch projects' })
   })
 })

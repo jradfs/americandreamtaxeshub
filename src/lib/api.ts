@@ -1,9 +1,7 @@
-import { getSupabase } from '@/lib/supabase/client';
-
-const supabase = getSupabase();
+import { supabaseBrowserClient } from '@/lib/supabaseBrowserClient';
 
 export async function fetchProjectsWithTasks() {
-  const { data, error } = await supabase
+  const { data, error } = await supabaseBrowserClient
     .from('projects')
     .select(`
       id, name, status, completed_tasks, tasks (id, title, status, progress)
@@ -13,7 +11,7 @@ export async function fetchProjectsWithTasks() {
 }
 
 export async function createProject(projectData: any) {
-  const { data, error } = await supabase
+  const { data, error } = await supabaseBrowserClient
     .from('projects')
     .insert(projectData)
     .select()
@@ -23,7 +21,7 @@ export async function createProject(projectData: any) {
 }
 
 export async function fetchTasksByProject(projectId: string) {
-  const { data, error } = await supabase
+  const { data, error } = await supabaseBrowserClient
     .from('tasks')
     .select('*')
     .eq('project_id', projectId);
@@ -32,7 +30,7 @@ export async function fetchTasksByProject(projectId: string) {
 }
 
 export async function createTasks(tasks: any[]) {
-  const { data, error } = await supabase
+  const { data, error } = await supabaseBrowserClient
     .from('tasks')
     .insert(tasks)
     .select();
@@ -41,14 +39,14 @@ export async function createTasks(tasks: any[]) {
 }
 
 export async function applyTemplate(templateId: string, projectData: any) {
-  const { data: templateTasks, error: templateError } = await supabase
+  const { data: templateTasks, error: templateError } = await supabaseBrowserClient
     .from('template_tasks')
     .select('*')
     .eq('template_id', templateId);
 
   if (templateError) throw new Error(templateError.message);
 
-  const { data: project, error: projectError } = await supabase
+  const { data: project, error: projectError } = await supabaseBrowserClient
     .from('projects')
     .insert(projectData)
     .select()

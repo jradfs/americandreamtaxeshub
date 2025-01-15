@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useTransition } from 'react'
 import { ColumnManager } from './column-manager'
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
+import { getBrowserClient } from '@/lib/supabase/browser-client'
 import { 
   Mail, 
   FileText, 
@@ -70,7 +70,7 @@ export function ClientList() {
   const [clients, setClients] = useState<Client[]>([])
   const [isPending, startTransition] = useTransition()
   const [loading, setLoading] = useState(true)
-  const supabase = createClientComponentClient()
+  const supabase = getBrowserClient()
   const { toast } = useToast()
 
   const handleQuickEmail = (client: Client) => {
@@ -236,19 +236,35 @@ export function ClientList() {
               )}
               {visibleColumns.includes('Actions') && (
                 <TableCell className="space-x-2">
-                  <Button variant="ghost" size="sm" onClick={() => handleQuickEmail(client)}>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => handleQuickEmail(client)}
+                    aria-label="Email client"
+                  >
                     <Mail className="h-4 w-4" />
                   </Button>
-                  <Button variant="ghost" size="sm" onClick={() => handleRequestDocument(client)}>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => handleRequestDocument(client)}
+                    aria-label="Request documents"
+                  >
                     <FileText className="h-4 w-4" />
                   </Button>
-                  <Button variant="ghost" size="sm" onClick={() => handleAddNote(client)}>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => handleAddNote(client)}
+                    aria-label="Add note"
+                  >
                     <ClipboardList className="h-4 w-4" />
                   </Button>
                   <Button 
                     variant="ghost" 
                     size="sm" 
                     onClick={() => handleDeleteClient(client.id)}
+                    aria-label="Delete client"
                   >
                     <Trash className="h-4 w-4" />
                   </Button>
@@ -259,5 +275,5 @@ export function ClientList() {
         </TableBody>
       </Table>
     </div>
-  );
+  )
 }

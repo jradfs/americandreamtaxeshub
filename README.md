@@ -1,32 +1,70 @@
-# American Dream Financial Services - Practice Management Tool
+# American Dream Taxes Hub
 
-**Vision**: Build a robust, scalable, AI-driven practice management tool that supports:
-- **Accounting & Bookkeeping** (QuickBooks)
-- **Tax Preparation** tasks & deadlines (TaxSlayer)
-- **Client Management** & contact info
-- **Project & Task Management**
-- **Team Collaboration & Roles**
+A modern, collaborative platform for tax preparation and client management.
 
-**Primary Objectives**:
-- **Systematize** processes for consistent workflows.
-- **Enable automation** (e.g., reminders, AI analysis).
-- **Scale** to thousands of clients and hundreds of staff members.
-- **Integrate** with existing solutions (Google Workspace, Gmail, QuickBooks, TaxSlayer).
+## Features
 
-## Key Highlights
+- 🔐 **Simple Authentication**: Just sign in to access everything
+- 🤝 **Full Team Collaboration**: All authenticated users have complete access
+- 📊 **Client Management**: Track and manage client information
+- 📋 **Tax Returns**: Process and manage tax returns efficiently
+- 👥 **User Management**: Simple user system with full access
+- 📁 **Project Tracking**: Comprehensive project management
 
-1. **Database Migrations & Schema**  
-   - All IDs converted to UUID for consistent referencing & horizontal scaling.
-   - JSON fields normalized for better structure (e.g., `activity_log_entries`, `checklist_items`).
-   - Timestamps (`created_at`, `updated_at`) are standardized.
+## Database Access
 
-2. **Next Steps**:
-   - Review and refine application code (front-end & back-end).
-   - Confirm references to numeric IDs are fully replaced with UUID strings.
-   - Expand AI-driven features for task automation, scheduling, and data analysis.
+All authenticated users have full access to:
+- Clients
+- Tax Returns
+- Users
+- Projects
+- All future tables
 
-> For more details, see:
-> - [`docs/DEVELOPMENT_GUIDE.md`](./docs/DEVELOPMENT_GUIDE.md)
-> - [`docs/DATABASE_SCHEMA.md`](./docs/DATABASE_SCHEMA.md)
-> - [`docs/MIGRATION_HISTORY.md`](./docs/MIGRATION_HISTORY.md)
+No complex permissions or restrictions - just authenticate and start working!
+
+## Getting Started
+
+1. Clone the repository
+2. Install dependencies: `npm install`
+3. Set up environment variables (see `.env.example`)
+4. Run development server: `npm run dev`
+
+## Development Guidelines
+
+- All team members have full access to all tables
+- Focus on feature development, not access control
+- Keep authentication simple
+- Build with collaboration in mind
+
+## Tech Stack
+
+- Next.js 14
+- Supabase (Authentication & Database)
+- TypeScript
+- React Server Components
+- Tailwind CSS
+
+## Contributing
+
+1. Sign in to get full access
+2. Create your feature branch
+3. Commit your changes
+4. Push to the branch
+5. Create a Pull Request
+
+## Environment Setup
+
+```bash
+# Required environment variables
+NEXT_PUBLIC_SUPABASE_URL=your-project-url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+```
+
+## Database Access Policy
+
+Simple policy for maximum collaboration:
+- ✅ All authenticated users have full CRUD access
+- ✅ No role restrictions
+- ✅ Access all tables freely
+- ✅ Focus on building features
 

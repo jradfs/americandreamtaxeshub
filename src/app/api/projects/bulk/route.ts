@@ -1,43 +1,56 @@
+import { createServerClient } from '@supabase/ssr'
+import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
-import { Database } from '@/types/database.types'
+import type { Database } from '@/types/database.types'
 
 export async function POST(request: Request) {
   try {
-    const supabase = createClient()
-    const { projectIds, updates } = await request.json() as {
-      projectIds: string[]
-      updates: Partial<Pick<Database['public']['Tables']['projects']['Row'],
-        'status' | 'priority' | 'due_date' | 'description' | 'service_type'
-      >>
-    }
+    const cookieStore = cookies()
+    
+    const supabase = createServerClient<Database>(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          get(name: string) {
+            return cookieStore.get(name)?.value
+          },
+          set(name: string, value: string, options: any) {
+            try {
+              cookieStore.set({ name, value, ...options })
+            } catch (error) {
+              // Handle cookie parsing errors
+              console.error('Error setting cookie:', error)
+            }
+          },
+          remove(name: string, options: any) {
+            try {
+              cookieStore.set({ name, value: '', ...options, maxAge: 0 })
+            } catch (error) {
+              // Handle cookie parsing errors
+              console.error('Error removing cookie:', error)
+            }
+          }
+        }
+      }
+    )
 
-    if (!projectIds?.length) {
-      return NextResponse.json(
-        { error: 'No project IDs provided' },
-        { status: 400 }
-      )
-    }
+    const projects = await request.json()
 
     const { data, error } = await supabase
       .from('projects')
-      .update(updates)
-      .in('id', projectIds)
+      .insert(projects)
       .select()
 
     if (error) {
-      console.error('Error updating projects:', error)
-      return NextResponse.json(
-        { error: 'Failed to update projects' },
-        { status: 500 }
-      )
+      throw error
     }
 
-    return NextResponse.json({ data })
+    return NextResponse.json(data)
   } catch (error) {
-    console.error('Error in bulk update:', error)
+    console.error('Error creating projects:', error)
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Failed to create projects' },
       { status: 500 }
     )
   }

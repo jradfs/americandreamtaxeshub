@@ -1,33 +1,24 @@
-import { redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
-import { DashboardShell } from '@/components/shell'
-import { DashboardHeader } from '@/components/header'
-import { DashboardTabs } from '@/components/dashboard/dashboard-tabs'
-import { getDashboardMetrics } from '@/lib/supabase/dashboardQueries'
+import { DashboardShell } from '@/components/dashboard/DashboardShell';
+import { getSupabaseServerClient } from '@/lib/supabaseServerClient';
 
 export default async function DashboardPage() {
-  const supabase = createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const supabase = getSupabaseServerClient();
 
-  if (!user) {
-    redirect('/auth/login')
+  // Fetch calendar events from Supabase
+  const { data: calendarEvents, error } = await supabase
+    .from('calendar_events')
+    .select('*')
+    .gte('start_time', new Date().toISOString())
+    .order('start_time', { ascending: true })
+    .limit(10);
+
+  if (error) {
+    console.error('Error fetching calendar events:', error);
   }
 
-  try {
-    const metrics = await getDashboardMetrics();
-    return <DashboardTabs {...metrics} />;
-  } catch (error) {
-    console.error('Error loading dashboard:', error);
-    // Return a fallback UI with zero values and error message
-    return (
-      <DashboardTabs 
-        totalActiveClients={0}
-        pendingTaxReturns={0}
-        activeProjects={0}
-        upcomingDeadlines={0}
-        errorTitle="Error Loading Dashboard"
-        errorMessage="Unable to load dashboard metrics. Please try again later."
-      />
-    );
-  }
+  return (
+    <DashboardShell calendarEvents={calendarEvents || []}>
+      {/* Additional dashboard widgets will go here */}
+    </DashboardShell>
+  );
 }

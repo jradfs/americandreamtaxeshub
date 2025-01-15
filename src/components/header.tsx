@@ -1,21 +1,39 @@
-interface DashboardHeaderProps {
-  heading: string
-  text?: string
-  children?: React.ReactNode
-}
+'use client'
 
-export function DashboardHeader({
-  heading,
-  text,
-  children,
-}: DashboardHeaderProps) {
+import { useAuth } from '@/hooks/use-auth'
+import Link from 'next/link'
+
+export function Header() {
+  const { user, signOut, loading } = useAuth()
+
   return (
-    <div className="flex items-center justify-between px-2">
-      <div className="grid gap-1">
-        <h1 className="font-heading text-3xl md:text-4xl">{heading}</h1>
-        {text && <p className="text-lg text-muted-foreground">{text}</p>}
+    <header className="border-b">
+      <div className="container mx-auto px-4 py-4 flex justify-between items-center">
+        <Link href="/" className="text-xl font-bold">
+          American Dream Taxes
+        </Link>
+        
+        <nav className="flex items-center gap-4">
+          {!loading && user ? (
+            <>
+              <Link href="/dashboard">Dashboard</Link>
+              <button
+                onClick={signOut}
+                className="px-4 py-2 bg-primary text-white rounded"
+              >
+                Sign Out
+              </button>
+            </>
+          ) : (
+            <Link
+              href="/auth/login"
+              className="px-4 py-2 bg-primary text-white rounded"
+            >
+              Sign In
+            </Link>
+          )}
+        </nav>
       </div>
-      {children}
-    </div>
+    </header>
   )
 } 

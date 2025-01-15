@@ -1,63 +1,68 @@
-import { useCallback, useEffect, useState } from 'react'
-import { useSupabase } from '@/lib/supabase/supabase-provider'
-import { ProjectTemplate, ProjectTemplateInput } from '@/types/projects'
+'use client'
+
+import { useState, useCallback, useEffect } from 'react'
+import { useAuth } from '@/providers/unified-auth-provider'
+import type { Database } from '@/types/database.types'
+
+type ProjectTemplate = Database['public']['Tables']['project_templates']['Row']
 
 export function useProjectTemplates() {
-  const { supabase } = useSupabase()
+  const { supabase } = useAuth()
   const [templates, setTemplates] = useState<ProjectTemplate[]>([])
-  const [loading, setLoading] = useState(true)
+  const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
 
   const fetchTemplates = useCallback(async () => {
     try {
-      setLoading(true)
+      setIsLoading(true)
       const { data, error } = await supabase
         .from('project_templates')
-        .select('*, template_tasks(*)')
+        .select('*')
         .order('created_at', { ascending: false })
 
       if (error) throw error
-
-      setTemplates(data)
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error('Failed to fetch templates'))
+      setTemplates(data || [])
+    } catch (e) {
+      setError(e instanceof Error ? e : new Error('Failed to fetch project templates'))
     } finally {
-      setLoading(false)
+      setIsLoading(false)
     }
   }, [supabase])
 
-  const createTemplate = useCallback(async (template: ProjectTemplateInput) => {
+  useEffect(() => {
+    fetchTemplates()
+  }, [fetchTemplates])
+
+  const createTemplate = useCallback(async (templateData: Partial<ProjectTemplate>) => {
     try {
       const { data, error } = await supabase
         .from('project_templates')
-        .insert(template)
-        .select('*, template_tasks(*)')
+        .insert([templateData])
+        .select()
         .single()
 
       if (error) throw error
-
       setTemplates(prev => [data, ...prev])
       return data
-    } catch (err) {
-      throw err instanceof Error ? err : new Error('Failed to create template')
+    } catch (e) {
+      throw e instanceof Error ? e : new Error('Failed to create project template')
     }
   }, [supabase])
 
-  const updateTemplate = useCallback(async (id: string, updates: Partial<ProjectTemplateInput>) => {
+  const updateTemplate = useCallback(async (id: string, templateData: Partial<ProjectTemplate>) => {
     try {
       const { data, error } = await supabase
         .from('project_templates')
-        .update(updates)
+        .update(templateData)
         .eq('id', id)
-        .select('*, template_tasks(*)')
+        .select()
         .single()
 
       if (error) throw error
-
-      setTemplates(prev => prev.map(t => t.id === id ? data : t))
+      setTemplates(prev => prev.map(template => template.id === id ? data : template))
       return data
-    } catch (err) {
-      throw err instanceof Error ? err : new Error('Failed to update template')
+    } catch (e) {
+      throw e instanceof Error ? e : new Error('Failed to update project template')
     }
   }, [supabase])
 
@@ -69,20 +74,15 @@ export function useProjectTemplates() {
         .eq('id', id)
 
       if (error) throw error
-
-      setTemplates(prev => prev.filter(t => t.id !== id))
-    } catch (err) {
-      throw err instanceof Error ? err : new Error('Failed to delete template')
+      setTemplates(prev => prev.filter(template => template.id !== id))
+    } catch (e) {
+      throw e instanceof Error ? e : new Error('Failed to delete project template')
     }
   }, [supabase])
 
-  useEffect(() => {
-    fetchTemplates()
-  }, [fetchTemplates])
-
   return {
     templates,
-    loading,
+    isLoading,
     error,
     createTemplate,
     updateTemplate,

@@ -1,84 +1,144 @@
 -- Begin transaction
 BEGIN;
 
--- Drop existing policies if any
+-- Drop existing policies
 DROP POLICY IF EXISTS "Enable read access for authenticated users" ON tax_returns;
+DROP POLICY IF EXISTS "Enable public read access" ON tax_returns;
+DROP POLICY IF EXISTS "Users can view assigned tax returns" ON tax_returns;
+DROP POLICY IF EXISTS "Users can view assigned clients" ON clients;
+DROP POLICY IF EXISTS "Users can view assigned projects" ON projects;
+DROP POLICY IF EXISTS "Users can view assigned tasks" ON tasks;
 
--- Enable RLS on tax_returns table if not already enabled
+-- Enable RLS on all tables
 ALTER TABLE tax_returns ENABLE ROW LEVEL SECURITY;
+ALTER TABLE clients ENABLE ROW LEVEL SECURITY;
+ALTER TABLE projects ENABLE ROW LEVEL SECURITY;
+ALTER TABLE tasks ENABLE ROW LEVEL SECURITY;
+ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 
--- Create a policy that allows authenticated users to read all tax returns
-CREATE POLICY "Enable read access for authenticated users"
-ON tax_returns
-FOR SELECT
-TO authenticated
+-- Create comprehensive RLS policies for tax_returns
+CREATE POLICY "tax_returns_select_policy" ON tax_returns
+FOR SELECT TO authenticated
+USING (
+  auth.uid() = assigned_to OR
+  EXISTS (
+    SELECT 1 FROM auth.users
+    WHERE auth.users.id = auth.uid()
+    AND auth.users.raw_user_meta_data->>'role' IN ('admin', 'manager')
+  )
+);
+
+CREATE POLICY "tax_returns_insert_policy" ON tax_returns
+FOR INSERT TO authenticated
+WITH CHECK (
+  EXISTS (
+    SELECT 1 FROM auth.users
+    WHERE auth.users.id = auth.uid()
+    AND auth.users.raw_user_meta_data->>'role' IN ('admin', 'manager', 'accountant')
+  )
+);
+
+CREATE POLICY "tax_returns_update_policy" ON tax_returns
+FOR UPDATE TO authenticated
+USING (
+  auth.uid() = assigned_to OR
+  EXISTS (
+    SELECT 1 FROM auth.users
+    WHERE auth.users.id = auth.uid()
+    AND auth.users.raw_user_meta_data->>'role' IN ('admin', 'manager')
+  )
+);
+
+-- Create comprehensive RLS policies for clients
+CREATE POLICY "clients_select_policy" ON clients
+FOR SELECT TO authenticated
+USING (
+  EXISTS (
+    SELECT 1 FROM tax_returns
+    WHERE tax_returns.client_id = clients.id
+    AND (
+      tax_returns.assigned_to = auth.uid() OR
+      EXISTS (
+        SELECT 1 FROM auth.users
+        WHERE auth.users.id = auth.uid()
+        AND auth.users.raw_user_meta_data->>'role' IN ('admin', 'manager')
+      )
+    )
+  )
+);
+
+CREATE POLICY "clients_insert_policy" ON clients
+FOR INSERT TO authenticated
+WITH CHECK (
+  EXISTS (
+    SELECT 1 FROM auth.users
+    WHERE auth.users.id = auth.uid()
+    AND auth.users.raw_user_meta_data->>'role' IN ('admin', 'manager')
+  )
+);
+
+-- Create comprehensive RLS policies for tasks
+CREATE POLICY "tasks_select_policy" ON tasks
+FOR SELECT TO authenticated
+USING (
+  assigned_to = auth.uid() OR
+  EXISTS (
+    SELECT 1 FROM auth.users
+    WHERE auth.users.id = auth.uid()
+    AND auth.users.raw_user_meta_data->>'role' IN ('admin', 'manager')
+  )
+);
+
+CREATE POLICY "tasks_insert_policy" ON tasks
+FOR INSERT TO authenticated
+WITH CHECK (
+  EXISTS (
+    SELECT 1 FROM auth.users
+    WHERE auth.users.id = auth.uid()
+    AND auth.users.raw_user_meta_data->>'role' IN ('admin', 'manager', 'accountant')
+  )
+);
+
+CREATE POLICY "tasks_update_policy" ON tasks
+FOR UPDATE TO authenticated
+USING (
+  assigned_to = auth.uid() OR
+  EXISTS (
+    SELECT 1 FROM auth.users
+    WHERE auth.users.id = auth.uid()
+    AND auth.users.raw_user_meta_data->>'role' IN ('admin', 'manager')
+  )
+);
+
+-- Create profile policies
+CREATE POLICY "profiles_select_policy" ON profiles
+FOR SELECT TO authenticated
 USING (true);
 
--- Create a policy that allows public access (if needed)
-CREATE POLICY "Enable public read access"
-ON tax_returns
-FOR SELECT
-TO public
-USING (true);
+CREATE POLICY "profiles_insert_policy" ON profiles
+FOR INSERT TO authenticated
+WITH CHECK (auth.uid() = id);
 
--- Verify the tax_return_status enum has all required values
-DO $$
-BEGIN
-    -- Check if the enum exists
-    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'tax_return_status') THEN
-        CREATE TYPE tax_return_status AS ENUM (
-            'not_started',
-            'gathering_documents',
-            'in_progress',
-            'review',
-            'filed',
-            'amended'
-        );
-    ELSE
-        -- Add missing values if they don't exist
-        BEGIN
-            ALTER TYPE tax_return_status ADD VALUE IF NOT EXISTS 'not_started';
-            EXCEPTION WHEN duplicate_object THEN NULL;
-        END;
-        BEGIN
-            ALTER TYPE tax_return_status ADD VALUE IF NOT EXISTS 'gathering_documents';
-            EXCEPTION WHEN duplicate_object THEN NULL;
-        END;
-    END IF;
-END$$;
+CREATE POLICY "profiles_update_policy" ON profiles
+FOR UPDATE TO authenticated
+USING (
+  auth.uid() = id OR
+  EXISTS (
+    SELECT 1 FROM auth.users
+    WHERE auth.users.id = auth.uid()
+    AND auth.users.raw_user_meta_data->>'role' = 'admin'
+  )
+);
 
--- Verify tax_returns table structure
-DO $$
-BEGIN
-    -- Check if the table exists
-    IF NOT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'tax_returns') THEN
-        CREATE TABLE tax_returns (
-            id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
-            status tax_return_status NOT NULL DEFAULT 'not_started',
-            client_id uuid REFERENCES clients(id),
-            tax_year integer NOT NULL,
-            filing_type text NOT NULL,
-            due_date timestamp with time zone,
-            extension_date timestamp with time zone,
-            filed_date timestamp with time zone,
-            assigned_to uuid REFERENCES users(id),
-            notes text,
-            created_at timestamp with time zone DEFAULT now(),
-            updated_at timestamp with time zone DEFAULT now()
-        );
-    ELSE
-        -- Make sure the status column exists and is of the correct type
-        IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
-                      WHERE table_name = 'tax_returns' AND column_name = 'status') THEN
-            ALTER TABLE tax_returns ADD COLUMN status tax_return_status NOT NULL DEFAULT 'not_started';
-        END IF;
-    END IF;
-END$$;
-
--- Add indexes for better performance
-CREATE INDEX IF NOT EXISTS idx_tax_returns_status ON tax_returns(status);
-CREATE INDEX IF NOT EXISTS idx_tax_returns_client_id ON tax_returns(client_id);
-CREATE INDEX IF NOT EXISTS idx_tax_returns_assigned_to ON tax_returns(assigned_to);
+-- Grant necessary permissions
+GRANT ALL ON tax_returns TO authenticated;
+GRANT ALL ON clients TO authenticated;
+GRANT ALL ON projects TO authenticated;
+GRANT ALL ON tasks TO authenticated;
+GRANT ALL ON profiles TO authenticated;
 
 -- Commit transaction
-COMMIT; 
+COMMIT;
+
+-- Add workflows table migration
+\i supabase/migrations/20240101000000_create_workflows_table.sql

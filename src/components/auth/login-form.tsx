@@ -1,117 +1,74 @@
 'use client'
 
-import * as z from 'zod'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import {
-  Form,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormControl,
-  FormMessage,
-} from '@/components/ui/form'
-import { useToast } from '@/components/ui/use-toast'
+import { createBrowserClient } from '@supabase/ssr'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
-
-const formSchema = z.object({
-  email: z.string().email({
-    message: 'Please enter a valid email address.',
-  }),
-  password: z.string().min(6, {
-    message: 'Password must be at least 6 characters.',
-  }),
-})
-
-type FormValues = z.infer<typeof formSchema>
+import { useState } from 'react'
+import { toast } from '@/components/ui/use-toast'
 
 export function LoginForm() {
-  const { toast } = useToast()
+  const [loading, setLoading] = useState(false)
   const router = useRouter()
-  const supabase = createClient()
 
-  const form = useForm<FormValues>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      email: '',
-      password: '',
-    },
-  })
+  const supabase = createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  )
 
-  const onSubmit = async (data: FormValues) => {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault()
+    setLoading(true)
+
     try {
+      const formData = new FormData(e.currentTarget)
       const { error } = await supabase.auth.signInWithPassword({
-        email: data.email,
-        password: data.password,
+        email: formData.get('email') as string,
+        password: formData.get('password') as string,
       })
 
-      if (error) {
-        throw error
-      }
+      if (error) throw error
 
-      toast({
-        title: "Success",
-        description: "Successfully logged in.",
-      })
-
-      router.push('/dashboard')
       router.refresh()
+      router.push('/dashboard')
     } catch (error) {
-      console.error('Login error:', error)
       toast({
         title: 'Error',
-        description: 'Invalid email or password. Please try again.',
-        variant: 'destructive',
+        description: error.message,
+        variant: 'destructive'
       })
+    } finally {
+      setLoading(false)
     }
   }
 
   return (
-    <Form {...form}>
-      <div className="space-y-8">
-        <form onSubmit={form.handleSubmit(onSubmit)}>
-          <FormField
-            control={form.control}
-            name="email"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Email</FormLabel>
-                <FormControl>
-                  <Input 
-                    type="email"
-                    placeholder="Enter your email" 
-                    {...field} 
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="password"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Password</FormLabel>
-                <FormControl>
-                  <Input
-                    type="password"
-                    placeholder="Enter your password"
-                    {...field}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <Button type="submit" className="w-full mt-6">
-            Sign In
-          </Button>
-        </form>
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="space-y-2">
+        <label htmlFor="email">Email</label>
+        <input
+          id="email"
+          name="email"
+          type="email"
+          required
+          className="w-full p-2 border rounded"
+        />
       </div>
-    </Form>
+      <div className="space-y-2">
+        <label htmlFor="password">Password</label>
+        <input
+          id="password"
+          name="password"
+          type="password"
+          required
+          className="w-full p-2 border rounded"
+        />
+      </div>
+      <button
+        type="submit"
+        disabled={loading}
+        className="w-full py-2 px-4 bg-primary text-white rounded"
+      >
+        {loading ? 'Loading...' : 'Sign In'}
+      </button>
+    </form>
   )
 } 

@@ -1,40 +1,71 @@
-import { useState, useEffect } from 'react'
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
-import { Client } from '@/types/clients'
+'use client'
+
+import { useSupabase } from './useSupabase';
+import { useToast } from '@/components/ui/use-toast';
 
 export function useClients() {
-  const [data, setData] = useState<Client[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<Error | null>(null)
-  const supabase = createClientComponentClient()
+  const { data, error, mutate } = useSupabase('clients');
+  const { toast } = useToast();
 
-  useEffect(() => {
-    async function fetchClients() {
-      try {
-        const { data: clientsData, error: supabaseError } = await supabase
-          .from('clients')
-          .select('*')
-          .order('created_at', { ascending: false })
+  const addClient = async (clientData: any) => {
+    try {
+      const { data: newClient, error } = await supabase
+        .from('clients')
+        .insert([clientData])
+        .select()
+        .single();
 
-        if (supabaseError) throw supabaseError
+      if (error) throw error;
 
-        // Transform the data to match our Client type
-        const transformedClients = clientsData?.map((client) => ({
-          ...client,
-          contact_info: client.contact_info || {},
-          tax_info: client.tax_info || {},
-        })) as Client[]
+      mutate();
+      toast({
+        title: 'Success',
+        description: 'Client added successfully',
+      });
 
-        setData(transformedClients || [])
-      } catch (error) {
-        setError(error instanceof Error ? error : new Error('An unknown error occurred'))
-      } finally {
-        setLoading(false)
-      }
+      return newClient;
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to add client',
+        variant: 'destructive',
+      });
+      throw error;
     }
+  };
 
-    fetchClients()
-  }, [supabase])
+  const updateClient = async (id: string, updates: any) => {
+    try {
+      const { data: updatedClient, error } = await supabase
+        .from('clients')
+        .update(updates)
+        .eq('id', id)
+        .select()
+        .single();
 
-  return { data, loading, error }
+      if (error) throw error;
+
+      mutate();
+      toast({
+        title: 'Success',
+        description: 'Client updated successfully',
+      });
+
+      return updatedClient;
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to update client',
+        variant: 'destructive',
+      });
+      throw error;
+    }
+  };
+
+  return {
+    data,
+    error,
+    addClient,
+    updateClient,
+  };
 }

@@ -1,32 +1,34 @@
-import { useAuth } from '@/components/providers/auth-provider'
-import { Button } from '@/components/ui/button'
+import Sidebar from "@/components/dashboard/Sidebar"
+import { UserNav } from "@/components/dashboard/UserNav"
 import Link from "next/link"
-import { cookies } from 'next/headers'
-import { createServerComponentClient } from '@supabase/auth-helpers-nextjs'
 import { redirect } from 'next/navigation'
+import { createClient } from '@/lib/supabase/server'
 
 export default async function DashboardLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
-  const supabase = createServerComponentClient({ cookies })
+  const supabase = createClient()
   const { data: { session } } = await supabase.auth.getSession()
 
   if (!session) {
-    redirect('/login')
+    redirect('/auth/login')
   }
 
   return (
-    <div>
-      <div className="border-b">
-        <div className="container mx-auto p-4 flex items-center justify-between">
-          <h1 className="text-2xl font-bold">Dashboard</h1>
-          <div className="flex items-center gap-4"></div>
-        </div>
-      </div>
-      <div className="container mx-auto p-6">
-        {children}
+    <div className="flex h-screen">
+      <Sidebar />
+      <div className="flex-1 flex flex-col">
+        <header className="h-16 border-b flex items-center justify-between px-6">
+          <Link href="/dashboard" className="text-xl font-semibold">
+            American Dream Taxes
+          </Link>
+          <UserNav />
+        </header>
+        <main className="flex-1 overflow-y-auto p-6">
+          {children}
+        </main>
       </div>
     </div>
   )

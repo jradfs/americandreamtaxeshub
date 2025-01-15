@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { getBrowserClient } from '@/lib/supabase/browser-client';
 import type { Database } from '@/types/database.types';
 import type { ClientWithRelations, TaxInfo } from '@/types/clients';
 
@@ -20,7 +20,7 @@ type ClientResponse = Database['public']['Tables']['clients']['Row'] & {
 export function ClientDetails({ clientId }: ClientDetailsProps) {
   const [client, setClient] = useState<ClientWithRelations | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const supabase = createClientComponentClient<Database>();
+  const supabase = getBrowserClient();
 
   useEffect(() => {
     const fetchClient = async () => {

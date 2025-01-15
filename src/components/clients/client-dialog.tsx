@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { getBrowserClient } from '@/lib/supabase/browser-client'
 import { Database } from '@/types/database.types'
 import { DbClient, ClientWithRelations, ClientFormData } from '@/types/clients'
 import { Button } from '@/components/ui/button'

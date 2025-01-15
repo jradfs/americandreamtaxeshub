@@ -1,117 +1,96 @@
 'use client'
 
-import { useQuery } from '@tanstack/react-query'
-import { supabase } from '@/lib/supabase/client'
-import type { TaskWithRelations } from '@/types/tasks'
+import { useState } from 'react'
+import { supabaseBrowserClient } from '@/lib/supabaseBrowserClient'
+import type { Database } from '@/types/database.types'
 
-interface UseTaskRelationsOptions {
-  taskId: string
-  enabled?: boolean
-  initialData?: Partial<TaskWithRelations>
-}
+type TaskRelation = Database['public']['Tables']['task_relations']['Row']
+type TaskRelationInsert = Database['public']['Tables']['task_relations']['Insert']
 
-export function useTaskRelations({ taskId, enabled = true, initialData }: UseTaskRelationsOptions) {
-  // Fetch project details
-  const { data: project, isLoading: isLoadingProject } = useQuery({
-    queryKey: ['task', taskId, 'project'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('projects')
-        .select('id, name')
-        .eq('id', initialData?.project_id || '')
-        .single()
+export function useTaskRelations() {
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<Error | null>(null)
 
-      if (error) throw error
-      return data
-    },
-    enabled: enabled && !!initialData?.project_id,
-    staleTime: 1000 * 60 * 5, // Cache for 5 minutes
-    initialData: initialData?.project
-  })
-
-  // Fetch assignee details
-  const { data: assignee, isLoading: isLoadingAssignee } = useQuery({
-    queryKey: ['task', taskId, 'assignee'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('users')
-        .select('id, email, full_name, role')
-        .eq('id', initialData?.assignee_id || '')
-        .single()
-
-      if (error) throw error
-      return data
-    },
-    enabled: enabled && !!initialData?.assignee_id,
-    staleTime: 1000 * 60 * 5,
-    initialData: initialData?.assignee
-  })
-
-  // Fetch parent task details
-  const { data: parentTask, isLoading: isLoadingParentTask } = useQuery({
-    queryKey: ['task', taskId, 'parent'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('tasks')
-        .select('id, title')
-        .eq('id', initialData?.parent_task_id || '')
-        .single()
-
-      if (error) throw error
-      return data
-    },
-    enabled: enabled && !!initialData?.parent_task_id,
-    staleTime: 1000 * 60 * 5,
-    initialData: initialData?.parent_task
-  })
-
-  // Fetch checklist items
-  const { data: checklistItems, isLoading: isLoadingChecklist } = useQuery({
-    queryKey: ['task', taskId, 'checklist'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('checklist_items')
+  async function getTaskRelations(taskId: string) {
+    setLoading(true)
+    try {
+      const { data, error } = await supabaseBrowserClient
+        .from('task_relations')
         .select('*')
         .eq('task_id', taskId)
-        .order('created_at', { ascending: true })
 
       if (error) throw error
       return data
-    },
-    enabled: enabled,
-    staleTime: 1000 * 60, // Cache for 1 minute
-    initialData: initialData?.checklist_items
-  })
+    } catch (err) {
+      setError(err as Error)
+      throw err
+    } finally {
+      setLoading(false)
+    }
+  }
 
-  // Fetch activity log
-  const { data: activityLog, isLoading: isLoadingActivity } = useQuery({
-    queryKey: ['task', taskId, 'activity'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('activity_log_entries')
-        .select('*')
-        .eq('task_id', taskId)
-        .order('created_at', { ascending: false })
+  async function createTaskRelation(relation: TaskRelationInsert) {
+    setLoading(true)
+    try {
+      const { data, error } = await supabaseBrowserClient
+        .from('task_relations')
+        .insert(relation)
+        .select()
+        .single()
 
       if (error) throw error
       return data
-    },
-    enabled: enabled,
-    staleTime: 1000 * 60,
-    initialData: initialData?.activity_log_entries
-  })
+    } catch (err) {
+      setError(err as Error)
+      throw err
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function updateTaskRelation(id: string, updates: Partial<TaskRelation>) {
+    setLoading(true)
+    try {
+      const { data, error } = await supabaseBrowserClient
+        .from('task_relations')
+        .update(updates)
+        .eq('id', id)
+        .select()
+        .single()
+
+      if (error) throw error
+      return data
+    } catch (err) {
+      setError(err as Error)
+      throw err
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function deleteTaskRelation(id: string) {
+    setLoading(true)
+    try {
+      const { error } = await supabaseBrowserClient
+        .from('task_relations')
+        .delete()
+        .eq('id', id)
+
+      if (error) throw error
+    } catch (err) {
+      setError(err as Error)
+      throw err
+    } finally {
+      setLoading(false)
+    }
+  }
 
   return {
-    project,
-    assignee,
-    parentTask,
-    checklistItems,
-    activityLog,
-    isLoading: 
-      isLoadingProject || 
-      isLoadingAssignee || 
-      isLoadingParentTask || 
-      isLoadingChecklist || 
-      isLoadingActivity
+    loading,
+    error,
+    getTaskRelations,
+    createTaskRelation,
+    updateTaskRelation,
+    deleteTaskRelation
   }
 } 
