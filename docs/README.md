@@ -1,7 +1,11 @@
 # American Dream Taxes Hub Documentation
 
 ## Overview
-This is the central documentation hub for the American Dream Taxes automation platform.
+American Dream Taxes Hub is a comprehensive practice management and automation platform designed for accounting and tax preparation firms. The platform combines CRM, tax preparation workflow management, project management, and AI-powered automation to streamline daily operations and enhance productivity.
+
+The platform focuses on providing end-to-end solutions for client management, document processing, tax preparation, and team collaboration, all while maintaining high security and compliance standards.
+
+Current development status: Phase 1 (85-90% complete)
 
 ## Directory Structure
 ```
@@ -16,29 +20,49 @@ docs/
 │   └── specifications/      # Technical specifications
 ├── implementation/          # General implementation guides
 └── specifications/          # Business specifications
-```
-
 ## Quick Start
 
 1. **New Developers**
-   - Start with `ai-architecture/automation/00-MAIN.md`
-   - Review implementation guides in `automation/implementations/`
-   - Follow SOP implementations from Part B guide
-   - Review technical architecture from Part A guide
+   - Clone the repository
+   - Install dependencies: `npm install`
+   - Set up environment variables (see `.env.example`)
+   - Start development server: `npm run dev`
+   - Review `ai-architecture/automation/00-MAIN.md`
+   - Follow implementation guides in `automation/implementations/`
 
 2. **Current Features**
-   - AI-driven tax return automation
-   - Automated client management
-   - Smart document processing
-   - Integrated practice management
-   - Real-time collaboration tools
+   - **Client Management**
+     * Comprehensive client profiles
+     * Document management system
+     * Communication tracking
+     * Secure client portal
+
+   - **Tax Preparation**
+     * AI-driven automation
+     * Document analysis
+     * Error checking
+     * E-filing integration
+
+   - **Practice Management**
+     * Task tracking
+     * Team collaboration
+     * Deadline management
+     * Resource allocation
+
+   - **AI Features**
+     * Document processing
+     * Data extraction
+     * Tax advice suggestions
+     * Error detection
 
 3. **Development Guidelines**
-   - Follow TypeScript best practices
-   - Use React Server Components where possible
-   - Implement proper error handling
-   - Add tests for new features
-   - Follow SOP implementation guides
+   - Write clean, maintainable TypeScript code
+   - Follow React Server Components patterns
+   - Implement comprehensive error handling
+   - Maintain 80%+ test coverage
+   - Document all new features
+   - Follow code style guidelines
+   - Use conventional commits
 
 ## Implementation Guides
 
@@ -78,11 +102,20 @@ Keep documentation up to date:
 
 ## Contributing
 
-1. Review relevant documentation
-2. Follow implementation guides
-3. Add/update tests
-4. Update documentation
-5. Ensure SOP compliance
+1. Fork the repository
+2. Create a feature branch
+3. Review relevant documentation
+4. Follow implementation guides
+5. Write/update tests
+6. Update documentation
+7. Ensure SOP compliance
+8. Submit a pull request
+
+**Pull Request Guidelines:**
+- Follow the PR template
+- Include test coverage
+- Update relevant documentation
+- Add screenshots for UI changes
 
 ## Best Practices
 

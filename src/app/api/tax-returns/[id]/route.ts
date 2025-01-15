@@ -1,4 +1,4 @@
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
+import { createServerClient } from '@supabase/ssr'
 import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { Database } from '@/types/database.types'
@@ -7,16 +7,26 @@ export async function GET(
   request: Request,
   { params }: { params: { id: string } }
 ) {
-  try {
-    const supabase = createRouteHandlerClient<Database>({ cookies })
+  const cookieStore = cookies()
+  
+  const supabase = createServerClient<Database>(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name: string) {
+          return cookieStore.get(name)?.value
+        }
+      }
+    }
+  )
 
+  try {
     const { data, error } = await supabase
       .from('tax_returns')
       .select(`
         *,
-        client:client_id (*),
-        project:project_id (*),
-        documents:documents (*)
+        client:client_id (*)
       `)
       .eq('id', params.id)
       .single()
@@ -39,8 +49,21 @@ export async function PUT(
   request: Request,
   { params }: { params: { id: string } }
 ) {
+  const cookieStore = cookies()
+  
+  const supabase = createServerClient<Database>(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name: string) {
+          return cookieStore.get(name)?.value
+        }
+      }
+    }
+  )
+
   try {
-    const supabase = createRouteHandlerClient<Database>({ cookies })
     const updates = await request.json()
 
     try {
@@ -57,32 +80,12 @@ export async function PUT(
         throw updateError
       }
 
-      // If status is changed to 'completed', update related project
-      if (updates.status === 'completed') {
-        const { error: projectError } = await supabase
-          .from('projects')
-          .update({
-            status: 'completed',
-            updated_at: new Date().toISOString()
-          })
-          .eq('tax_return_id', params.id)
-
-        if (projectError) {
-          throw projectError
-        }
-      }
-
-      // Commit transaction
-      await supabase.rpc('commit_transaction')
-
       // Fetch updated tax return
       const { data: taxReturn, error: fetchError } = await supabase
         .from('tax_returns')
         .select(`
           *,
-          client:client_id (*),
-          project:project_id (*),
-          documents:documents (*)
+          client:client_id (*)
         `)
         .eq('id', params.id)
         .single()
@@ -93,8 +96,6 @@ export async function PUT(
 
       return NextResponse.json(taxReturn)
     } catch (error) {
-      // Rollback transaction on error
-      await supabase.rpc('rollback_transaction')
       throw error
     }
   } catch (error) {

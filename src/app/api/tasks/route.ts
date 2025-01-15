@@ -1,4 +1,4 @@
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
+import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { Database } from '@/types/database.types';
@@ -25,7 +25,17 @@ export async function GET(request: Request) {
     const clientId = searchParams.get('clientId');
     const assigneeId = searchParams.get('assigneeId');
 
-    const supabase = createRouteHandlerClient<Database>({ cookies });
+    const supabase = createServerClient<Database>(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          get(name: string) {
+            return cookies().get(name)?.value
+          }
+        }
+      }
+    );
 
     let query = supabase
       .from('tasks')
@@ -70,7 +80,17 @@ export async function POST(request: Request) {
     const { checklistItems, ...taskData } = formData;
     const validatedData = taskSchema.parse(taskData);
 
-    const supabase = createRouteHandlerClient<Database>({ cookies });
+    const supabase = createServerClient<Database>(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          get(name: string) {
+            return cookies().get(name)?.value
+          }
+        }
+      }
+    );
 
     // Insert task first
     const { data: task, error: taskError } = await supabase
@@ -138,7 +158,17 @@ export async function PUT(request: Request) {
     }
 
     const validatedData = taskSchema.partial().parse(updates);
-    const supabase = createRouteHandlerClient<Database>({ cookies });
+    const supabase = createServerClient<Database>(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          get(name: string) {
+            return cookies().get(name)?.value
+          }
+        }
+      }
+    );
 
     // Update task
     const { data: task, error: taskError } = await supabase
@@ -216,7 +246,17 @@ export async function DELETE(request: Request) {
       );
     }
 
-    const supabase = createRouteHandlerClient<Database>({ cookies });
+    const supabase = createServerClient<Database>(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          get(name: string) {
+            return cookies().get(name)?.value
+          }
+        }
+      }
+    );
 
     // Delete related records first (due to foreign key constraints)
     await Promise.all([
