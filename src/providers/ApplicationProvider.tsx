@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import React, { createContext, useContext, ReactNode } from 'react';
-import { useClients } from '@/hooks/useClients';
-import { useTasks } from '@/hooks/useTasks';
+import React, { createContext, useContext, ReactNode } from "react";
+import { useClients } from "@/hooks/useClients";
+import { useTasks } from "@/hooks/useTasks";
 
 type ApplicationContextType = {
   clients: any[];
@@ -11,11 +11,21 @@ type ApplicationContextType = {
   error: Error | null;
 };
 
-const ApplicationContext = createContext<ApplicationContextType | undefined>(undefined);
+const ApplicationContext = createContext<ApplicationContextType | undefined>(
+  undefined,
+);
 
 export function ApplicationProvider({ children }: { children: ReactNode }) {
-  const { data: clients, error: clientsError, isLoading: clientsLoading } = useClients();
-  const { data: tasks, error: tasksError, isLoading: tasksLoading } = useTasks();
+  const {
+    data: clients,
+    error: clientsError,
+    isLoading: clientsLoading,
+  } = useClients();
+  const {
+    data: tasks,
+    error: tasksError,
+    isLoading: tasksLoading,
+  } = useTasks();
 
   const value = {
     clients: clients || [],
@@ -34,7 +44,9 @@ export function ApplicationProvider({ children }: { children: ReactNode }) {
 export function useApplication() {
   const context = useContext(ApplicationContext);
   if (context === undefined) {
-    throw new Error('useApplication must be used within an ApplicationProvider');
+    throw new Error(
+      "useApplication must be used within an ApplicationProvider",
+    );
   }
   return context;
-} 
+}

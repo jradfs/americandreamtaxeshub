@@ -1,6 +1,6 @@
-import { TaskSummary } from './TaskSummary';
-import { Calendar } from './Calendar';
-import { CalendarEvent } from '@/types/calendar';
+import { TaskSummary } from "./TaskSummary";
+import { Calendar } from "./Calendar";
+import { CalendarEvent } from "@/types/calendar";
 
 interface DashboardShellProps {
   children?: React.ReactNode;
@@ -19,9 +19,7 @@ export function DashboardShell({
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Calendar events={calendarEvents} />
       </div>
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {children}
-      </div>
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">{children}</div>
     </div>
   );
 }

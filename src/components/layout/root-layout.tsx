@@ -1,9 +1,9 @@
-'use client'
+"use client";
 
-import { Sidebar } from "./sidebar"
+import { Sidebar } from "./sidebar";
 
 interface RootLayoutProps {
-  children: React.ReactNode
+  children: React.ReactNode;
 }
 
 export function RootLayout({ children }: RootLayoutProps) {
@@ -11,10 +11,8 @@ export function RootLayout({ children }: RootLayoutProps) {
     <div className="relative flex min-h-screen">
       <Sidebar />
       <main className="flex-1 pl-64">
-        <div className="container py-4">
-          {children}
-        </div>
+        <div className="container py-4">{children}</div>
       </main>
     </div>
-  )
+  );
 }

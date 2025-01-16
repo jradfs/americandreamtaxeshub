@@ -36,14 +36,18 @@ export default function DocumentsPage() {
   } = useForm<{ file: FileList; linkReturnId: string }>();
 
   async function fetchDocuments() {
-    const { data, error } = await supabaseBrowserClient.from("documents").select("*");
+    const { data, error } = await supabaseBrowserClient
+      .from("documents")
+      .select("*");
     if (!error && data) {
       setDocs(data);
     }
   }
 
   async function fetchTaxReturns() {
-    const { data, error } = await supabaseBrowserClient.from("tax_returns").select("*");
+    const { data, error } = await supabaseBrowserClient
+      .from("tax_returns")
+      .select("*");
     if (!error && data) {
       setTaxReturns(data);
     }
@@ -59,7 +63,7 @@ export default function DocumentsPage() {
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "documents" },
-        () => fetchDocuments()
+        () => fetchDocuments(),
       )
       .subscribe();
 
@@ -78,9 +82,8 @@ export default function DocumentsPage() {
     // Example: store offline if user is offline
     // syncOfflineChanges(...)
     // Or do direct upload:
-    const { data: storageData, error: storageErr } = await supabaseBrowserClient.storage
-      .from("docs")
-      .upload(file.name, file);
+    const { data: storageData, error: storageErr } =
+      await supabaseBrowserClient.storage.from("docs").upload(file.name, file);
     if (storageErr) {
       alert(storageErr.message);
       return;
@@ -106,7 +109,7 @@ export default function DocumentsPage() {
   }
 
   const filteredDocs = docs.filter((d) =>
-    d.file_name?.toLowerCase().includes(search.toLowerCase())
+    d.file_name?.toLowerCase().includes(search.toLowerCase()),
   );
 
   return (
@@ -134,7 +137,10 @@ export default function DocumentsPage() {
                   onSubmit={handleSubmit(onUpload)}
                   className="space-y-4 mt-2"
                 >
-                  <input type="file" {...register("file", { required: true })} />
+                  <input
+                    type="file"
+                    {...register("file", { required: true })}
+                  />
                   {errors.file && (
                     <p className="text-red-500 text-sm">File is required.</p>
                   )}
@@ -221,4 +227,4 @@ export default function DocumentsPage() {
       </Dialog>
     </div>
   );
-} 
+}

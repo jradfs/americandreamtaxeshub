@@ -1,48 +1,45 @@
-import { getRouteClient } from '@/lib/supabase/server-client'
-import type { Database } from '@/types/database.types'
+import { getRouteClient } from "@/lib/supabase/server-client";
+import type { Database } from "@/types/database.types";
 
 export async function getProjects() {
-  const supabase = getRouteClient()
+  const supabase = getRouteClient();
   const { data, error } = await supabase
-    .from('projects')
-    .select('*')
-    .order('created_at', { ascending: false })
+    .from("projects")
+    .select("*")
+    .order("created_at", { ascending: false });
 
-  if (error) throw error
-  return data
+  if (error) throw error;
+  return data;
 }
 
 export async function createProject(project: any) {
-  const supabase = getRouteClient()
+  const supabase = getRouteClient();
   const { data, error } = await supabase
-    .from('projects')
+    .from("projects")
     .insert(project)
     .select()
-    .single()
+    .single();
 
-  if (error) throw error
-  return data
+  if (error) throw error;
+  return data;
 }
 
 export async function updateProject(id: string, project: any) {
-  const supabase = getRouteClient()
+  const supabase = getRouteClient();
   const { data, error } = await supabase
-    .from('projects')
+    .from("projects")
     .update(project)
-    .eq('id', id)
+    .eq("id", id)
     .select()
-    .single()
+    .single();
 
-  if (error) throw error
-  return data
+  if (error) throw error;
+  return data;
 }
 
 export async function deleteProject(id: string) {
-  const supabase = getRouteClient()
-  const { error } = await supabase
-    .from('projects')
-    .delete()
-    .eq('id', id)
+  const supabase = getRouteClient();
+  const { error } = await supabase.from("projects").delete().eq("id", id);
 
-  if (error) throw error
+  if (error) throw error;
 }

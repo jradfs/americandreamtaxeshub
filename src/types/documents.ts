@@ -1,4 +1,9 @@
-export type DocumentCategory = 'tax_return' | 'financial_statement' | 'payroll' | 'corporate' | 'supporting';
+export type DocumentCategory =
+  | "tax_return"
+  | "financial_statement"
+  | "payroll"
+  | "corporate"
+  | "supporting";
 
 export interface Document {
   id: string;
@@ -13,7 +18,7 @@ export interface Document {
   description?: string;
   uploaded_at: string;
   uploaded_by: string;
-  status: 'pending' | 'approved' | 'rejected';
+  status: "pending" | "approved" | "rejected";
   metadata?: {
     tax_year?: number;
     form_type?: string;
@@ -27,7 +32,7 @@ export interface DocumentReminder {
   id: string;
   document_id: string;
   due_date: string;
-  status: 'pending' | 'completed';
+  status: "pending" | "completed";
   message: string;
   created_at: string;
   updated_at: string;
@@ -37,9 +42,9 @@ export interface DocumentTracking {
   id: string;
   document_id: string;
   project_id: string;
-  status: 'required' | 'received' | 'reviewed' | 'approved';
+  status: "required" | "received" | "reviewed" | "approved";
   required_by?: string;
   notes?: string;
   created_at: string;
   updated_at: string;
-} 
+}

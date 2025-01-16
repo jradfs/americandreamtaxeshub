@@ -1,9 +1,14 @@
-'use client'
+"use client";
 
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { TaskFormData, taskSchema, taskStatusOptions, taskPriorityOptions } from '@/types/tasks'
-import { Button } from '@/components/ui/button'
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import {
+  TaskFormData,
+  taskSchema,
+  taskStatusOptions,
+  taskPriorityOptions,
+} from "@/types/tasks";
+import { Button } from "@/components/ui/button";
 import {
   Form,
   FormControl,
@@ -11,32 +16,36 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/components/ui/form'
-import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
-import { DatePicker } from '@/components/ui/date-picker'
+} from "@/components/ui/select";
+import { DatePicker } from "@/components/ui/date-picker";
 
 interface TaskFormProps {
-  initialData?: Partial<TaskFormData>
-  onSubmit: (data: TaskFormData) => Promise<void>
-  isSubmitting?: boolean
+  initialData?: Partial<TaskFormData>;
+  onSubmit: (data: TaskFormData) => Promise<void>;
+  isSubmitting?: boolean;
 }
 
-export function TaskForm({ initialData, onSubmit, isSubmitting }: TaskFormProps) {
+export function TaskForm({
+  initialData,
+  onSubmit,
+  isSubmitting,
+}: TaskFormProps) {
   const form = useForm<TaskFormData>({
     resolver: zodResolver(taskSchema),
     defaultValues: {
-      title: initialData?.title || '',
-      description: initialData?.description || '',
-      status: initialData?.status || 'todo',
-      priority: initialData?.priority || 'medium',
+      title: initialData?.title || "",
+      description: initialData?.description || "",
+      status: initialData?.status || "todo",
+      priority: initialData?.priority || "medium",
       project_id: initialData?.project_id || null,
       assignee_id: initialData?.assignee_id || null,
       due_date: initialData?.due_date || null,
@@ -44,19 +53,20 @@ export function TaskForm({ initialData, onSubmit, isSubmitting }: TaskFormProps)
       tax_form_type: initialData?.tax_form_type || null,
       category: initialData?.category || null,
     },
-  })
+  });
 
   const handleSubmit = async (values: TaskFormData) => {
     try {
-      await onSubmit(values)
-      form.reset()
+      await onSubmit(values);
+      form.reset();
     } catch (error) {
       // Error will be handled by the parent component
-      form.setError('root', { 
-        message: error instanceof Error ? error.message : 'Failed to submit task'
-      })
+      form.setError("root", {
+        message:
+          error instanceof Error ? error.message : "Failed to submit task",
+      });
     }
-  }
+  };
 
   return (
     <Form {...form}>
@@ -96,7 +106,10 @@ export function TaskForm({ initialData, onSubmit, isSubmitting }: TaskFormProps)
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Status</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <Select
+                  onValueChange={field.onChange}
+                  defaultValue={field.value}
+                >
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder="Select status" />
@@ -121,8 +134,8 @@ export function TaskForm({ initialData, onSubmit, isSubmitting }: TaskFormProps)
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Priority</FormLabel>
-                <Select 
-                  onValueChange={field.onChange} 
+                <Select
+                  onValueChange={field.onChange}
                   defaultValue={field.value || undefined}
                 >
                   <FormControl>
@@ -187,14 +200,11 @@ export function TaskForm({ initialData, onSubmit, isSubmitting }: TaskFormProps)
         )}
 
         <div className="flex justify-end space-x-2">
-          <Button
-            type="submit"
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? 'Saving...' : 'Save Task'}
+          <Button type="submit" disabled={isSubmitting}>
+            {isSubmitting ? "Saving..." : "Save Task"}
           </Button>
         </div>
       </form>
     </Form>
-  )
-} 
+  );
+}

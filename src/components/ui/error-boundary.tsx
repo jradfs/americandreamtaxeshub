@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import { Component, ErrorInfo, ReactNode } from 'react';
-import { Card, CardContent } from './card';
-import { Button } from './button';
-import { AlertCircle } from 'lucide-react';
+import { Component, ErrorInfo, ReactNode } from "react";
+import { Card, CardContent } from "./card";
+import { Button } from "./button";
+import { AlertCircle } from "lucide-react";
 
 interface Props {
   children: ReactNode;
@@ -25,7 +25,7 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error('Uncaught error:', error, errorInfo);
+    console.error("Uncaught error:", error, errorInfo);
   }
 
   public render() {
@@ -38,7 +38,7 @@ export class ErrorBoundary extends Component<Props, State> {
               <div className="text-center">
                 <h2 className="text-lg font-semibold">Something went wrong</h2>
                 <p className="text-sm text-muted-foreground mt-1">
-                  {this.state.error?.message || 'An unexpected error occurred'}
+                  {this.state.error?.message || "An unexpected error occurred"}
                 </p>
               </div>
               <Button

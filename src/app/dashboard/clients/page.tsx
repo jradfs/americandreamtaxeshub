@@ -1,10 +1,10 @@
-import { getSupabaseServerClient } from '@/lib/supabaseServerClient';
-import ClientList from '@/components/client/ClientList';
-import { Database } from '@/types/database.types';
+import { getSupabaseServerClient } from "@/lib/supabaseServerClient";
+import ClientList from "@/components/client/ClientList";
+import { Database } from "@/types/database.types";
 
 async function getClients() {
   const supabase = getSupabaseServerClient();
-  const { data: clients } = await supabase.from('clients').select('*');
+  const { data: clients } = await supabase.from("clients").select("*");
   return clients || [];
 }
 
@@ -17,4 +17,4 @@ export default async function ClientsPage() {
       <ClientList initialClients={initialClients} />
     </main>
   );
-} 
+}

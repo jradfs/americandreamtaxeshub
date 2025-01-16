@@ -1,23 +1,30 @@
-'use client'
+"use client";
 
-import { useState, useEffect } from 'react'
-import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Skeleton } from '@/components/ui/skeleton'
-import { TaskDialog } from './task-dialog'
-import { TaskWithRelations, TaskFormData, toTaskFormData } from '@/types/tasks'
-import { ErrorBoundary } from '@/components/error-boundary'
+import { useState, useEffect } from "react";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { TaskDialog } from "./task-dialog";
+import { TaskWithRelations, TaskFormData, toTaskFormData } from "@/types/tasks";
+import { ErrorBoundary } from "react-error-boundary";
 
 interface TaskListProps {
-  tasks: TaskWithRelations[]
-  isLoading?: boolean
-  totalTasks: number
-  currentPage: number
-  totalPages: number
-  onUpdate: (taskId: string, data: TaskFormData) => Promise<void>
-  onDelete: (taskId: string) => Promise<void>
-  onCreate?: (data: TaskFormData) => Promise<void>
-  onPageChange: (page: number) => void
+  tasks: TaskWithRelations[];
+  isLoading?: boolean;
+  totalTasks: number;
+  currentPage: number;
+  totalPages: number;
+  onUpdate: (taskId: string, data: TaskFormData) => Promise<void>;
+  onDelete: (taskId: string) => Promise<void>;
+  onCreate?: (data: TaskFormData) => Promise<void>;
+  onPageChange: (page: number) => void;
+  onViewSubtasks?: (taskId: string) => void;
+  showSubtasks?: boolean;
 }
 
 export function TaskList({
@@ -29,39 +36,41 @@ export function TaskList({
   onUpdate,
   onDelete,
   onCreate,
-  onPageChange
+  onPageChange,
 }: TaskListProps) {
-  const [dialogOpen, setDialogOpen] = useState(false)
-  const [selectedTask, setSelectedTask] = useState<TaskWithRelations | null>(null)
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [selectedTask, setSelectedTask] = useState<TaskWithRelations | null>(
+    null,
+  );
 
   const handleSubmit = async (data: TaskFormData) => {
     if (selectedTask) {
-      await onUpdate(selectedTask.id, data)
+      await onUpdate(selectedTask.id, data);
     } else if (onCreate) {
-      await onCreate(data)
+      await onCreate(data);
     }
-    setDialogOpen(false)
-    setSelectedTask(null)
-  }
+    setDialogOpen(false);
+    setSelectedTask(null);
+  };
 
   // Prefetch next page when near the end of the list
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting && currentPage < totalPages) {
-          onPageChange(currentPage + 1)
+          onPageChange(currentPage + 1);
         }
       },
-      { threshold: 0.5 }
-    )
+      { threshold: 0.5 },
+    );
 
-    const sentinel = document.getElementById('task-list-sentinel')
+    const sentinel = document.getElementById("task-list-sentinel");
     if (sentinel) {
-      observer.observe(sentinel)
+      observer.observe(sentinel);
     }
 
-    return () => observer.disconnect()
-  }, [currentPage, totalPages, onPageChange])
+    return () => observer.disconnect();
+  }, [currentPage, totalPages, onPageChange]);
 
   if (isLoading && tasks.length === 0) {
     return (
@@ -73,18 +82,35 @@ export function TaskList({
           </Card>
         ))}
       </div>
-    )
+    );
   }
 
   return (
-    <ErrorBoundary>
+    <ErrorBoundary
+      fallback={({ error, reset }) => (
+        <div className="p-4 border rounded bg-red-50">
+          <h3 className="font-medium text-red-600">Error loading tasks</h3>
+          <p className="text-sm text-red-500">{error.message}</p>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={reset}
+            className="mt-2"
+          >
+            Try Again
+          </Button>
+        </div>
+      )}
+    >
       <div className="space-y-4">
         {tasks.length === 0 ? (
           <Card className="p-4">
             <CardHeader>
               <CardTitle>No tasks found</CardTitle>
               <CardDescription>
-                {onCreate ? 'Create a new task to get started.' : 'No tasks match your criteria.'}
+                {onCreate
+                  ? "Create a new task to get started."
+                  : "No tasks match your criteria."}
               </CardDescription>
             </CardHeader>
           </Card>
@@ -96,7 +122,9 @@ export function TaskList({
                   <div>
                     <h3 className="font-medium">{task.title}</h3>
                     {task.description && (
-                      <p className="text-sm text-gray-500">{task.description}</p>
+                      <p className="text-sm text-gray-500">
+                        {task.description}
+                      </p>
                     )}
                     <div className="mt-2 flex gap-2">
                       <span className="text-xs px-2 py-1 rounded-full bg-gray-100">
@@ -114,8 +142,8 @@ export function TaskList({
                       variant="ghost"
                       size="sm"
                       onClick={() => {
-                        setSelectedTask(task)
-                        setDialogOpen(true)
+                        setSelectedTask(task);
+                        setDialogOpen(true);
                       }}
                     >
                       Edit
@@ -151,5 +179,5 @@ export function TaskList({
         />
       </div>
     </ErrorBoundary>
-  )
+  );
 }

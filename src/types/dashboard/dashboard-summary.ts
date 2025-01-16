@@ -1,6 +1,6 @@
-import { TaskSummary, TaskSummaryFilters } from './task-summary';
-import { NotificationSummary, NotificationFilters } from './notification';
-import { CalendarEvent } from '../calendar/calendar-event';
+import { TaskSummary, TaskSummaryFilters } from "./task-summary";
+import { NotificationSummary, NotificationFilters } from "./notification";
+import { CalendarEvent } from "../calendar/calendar-event";
 
 export interface DashboardSummary {
   tasks: TaskSummary;

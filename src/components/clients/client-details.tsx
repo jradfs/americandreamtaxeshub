@@ -1,21 +1,21 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import { getBrowserClient } from '@/lib/supabase/browser-client';
-import type { Database } from '@/types/database.types';
-import type { ClientWithRelations, TaxInfo } from '@/types/clients';
+import { useEffect, useState } from "react";
+import { getBrowserClient } from "@/lib/supabase/browser-client";
+import type { Database } from "@/types/database.types";
+import type { ClientWithRelations, TaxInfo } from "@/types/clients";
 
 interface ClientDetailsProps {
   clientId: string;
 }
 
-type ClientResponse = Database['public']['Tables']['clients']['Row'] & {
-  documents: Database['public']['Tables']['client_documents']['Row'][]
-  workflows: Database['public']['Tables']['client_onboarding_workflows']['Row'][]
-  assigned_preparer: Database['public']['Tables']['users']['Row'] | null
-  tax_returns: Database['public']['Tables']['tax_returns']['Row'][]
-  projects: Database['public']['Tables']['projects']['Row'][]
-}
+type ClientResponse = Database["public"]["Tables"]["clients"]["Row"] & {
+  documents: Database["public"]["Tables"]["client_documents"]["Row"][];
+  workflows: Database["public"]["Tables"]["client_onboarding_workflows"]["Row"][];
+  assigned_preparer: Database["public"]["Tables"]["users"]["Row"] | null;
+  tax_returns: Database["public"]["Tables"]["tax_returns"]["Row"][];
+  projects: Database["public"]["Tables"]["projects"]["Row"][];
+};
 
 export function ClientDetails({ clientId }: ClientDetailsProps) {
   const [client, setClient] = useState<ClientWithRelations | null>(null);
@@ -26,16 +26,18 @@ export function ClientDetails({ clientId }: ClientDetailsProps) {
     const fetchClient = async () => {
       try {
         const { data, error } = await supabase
-          .from('clients')
-          .select(`
+          .from("clients")
+          .select(
+            `
             *,
             assigned_preparer:users(id, full_name, email),
             documents:client_documents(*),
             workflows:client_onboarding_workflows(*),
             tax_returns:tax_returns(*),
             projects:projects(*)
-          `)
-          .eq('id', clientId)
+          `,
+          )
+          .eq("id", clientId)
           .single();
 
         if (error) {
@@ -56,7 +58,7 @@ export function ClientDetails({ clientId }: ClientDetailsProps) {
           setClient(enhancedClient);
         }
       } catch (error) {
-        console.error('Error fetching client:', error);
+        console.error("Error fetching client:", error);
       } finally {
         setIsLoading(false);
       }
@@ -84,10 +86,12 @@ export function ClientDetails({ clientId }: ClientDetailsProps) {
             <h3 className="font-semibold">Basic Information</h3>
             <div className="mt-2 space-y-2">
               <p>
-                <span className="font-medium">Name:</span> {client.full_name || client.company_name}
+                <span className="font-medium">Name:</span>{" "}
+                {client.full_name || client.company_name}
               </p>
               <p>
-                <span className="font-medium">Email:</span> {client.contact_email}
+                <span className="font-medium">Email:</span>{" "}
+                {client.contact_email}
               </p>
               <p>
                 <span className="font-medium">Status:</span> {client.status}
@@ -101,14 +105,14 @@ export function ClientDetails({ clientId }: ClientDetailsProps) {
             <h3 className="font-semibold">Tax Information</h3>
             <div className="mt-2 space-y-2">
               <p>
-                <span className="font-medium">Filing Status:</span>{' '}
+                <span className="font-medium">Filing Status:</span>{" "}
                 {taxInfo?.filing_status}
               </p>
               <p>
                 <span className="font-medium">Tax ID:</span> {taxInfo?.tax_id}
               </p>
               <p>
-                <span className="font-medium">Last Filed:</span>{' '}
+                <span className="font-medium">Last Filed:</span>{" "}
                 {taxInfo?.last_filed_date}
               </p>
             </div>
@@ -171,7 +175,3 @@ export function ClientDetails({ clientId }: ClientDetailsProps) {
 }
 
 export default ClientDetails;
-
-
-
-

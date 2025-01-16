@@ -1,14 +1,14 @@
-'use client';
+"use client";
 
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Progress } from '@/components/ui/progress';
-import { BasicInfoSection } from './BasicInfoSection';
-import { ServiceDetailsSection } from './ServiceDetailsSection';
-import { TaskSection } from './TaskSection';
-import { useProjectFormContext } from './ProjectFormContext';
-import type { Database } from '@/types/database.types';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Progress } from "@/components/ui/progress";
+import { BasicInfoSection } from "./BasicInfoSection";
+import { ServiceDetailsSection } from "./ServiceDetailsSection";
+import { TaskSection } from "./TaskSection";
+import { useProjectFormContext } from "./ProjectFormContext";
+import type { Database } from "@/types/database.types";
 
-type DbTaskInsert = Database['public']['Tables']['tasks']['Insert'];
+type DbTaskInsert = Database["public"]["Tables"]["tasks"]["Insert"];
 
 interface ProjectFormTabsProps {
   activeTab: string;
@@ -16,23 +16,30 @@ interface ProjectFormTabsProps {
   getTabProgress: (tab: string) => number;
 }
 
-export function ProjectFormTabs({ activeTab, onTabChange, getTabProgress }: ProjectFormTabsProps) {
+export function ProjectFormTabs({
+  activeTab,
+  onTabChange,
+  getTabProgress,
+}: ProjectFormTabsProps) {
   const { form } = useProjectFormContext();
 
   const handleAddTask = (task: DbTaskInsert) => {
-    const tasks = form.getValues('template_tasks') || [];
-    form.setValue('template_tasks', [...tasks, task]);
+    const tasks = form.getValues("template_tasks") || [];
+    form.setValue("template_tasks", [...tasks, task]);
   };
 
   const handleEditTask = (task: DbTaskInsert, taskId: string) => {
-    const tasks = form.getValues('template_tasks') || [];
-    const updatedTasks = tasks.map(t => t.id === taskId ? task : t);
-    form.setValue('template_tasks', updatedTasks);
+    const tasks = form.getValues("template_tasks") || [];
+    const updatedTasks = tasks.map((t) => (t.id === taskId ? task : t));
+    form.setValue("template_tasks", updatedTasks);
   };
 
   const handleDeleteTask = (taskId: string) => {
-    const tasks = form.getValues('template_tasks') || [];
-    form.setValue('template_tasks', tasks.filter(t => t.id !== taskId));
+    const tasks = form.getValues("template_tasks") || [];
+    form.setValue(
+      "template_tasks",
+      tasks.filter((t) => t.id !== taskId),
+    );
   };
 
   return (
@@ -64,4 +71,4 @@ export function ProjectFormTabs({ activeTab, onTabChange, getTabProgress }: Proj
       </TabsContent>
     </Tabs>
   );
-} 
+}

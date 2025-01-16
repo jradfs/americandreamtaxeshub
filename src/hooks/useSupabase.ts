@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { useToast } from '@/components/ui/use-toast';
-import { supabaseBrowserClient as supabase } from '@/lib/supabaseBrowserClient';
+import { useState, useEffect } from "react";
+import { useToast } from "@/components/ui/use-toast";
+import { supabaseBrowserClient as supabase } from "@/lib/supabaseBrowserClient";
 
 type UseSupabaseOptions = {
   filters?: [string, string, any][];
@@ -20,7 +20,7 @@ export function useSupabase(table: string, options: UseSupabaseOptions = {}) {
 
   const fetchData = async () => {
     try {
-      let query = supabase.from(table).select(options.select || '*');
+      let query = supabase.from(table).select(options.select || "*");
 
       if (options.filters) {
         options.filters.forEach(([column, operator, value]) => {
@@ -43,9 +43,9 @@ export function useSupabase(table: string, options: UseSupabaseOptions = {}) {
     } catch (err) {
       setError(err as Error);
       toast({
-        title: 'Error',
-        description: 'Failed to fetch data',
-        variant: 'destructive',
+        title: "Error",
+        description: "Failed to fetch data",
+        variant: "destructive",
       });
     }
   };
@@ -59,4 +59,4 @@ export function useSupabase(table: string, options: UseSupabaseOptions = {}) {
   };
 
   return { data, error, mutate };
-} 
+}

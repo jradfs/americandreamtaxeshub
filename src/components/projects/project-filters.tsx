@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -22,12 +22,7 @@ import {
 import type { DateRange } from "react-day-picker";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
-import { 
-  CalendarIcon, 
-  Search, 
-  X,
-  ArrowUpDown,
-} from "lucide-react";
+import { CalendarIcon, Search, X, ArrowUpDown } from "lucide-react";
 import type { ProjectFilters as ProjectFiltersType } from "@/hooks/useProjectFilters";
 import { defaultFilters } from "@/hooks/useProjectFilters";
 import { Badge } from "@/components/ui/badge";
@@ -39,7 +34,11 @@ interface ProjectFiltersProps {
   clientOptions?: Array<{ id: string; label: string }>;
 }
 
-export function ProjectFilters({ filters, onChange, clientOptions = [] }: ProjectFiltersProps) {
+export function ProjectFilters({
+  filters,
+  onChange,
+  clientOptions = [],
+}: ProjectFiltersProps) {
   const [date, setDate] = useState<DateRange | undefined>(filters.dateRange);
 
   const handleDateSelect = (range: DateRange | undefined) => {
@@ -55,8 +54,8 @@ export function ProjectFilters({ filters, onChange, clientOptions = [] }: Projec
     onChange(defaultFilters);
   };
 
-  const hasActiveFilters = 
-    filters.search !== "" || 
+  const hasActiveFilters =
+    filters.search !== "" ||
     filters.status.length > 0 ||
     filters.priority.length > 0 ||
     filters.service_category.length > 0 ||
@@ -66,7 +65,7 @@ export function ProjectFilters({ filters, onChange, clientOptions = [] }: Projec
   const toggleSortOrder = () => {
     onChange({
       ...filters,
-      sortOrder: filters.sortOrder === 'asc' ? 'desc' : 'asc'
+      sortOrder: filters.sortOrder === "asc" ? "desc" : "asc",
     });
   };
 
@@ -99,10 +98,12 @@ export function ProjectFilters({ filters, onChange, clientOptions = [] }: Projec
           {/* Status Filter */}
           <Select
             value={filters.status.length > 0 ? filters.status[0] : "all"}
-            onValueChange={(value) => onChange({ 
-              ...filters, 
-              status: value === "all" ? [] : [value as ProjectStatus] 
-            })}
+            onValueChange={(value) =>
+              onChange({
+                ...filters,
+                status: value === "all" ? [] : [value as ProjectStatus],
+              })
+            }
           >
             <SelectTrigger className="w-[130px]">
               <SelectValue placeholder="Status" />
@@ -124,10 +125,12 @@ export function ProjectFilters({ filters, onChange, clientOptions = [] }: Projec
           {/* Priority Filter */}
           <Select
             value={filters.priority.length > 0 ? filters.priority[0] : "all"}
-            onValueChange={(value) => onChange({ 
-              ...filters, 
-              priority: value === "all" ? [] : [value as Priority] 
-            })}
+            onValueChange={(value) =>
+              onChange({
+                ...filters,
+                priority: value === "all" ? [] : [value as Priority],
+              })
+            }
           >
             <SelectTrigger className="w-[130px]">
               <SelectValue placeholder="Priority" />
@@ -143,11 +146,18 @@ export function ProjectFilters({ filters, onChange, clientOptions = [] }: Projec
 
           {/* Stage Filter */}
           <Select
-            value={filters.service_category.length > 0 ? filters.service_category[0] : "all"}
-            onValueChange={(value) => onChange({ 
-              ...filters, 
-              service_category: value === "all" ? [] : [value as ServiceCategory] 
-            })}
+            value={
+              filters.service_category.length > 0
+                ? filters.service_category[0]
+                : "all"
+            }
+            onValueChange={(value) =>
+              onChange({
+                ...filters,
+                service_category:
+                  value === "all" ? [] : [value as ServiceCategory],
+              })
+            }
           >
             <SelectTrigger className="w-[130px]">
               <SelectValue placeholder="Stage" />
@@ -167,8 +177,10 @@ export function ProjectFilters({ filters, onChange, clientOptions = [] }: Projec
           {clientOptions.length > 0 && (
             <div className="w-[180px]">
               <ClientCombobox
-                value={filters.clientId === 'all' ? null : filters.clientId}
-                onChange={(value) => onChange({ ...filters, clientId: value || 'all' })}
+                value={filters.clientId === "all" ? null : filters.clientId}
+                onChange={(value) =>
+                  onChange({ ...filters, clientId: value || "all" })
+                }
               />
             </div>
           )}
@@ -186,14 +198,15 @@ export function ProjectFilters({ filters, onChange, clientOptions = [] }: Projec
                 variant="outline"
                 className={cn(
                   "w-[240px] justify-start text-left font-normal",
-                  !date && "text-muted-foreground"
+                  !date && "text-muted-foreground",
                 )}
               >
                 <CalendarIcon className="mr-2 h-4 w-4" />
                 {date?.from ? (
                   date.to ? (
                     <>
-                      {format(date.from, "LLL dd, y")} - {format(date.to, "LLL dd, y")}
+                      {format(date.from, "LLL dd, y")} -{" "}
+                      {format(date.to, "LLL dd, y")}
                     </>
                   ) : (
                     format(date.from, "LLL dd, y")
@@ -247,7 +260,7 @@ export function ProjectFilters({ filters, onChange, clientOptions = [] }: Projec
             onClick={toggleSortOrder}
             className={cn(
               "h-10 w-10",
-              filters.sortOrder === 'desc' && "bg-muted"
+              filters.sortOrder === "desc" && "bg-muted",
             )}
           >
             <ArrowUpDown className="h-4 w-4" />
@@ -256,11 +269,7 @@ export function ProjectFilters({ filters, onChange, clientOptions = [] }: Projec
 
         {/* Clear Filters */}
         {hasActiveFilters && (
-          <Button 
-            variant="ghost" 
-            onClick={clearFilters}
-            className="gap-2"
-          >
+          <Button variant="ghost" onClick={clearFilters} className="gap-2">
             <X className="h-4 w-4" />
             Clear filters
           </Button>

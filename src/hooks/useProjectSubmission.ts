@@ -1,6 +1,10 @@
-import { useState } from 'react';
-import { toast } from 'sonner';
-import { ProjectFormValues, validateTaskDependencies, sortTasksByDependencies } from '@/lib/validations/project';
+import { useState } from "react";
+import { toast } from "sonner";
+import {
+  ProjectFormValues,
+  validateTaskDependencies,
+  sortTasksByDependencies,
+} from "@/lib/validations/project";
 
 export const useProjectSubmission = (onSuccess: () => void) => {
   const [isLoading, setIsLoading] = useState(false);
@@ -11,11 +15,13 @@ export const useProjectSubmission = (onSuccess: () => void) => {
     try {
       // Validate tasks before submission
       if (values.tasks?.length && !validateTaskDependencies(values.tasks)) {
-        throw new Error('Invalid task dependencies');
+        throw new Error("Invalid task dependencies");
       }
 
       // Sort tasks by dependencies to ensure correct order
-      const sortedTasks = values.tasks ? sortTasksByDependencies(values.tasks) : [];
+      const sortedTasks = values.tasks
+        ? sortTasksByDependencies(values.tasks)
+        : [];
 
       // Prepare project data
       const projectData = {
@@ -39,31 +45,32 @@ export const useProjectSubmission = (onSuccess: () => void) => {
           priority: task.priority,
           dependencies: task.dependencies || [],
           order_index: index,
-          assignee_id: task.assignee_id
-        }))
+          assignee_id: task.assignee_id,
+        })),
       };
 
       // Submit project through API
-      const response = await fetch('/api/projects', {
-        method: 'POST',
+      const response = await fetch("/api/projects", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json'
+          "Content-Type": "application/json",
         },
-        body: JSON.stringify(projectData)
+        body: JSON.stringify(projectData),
       });
 
       const responseData = await response.json();
 
       if (!response.ok) {
-        throw new Error(responseData.message || 'Failed to create project');
+        throw new Error(responseData.message || "Failed to create project");
       }
 
-      toast.success('Project created successfully');
+      toast.success("Project created successfully");
       onSuccess();
       return { data: responseData, error: null };
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to create project';
-      console.error('Project creation error:', err);
+      const message =
+        err instanceof Error ? err.message : "Failed to create project";
+      console.error("Project creation error:", err);
       toast.error(message);
       return { data: null, error: message };
     } finally {
@@ -73,6 +80,6 @@ export const useProjectSubmission = (onSuccess: () => void) => {
 
   return {
     isLoading,
-    submitProject
+    submitProject,
   };
 };

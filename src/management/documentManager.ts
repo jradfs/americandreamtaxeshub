@@ -1,6 +1,9 @@
 import { supabase } from "../lib/supabaseClient";
 
-export async function updateDocumentStatus(documentId: string, newStatus: string) {
+export async function updateDocumentStatus(
+  documentId: string,
+  newStatus: string,
+) {
   const { data, error } = await supabase
     .from("documents")
     .update({ document_status: newStatus })
@@ -11,4 +14,4 @@ export async function updateDocumentStatus(documentId: string, newStatus: string
   }
 
   return data;
-} 
+}

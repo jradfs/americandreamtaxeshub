@@ -1,120 +1,175 @@
-import { createServerClient } from '@supabase/ssr'
-import { cookies } from 'next/headers'
-import { NextResponse } from 'next/server'
-import { Database } from '@/types/database.types'
-import { generateOnboardingTasks } from '@/lib/services/task.service'
+import createClient from '@/lib/supabase/client';
+import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 
+// Initialize Supabase client
+const supabase = createClient();
+
+async function checkAuth() {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) {
+    return NextResponse.json(
+      { error: 'Unauthorized' },
+      { status: 401 }
+    );
+  }
+  return null;
+}
+
+// Create new client
 export async function POST(request: Request) {
+  const authError = await checkAuth();
+  if (authError) return authError;
+  
   try {
-    const supabase = createServerClient<Database>(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          get(name: string) {
-            return cookies().get(name)?.value
-          }
-        }
-      }
-    )
-    const json = await request.json()
+    const clientData = await request.json();
+    
+    // Validate required fields
+    if (!clientData.full_name || !clientData.email) {
+      return NextResponse.json(
+        { error: 'Full name and email are required' },
+        { status: 400 }
+      );
+    }
 
-    // Create the client
-    const { data: client, error: clientError } = await supabase
+    const { data, error } = await supabase
       .from('clients')
-      .insert(json)
+      .insert([clientData])
       .select()
-      .single()
+      .single();
 
-    if (clientError) {
-      throw clientError
+    if (error) {
+      return NextResponse.json(
+        { error: error.message },
+        { status: 500 }
+      );
     }
 
-    // Generate onboarding tasks if client type is provided
-    if (client.type) {
-      try {
-        await generateOnboardingTasks(client.id, client.type)
-      } catch (error) {
-        console.error('Failed to generate onboarding tasks:', error)
-        // Don't throw here - we still want to return the created client
-      }
-    }
-
-    return NextResponse.json(client)
+    return NextResponse.json(data);
   } catch (error) {
-    console.error('Error creating client:', error)
     return NextResponse.json(
-      { error: 'Failed to create client' },
+      { error: 'Internal server error' },
       { status: 500 }
-    )
+    );
   }
 }
 
-export async function GET(request: Request) {
+// Get clients - all or single by ID
+export async function GET(
+  request: Request,
+  { params }: { params?: { id: string } }
+) {
   try {
-    const supabase = createServerClient<Database>(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          get(name: string) {
-            return cookies().get(name)?.value
-          }
-        }
+    if (params?.id) {
+      // Get single client
+      const { data, error } = await supabase
+        .from('clients')
+        .select('*')
+        .eq('id', params.id)
+        .single();
+
+      if (error) {
+        return NextResponse.json(
+          { error: error.message },
+          { status: 500 }
+        );
       }
-    )
-    const { data: clients, error } = await supabase
-      .from('clients')
-      .select('*')
-      .order('created_at', { ascending: false })
 
-    if (error) {
-      throw error
+      if (!data) {
+        return NextResponse.json(
+          { error: 'Client not found' },
+          { status: 404 }
+        );
+      }
+
+      return NextResponse.json(data);
+    } else {
+      // Get all clients
+      const { data, error } = await supabase
+        .from('clients')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        return NextResponse.json(
+          { error: error.message },
+          { status: 500 }
+        );
+      }
+
+      return NextResponse.json(data);
     }
-
-    return NextResponse.json(clients)
   } catch (error) {
-    console.error('Error fetching clients:', error)
     return NextResponse.json(
-      { error: 'Failed to fetch clients' },
+      { error: 'Internal server error' },
       { status: 500 }
-    )
+    );
   }
 }
 
-export async function PUT(request: Request) {
+// Update client
+export async function PUT(
+  request: Request,
+  { params }: { params: { id: string } }
+) {
   try {
-    const supabase = createServerClient<Database>(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          get(name: string) {
-            return cookies().get(name)?.value
-          }
-        }
-      }
-    )
-    const json = await request.json()
-    const { id, ...updates } = json
-
-    const { data: client, error } = await supabase
-      .from('clients')
-      .update(updates)
-      .eq('id', id)
-      .select()
-      .single()
-
-    if (error) {
-      throw error
+    const clientData = await request.json();
+    
+    // Validate required fields
+    if (!clientData.full_name || !clientData.email) {
+      return NextResponse.json(
+        { error: 'Full name and email are required' },
+        { status: 400 }
+      );
     }
 
-    return NextResponse.json(client)
+    const { data, error } = await supabase
+      .from('clients')
+      .update(clientData)
+      .eq('id', params.id)
+      .select()
+      .single();
+
+    if (error) {
+      return NextResponse.json(
+        { error: error.message },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json(data);
   } catch (error) {
-    console.error('Error updating client:', error)
     return NextResponse.json(
-      { error: 'Failed to update client' },
+      { error: 'Internal server error' },
       { status: 500 }
-    )
+    );
   }
-} 
+}
+
+
+// Delete client
+export async function DELETE(
+  request: Request,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const { error } = await supabase
+      .from('clients')
+      .delete()
+      .eq('id', params.id);
+
+    if (error) {
+      return NextResponse.json(
+        { error: error.message },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}

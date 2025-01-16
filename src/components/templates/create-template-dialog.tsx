@@ -1,16 +1,16 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import * as z from 'zod'
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from 'src/components/ui/dialog';
+} from "src/components/ui/dialog";
 import {
   Form,
   FormControl,
@@ -19,91 +19,108 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from 'src/components/ui/form';
-import { Input } from 'src/components/ui/input';
-import { Button } from 'src/components/ui/button';
+} from "src/components/ui/form";
+import { Input } from "src/components/ui/input";
+import { Button } from "src/components/ui/button";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from 'src/components/ui/select';
-import { Textarea } from 'src/components/ui/textarea';
-import { useProjectTemplates } from 'src/hooks/useProjectTemplates';
-import { ProjectTemplateInput, SeasonalPriority, ProjectDefaults } from '@/types/projects';
+} from "src/components/ui/select";
+import { Textarea } from "src/components/ui/textarea";
+import { useProjectTemplates } from "src/hooks/useProjectTemplates";
+import {
+  ProjectTemplateInput,
+  SeasonalPriority,
+  ProjectDefaults,
+} from "@/types/projects";
 
 const templateSchema = z.object({
-  title: z.string().min(1, 'Title is required'),
+  title: z.string().min(1, "Title is required"),
   description: z.string().optional(),
-  category: z.enum(['tax-return', 'bookkeeping', 'payroll', 'business-services', 'other']),
-  default_priority: z.enum(['low', 'medium', 'high']).optional(),
+  category: z.enum([
+    "tax-return",
+    "bookkeeping",
+    "payroll",
+    "business-services",
+    "other",
+  ]),
+  default_priority: z.enum(["low", "medium", "high"]).optional(),
   estimated_total_minutes: z.number().min(0),
-  recurring_schedule: z.enum(['daily', 'weekly', 'monthly', 'quarterly', 'annually', 'one-time']).optional(),
-  seasonal_priority: z.object({
-    Q1: z.enum(['low', 'medium', 'high', 'critical']),
-    Q2: z.enum(['low', 'medium', 'high', 'critical']),
-    Q3: z.enum(['low', 'medium', 'high', 'critical']),
-    Q4: z.enum(['low', 'medium', 'high', 'critical']),
-  }).optional(),
-})
+  recurring_schedule: z
+    .enum(["daily", "weekly", "monthly", "quarterly", "annually", "one-time"])
+    .optional(),
+  seasonal_priority: z
+    .object({
+      Q1: z.enum(["low", "medium", "high", "critical"]),
+      Q2: z.enum(["low", "medium", "high", "critical"]),
+      Q3: z.enum(["low", "medium", "high", "critical"]),
+      Q4: z.enum(["low", "medium", "high", "critical"]),
+    })
+    .optional(),
+});
 
-type TemplateFormValues = z.infer<typeof templateSchema>
+type TemplateFormValues = z.infer<typeof templateSchema>;
 
 interface CreateTemplateDialogProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
 }
 
-export function CreateTemplateDialog({ open, onOpenChange }: CreateTemplateDialogProps) {
-  const { createTemplate } = useProjectTemplates()
-  const [isSubmitting, setIsSubmitting] = useState(false)
+export function CreateTemplateDialog({
+  open,
+  onOpenChange,
+}: CreateTemplateDialogProps) {
+  const { createTemplate } = useProjectTemplates();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<TemplateFormValues>({
     resolver: zodResolver(templateSchema),
     defaultValues: {
-      title: '',
-      description: '',
-      category: 'other',
-      default_priority: 'medium',
+      title: "",
+      description: "",
+      category: "other",
+      default_priority: "medium",
       estimated_total_minutes: 0,
-      recurring_schedule: 'one-time',
+      recurring_schedule: "one-time",
       seasonal_priority: {
-        Q1: 'medium',
-        Q2: 'medium',
-        Q3: 'medium',
-        Q4: 'medium',
+        Q1: "medium",
+        Q2: "medium",
+        Q3: "medium",
+        Q4: "medium",
       },
     },
-  })
+  });
 
   const onSubmit = async (data: TemplateFormValues) => {
     try {
-      setIsSubmitting(true)
+      setIsSubmitting(true);
       const templateInput: ProjectTemplateInput = {
         title: data.title,
-        description: data.description || '',
+        description: data.description || "",
         category: data.category,
         category_id: null,
-        default_priority: data.default_priority || 'medium',
+        default_priority: data.default_priority || "medium",
         recurring_schedule: data.recurring_schedule,
         seasonal_priority: data.seasonal_priority as SeasonalPriority,
         project_defaults: {
           estimated_total_minutes: data.estimated_total_minutes,
           recurring_schedule: data.recurring_schedule,
-          seasonal_priority: data.seasonal_priority
+          seasonal_priority: data.seasonal_priority,
         } as ProjectDefaults,
-        template_tasks: []
-      }
-      await createTemplate(templateInput)
-      form.reset()
-      onOpenChange(false)
+        template_tasks: [],
+      };
+      await createTemplate(templateInput);
+      form.reset();
+      onOpenChange(false);
     } catch (error) {
-      console.error('Failed to create template:', error)
+      console.error("Failed to create template:", error);
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
-  }
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -152,7 +169,10 @@ export function CreateTemplateDialog({ open, onOpenChange }: CreateTemplateDialo
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Category</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select category" />
@@ -162,7 +182,9 @@ export function CreateTemplateDialog({ open, onOpenChange }: CreateTemplateDialo
                         <SelectItem value="tax-return">Tax Return</SelectItem>
                         <SelectItem value="bookkeeping">Bookkeeping</SelectItem>
                         <SelectItem value="payroll">Payroll</SelectItem>
-                        <SelectItem value="business-services">Business Services</SelectItem>
+                        <SelectItem value="business-services">
+                          Business Services
+                        </SelectItem>
                         <SelectItem value="other">Other</SelectItem>
                       </SelectContent>
                     </Select>
@@ -177,7 +199,10 @@ export function CreateTemplateDialog({ open, onOpenChange }: CreateTemplateDialo
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Default Priority</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select priority" />
@@ -216,7 +241,10 @@ export function CreateTemplateDialog({ open, onOpenChange }: CreateTemplateDialo
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Recurring Schedule</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select schedule" />
@@ -240,7 +268,7 @@ export function CreateTemplateDialog({ open, onOpenChange }: CreateTemplateDialo
             <div className="space-y-4">
               <FormLabel>Seasonal Priority</FormLabel>
               <div className="grid grid-cols-4 gap-4">
-                {(['Q1', 'Q2', 'Q3', 'Q4'] as const).map((quarter) => (
+                {(["Q1", "Q2", "Q3", "Q4"] as const).map((quarter) => (
                   <FormField
                     key={quarter}
                     control={form.control}
@@ -248,7 +276,10 @@ export function CreateTemplateDialog({ open, onOpenChange }: CreateTemplateDialo
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>{quarter}</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <Select
+                          onValueChange={field.onChange}
+                          defaultValue={field.value}
+                        >
                           <FormControl>
                             <SelectTrigger>
                               <SelectValue />
@@ -277,12 +308,12 @@ export function CreateTemplateDialog({ open, onOpenChange }: CreateTemplateDialo
                 Cancel
               </Button>
               <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? 'Creating...' : 'Create Template'}
+                {isSubmitting ? "Creating..." : "Create Template"}
               </Button>
             </div>
           </form>
         </Form>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

@@ -1,16 +1,25 @@
-'use client';
+"use client";
 
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { AccountingInfo } from '@/types/projects';
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { AccountingInfo } from "@/types/projects";
 
 interface AccountingInfoFieldsProps {
   value: AccountingInfo;
   onChange: (value: AccountingInfo) => void;
 }
 
-export function AccountingInfoFields({ value, onChange }: AccountingInfoFieldsProps) {
+export function AccountingInfoFields({
+  value,
+  onChange,
+}: AccountingInfoFieldsProps) {
   const handleChange = (field: keyof AccountingInfo, newValue: string) => {
     onChange({
       ...value,
@@ -25,16 +34,16 @@ export function AccountingInfoFields({ value, onChange }: AccountingInfoFieldsPr
           <Label>Period Start</Label>
           <Input
             type="date"
-            value={value.period_start || ''}
-            onChange={(e) => handleChange('period_start', e.target.value)}
+            value={value.period_start || ""}
+            onChange={(e) => handleChange("period_start", e.target.value)}
           />
         </div>
         <div className="space-y-2">
           <Label>Period End</Label>
           <Input
             type="date"
-            value={value.period_end || ''}
-            onChange={(e) => handleChange('period_end', e.target.value)}
+            value={value.period_end || ""}
+            onChange={(e) => handleChange("period_end", e.target.value)}
           />
         </div>
       </div>
@@ -42,8 +51,10 @@ export function AccountingInfoFields({ value, onChange }: AccountingInfoFieldsPr
       <div className="space-y-2">
         <Label>Accounting Method</Label>
         <Select
-          value={value.accounting_method || ''}
-          onValueChange={(newValue) => handleChange('accounting_method', newValue)}
+          value={value.accounting_method || ""}
+          onValueChange={(newValue) =>
+            handleChange("accounting_method", newValue)
+          }
         >
           <SelectTrigger>
             <SelectValue placeholder="Select accounting method" />
@@ -60,8 +71,8 @@ export function AccountingInfoFields({ value, onChange }: AccountingInfoFieldsPr
         <Label>Fiscal Year End</Label>
         <Input
           type="date"
-          value={value.fiscal_year_end || ''}
-          onChange={(e) => handleChange('fiscal_year_end', e.target.value)}
+          value={value.fiscal_year_end || ""}
+          onChange={(e) => handleChange("fiscal_year_end", e.target.value)}
         />
       </div>
 
@@ -69,16 +80,18 @@ export function AccountingInfoFields({ value, onChange }: AccountingInfoFieldsPr
         <Label>Last Reconciliation Date</Label>
         <Input
           type="date"
-          value={value.last_reconciliation_date || ''}
-          onChange={(e) => handleChange('last_reconciliation_date', e.target.value)}
+          value={value.last_reconciliation_date || ""}
+          onChange={(e) =>
+            handleChange("last_reconciliation_date", e.target.value)
+          }
         />
       </div>
 
       <div className="space-y-2">
         <Label>Software Used</Label>
         <Input
-          value={value.software_used || ''}
-          onChange={(e) => handleChange('software_used', e.target.value)}
+          value={value.software_used || ""}
+          onChange={(e) => handleChange("software_used", e.target.value)}
           placeholder="e.g., QuickBooks Online"
         />
       </div>
@@ -86,8 +99,8 @@ export function AccountingInfoFields({ value, onChange }: AccountingInfoFieldsPr
       <div className="space-y-2">
         <Label>Frequency</Label>
         <Select
-          value={value.frequency || ''}
-          onValueChange={(newValue) => handleChange('frequency', newValue)}
+          value={value.frequency || ""}
+          onValueChange={(newValue) => handleChange("frequency", newValue)}
         >
           <SelectTrigger>
             <SelectValue placeholder="Select frequency" />
@@ -103,11 +116,11 @@ export function AccountingInfoFields({ value, onChange }: AccountingInfoFieldsPr
       <div className="space-y-2">
         <Label>Notes</Label>
         <Input
-          value={value.notes || ''}
-          onChange={(e) => handleChange('notes', e.target.value)}
+          value={value.notes || ""}
+          onChange={(e) => handleChange("notes", e.target.value)}
           placeholder="Additional notes..."
         />
       </div>
     </div>
   );
-} 
+}

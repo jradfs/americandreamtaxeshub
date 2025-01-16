@@ -1,4 +1,4 @@
-'use client'
+"use client";
 
 export function SmartQueue() {
   return (
@@ -6,5 +6,5 @@ export function SmartQueue() {
       <h2 className="text-xl font-semibold">Smart Queue</h2>
       {/* Add your Smart Queue implementation here */}
     </div>
-  )
+  );
 }

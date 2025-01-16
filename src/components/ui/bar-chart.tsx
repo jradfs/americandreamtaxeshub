@@ -1,16 +1,20 @@
-'use client'
+"use client";
 
-import { Bar, BarChart as RechartsBarChart, ResponsiveContainer } from 'recharts'
-import { cn } from '@/lib/utils'
+import {
+  Bar,
+  BarChart as RechartsBarChart,
+  ResponsiveContainer,
+} from "recharts";
+import { cn } from "@/lib/utils";
 
 interface BarChartProps {
-  data: number[]
-  className?: string
-  pathClassName?: string
+  data: number[];
+  className?: string;
+  pathClassName?: string;
 }
 
 export function BarChart({ data, className, pathClassName }: BarChartProps) {
-  const chartData = data.map((value, index) => ({ value }))
+  const chartData = data.map((value, index) => ({ value }));
 
   return (
     <div className={cn("w-full h-[200px]", className)}>
@@ -24,5 +28,5 @@ export function BarChart({ data, className, pathClassName }: BarChartProps) {
         </RechartsBarChart>
       </ResponsiveContainer>
     </div>
-  )
+  );
 }

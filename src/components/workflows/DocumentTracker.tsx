@@ -1,11 +1,11 @@
-import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface Document {
   id: string;
   name: string;
-  status: 'pending' | 'received' | 'reviewed';
+  status: "pending" | "received" | "reviewed";
   due_date: string;
   reminder_sent: boolean;
 }
@@ -19,13 +19,13 @@ interface DocumentTrackerProps {
 export function DocumentTracker({
   documents,
   onSendReminder,
-  onStatusChange
+  onStatusChange,
 }: DocumentTrackerProps) {
   const [selectedDocuments, setSelectedDocuments] = useState<string[]>([]);
 
   const handleStatusChange = (documentId: string, status: string) => {
     onStatusChange(documentId, status);
-    setSelectedDocuments(prev => prev.filter(id => id !== documentId));
+    setSelectedDocuments((prev) => prev.filter((id) => id !== documentId));
   };
 
   return (
@@ -36,7 +36,7 @@ export function DocumentTracker({
           size="sm"
           disabled={selectedDocuments.length === 0}
           onClick={() => {
-            selectedDocuments.forEach(id => onSendReminder(id));
+            selectedDocuments.forEach((id) => onSendReminder(id));
             setSelectedDocuments([]);
           }}
         >
@@ -45,15 +45,18 @@ export function DocumentTracker({
       </div>
 
       <div className="space-y-2">
-        {documents.map(document => (
-          <div key={document.id} className="flex items-center gap-4 p-2 border rounded">
+        {documents.map((document) => (
+          <div
+            key={document.id}
+            className="flex items-center gap-4 p-2 border rounded"
+          >
             <Checkbox
               checked={selectedDocuments.includes(document.id)}
               onCheckedChange={(checked) => {
-                setSelectedDocuments(prev =>
+                setSelectedDocuments((prev) =>
                   checked
                     ? [...prev, document.id]
-                    : prev.filter(id => id !== document.id)
+                    : prev.filter((id) => id !== document.id),
                 );
               }}
             />

@@ -1,9 +1,9 @@
-import { toast } from 'sonner';
+import { toast } from "sonner";
 
 export const showSuccessToast = (message: string) => {
-    toast.success(message);
+  toast.success(message);
 };
 
 export const showErrorToast = (message: string) => {
-    toast.error(message);
+  toast.error(message);
 };

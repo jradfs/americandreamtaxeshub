@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import {
   Select,
@@ -6,8 +6,8 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { ServiceType } from '@/types/projects';
+} from "@/components/ui/select";
+import { ServiceType } from "@/types/projects";
 
 interface ServiceTypeSelectProps {
   id?: string;
@@ -15,7 +15,11 @@ interface ServiceTypeSelectProps {
   onChange: (value: ServiceType) => void;
 }
 
-export function ServiceTypeSelect({ id, value, onChange }: ServiceTypeSelectProps) {
+export function ServiceTypeSelect({
+  id,
+  value,
+  onChange,
+}: ServiceTypeSelectProps) {
   return (
     <Select value={value} onValueChange={onChange}>
       <SelectTrigger id={id}>
@@ -29,4 +33,4 @@ export function ServiceTypeSelect({ id, value, onChange }: ServiceTypeSelectProp
       </SelectContent>
     </Select>
   );
-} 
+}

@@ -1,12 +1,12 @@
-'use client'
+"use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface OverviewProps {
-  totalActiveClients: number
-  pendingTaxReturns: number
-  activeProjects: number
-  upcomingDeadlines: number
+  totalActiveClients: number;
+  pendingTaxReturns: number;
+  activeProjects: number;
+  upcomingDeadlines: number;
 }
 
 export function Overview({
@@ -19,7 +19,9 @@ export function Overview({
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Total Active Clients</CardTitle>
+          <CardTitle className="text-sm font-medium">
+            Total Active Clients
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold">{totalActiveClients}</div>
@@ -28,11 +30,15 @@ export function Overview({
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Pending Tax Returns</CardTitle>
+          <CardTitle className="text-sm font-medium">
+            Pending Tax Returns
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold">{pendingTaxReturns}</div>
-          <p className="text-xs text-muted-foreground">Not started or gathering documents</p>
+          <p className="text-xs text-muted-foreground">
+            Not started or gathering documents
+          </p>
         </CardContent>
       </Card>
 
@@ -42,13 +48,17 @@ export function Overview({
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold">{activeProjects}</div>
-          <p className="text-xs text-muted-foreground">Todo, in progress, or review</p>
+          <p className="text-xs text-muted-foreground">
+            Todo, in progress, or review
+          </p>
         </CardContent>
       </Card>
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Upcoming Deadlines</CardTitle>
+          <CardTitle className="text-sm font-medium">
+            Upcoming Deadlines
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold">{upcomingDeadlines}</div>
@@ -56,5 +66,5 @@ export function Overview({
         </CardContent>
       </Card>
     </div>
-  )
-} 
+  );
+}

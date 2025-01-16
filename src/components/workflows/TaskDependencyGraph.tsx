@@ -1,5 +1,5 @@
-import { useMemo } from 'react';
-import { Graph } from 'react-d3-graph';
+import { useMemo } from "react";
+import { Graph } from "react-d3-graph";
 
 interface TaskDependencyGraphProps {
   tasks: {
@@ -11,16 +11,16 @@ interface TaskDependencyGraphProps {
 
 export function TaskDependencyGraph({ tasks }: TaskDependencyGraphProps) {
   const graphData = useMemo(() => {
-    const nodes = tasks.map(task => ({
+    const nodes = tasks.map((task) => ({
       id: task.id,
-      name: task.name
+      name: task.name,
     }));
 
-    const links = tasks.flatMap(task =>
-      task.dependencies.map(dependencyId => ({
+    const links = tasks.flatMap((task) =>
+      task.dependencies.map((dependencyId) => ({
         source: task.id,
-        target: dependencyId
-      }))
+        target: dependencyId,
+      })),
     );
 
     return { nodes, links };
@@ -29,22 +29,18 @@ export function TaskDependencyGraph({ tasks }: TaskDependencyGraphProps) {
   const config = {
     nodeHighlightBehavior: true,
     node: {
-      color: '#6366f1',
+      color: "#6366f1",
       size: 120,
-      highlightStrokeColor: 'blue'
+      highlightStrokeColor: "blue",
     },
     link: {
-      highlightColor: 'lightblue'
-    }
+      highlightColor: "lightblue",
+    },
   };
 
   return (
     <div className="h-[500px] border rounded-lg">
-      <Graph
-        id="task-dependency-graph"
-        data={graphData}
-        config={config}
-      />
+      <Graph id="task-dependency-graph" data={graphData} config={config} />
     </div>
   );
 }

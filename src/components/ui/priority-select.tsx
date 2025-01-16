@@ -1,6 +1,12 @@
 import * as React from "react";
 import { useController, UseControllerProps } from "react-hook-form";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "./select";
 import { FormControl, FormLabel, FormMessage, FormItem } from "./form";
 import { Database } from "@/types/database.types";
 
@@ -28,8 +34,8 @@ export function PrioritySelect<TFieldValues>({
     <FormItem>
       {label && <FormLabel>{label}</FormLabel>}
       <FormControl>
-        <Select 
-          onValueChange={field.onChange} 
+        <Select
+          onValueChange={field.onChange}
           value={field.value as string}
           defaultValue={field.value as string}
         >
@@ -48,4 +54,4 @@ export function PrioritySelect<TFieldValues>({
       <FormMessage>{fieldState.error?.message}</FormMessage>
     </FormItem>
   );
-} 
+}

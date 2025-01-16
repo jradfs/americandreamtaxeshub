@@ -1,6 +1,7 @@
 # American Dream Taxes Hub Documentation
 
 ## Overview
+
 American Dream Taxes Hub is a comprehensive practice management and automation platform designed for accounting and tax preparation firms. The platform combines CRM, tax preparation workflow management, project management, and AI-powered automation to streamline daily operations and enhance productivity.
 
 The platform focuses on providing end-to-end solutions for client management, document processing, tax preparation, and team collaboration, all while maintaining high security and compliance standards.
@@ -8,6 +9,7 @@ The platform focuses on providing end-to-end solutions for client management, do
 Current development status: Phase 1 (85-90% complete)
 
 ## Directory Structure
+
 ```
 docs/
 ├── ai-architecture/          # AI implementation guides
@@ -143,3 +145,4 @@ Keep documentation up to date:
    - Optimize as needed
    - Document bottlenecks
    - Track SOP metrics
+```

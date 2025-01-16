@@ -1,33 +1,34 @@
-import { useState } from 'react';
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { useSupabase } from '@/hooks/useSupabase';
-import { Plus, Loader2, FileText, Eye, Download, Trash2 } from 'lucide-react';
-import { useToast } from '@/components/ui/use-toast';
-import { Document } from '@/lib/supabase/schema';
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useSupabase } from "@/hooks/useSupabase";
+import { Plus, Loader2, FileText, Eye, Download, Trash2 } from "lucide-react";
+import { useToast } from "@/components/ui/use-toast";
+import { Document } from "@/lib/supabase/schema";
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
 export function DocumentManager() {
-  const { data: documents, error: documentsError, mutate: mutateDocuments } = useSupabase('documents');
+  const {
+    data: documents,
+    error: documentsError,
+    mutate: mutateDocuments,
+  } = useSupabase("documents");
   const { toast } = useToast();
   const [isUploading, setIsUploading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [selectedDocument, setSelectedDocument] = useState<Document | null>(null);
+  const [selectedDocument, setSelectedDocument] = useState<Document | null>(
+    null,
+  );
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -35,9 +36,9 @@ export function DocumentManager() {
 
     if (file.size > MAX_FILE_SIZE) {
       toast({
-        title: 'Error',
-        description: 'File size must be less than 10MB',
-        variant: 'destructive',
+        title: "Error",
+        description: "File size must be less than 10MB",
+        variant: "destructive",
       });
       return;
     }
@@ -46,13 +47,13 @@ export function DocumentManager() {
     try {
       const fileName = `${Date.now()}-${file.name}`;
       const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('documents')
+        .from("documents")
         .upload(fileName, file);
 
       if (uploadError) throw uploadError;
 
       const { data: documentData, error: documentError } = await supabase
-        .from('documents')
+        .from("documents")
         .insert([
           {
             name: file.name,
@@ -69,14 +70,14 @@ export function DocumentManager() {
 
       mutateDocuments();
       toast({
-        title: 'Success',
-        description: 'Document uploaded successfully',
+        title: "Success",
+        description: "Document uploaded successfully",
       });
     } catch (error) {
       toast({
-        title: 'Error',
-        description: 'Failed to upload document',
-        variant: 'destructive',
+        title: "Error",
+        description: "Failed to upload document",
+        variant: "destructive",
       });
     } finally {
       setIsUploading(false);
@@ -86,7 +87,7 @@ export function DocumentManager() {
   const handlePreview = async (document: Document) => {
     try {
       const { data, error } = await supabase.storage
-        .from('documents')
+        .from("documents")
         .createSignedUrl(document.path, 60); // URL valid for 60 seconds
 
       if (error) throw error;
@@ -95,9 +96,9 @@ export function DocumentManager() {
       setSelectedDocument(document);
     } catch (error) {
       toast({
-        title: 'Error',
-        description: 'Failed to preview document',
-        variant: 'destructive',
+        title: "Error",
+        description: "Failed to preview document",
+        variant: "destructive",
       });
     }
   };
@@ -105,28 +106,28 @@ export function DocumentManager() {
   const handleDelete = async (document: Document) => {
     try {
       const { error: storageError } = await supabase.storage
-        .from('documents')
+        .from("documents")
         .remove([document.path]);
 
       if (storageError) throw storageError;
 
       const { error: dbError } = await supabase
-        .from('documents')
+        .from("documents")
         .delete()
-        .eq('id', document.id);
+        .eq("id", document.id);
 
       if (dbError) throw dbError;
 
       mutateDocuments();
       toast({
-        title: 'Success',
-        description: 'Document deleted successfully',
+        title: "Success",
+        description: "Document deleted successfully",
       });
     } catch (error) {
       toast({
-        title: 'Error',
-        description: 'Failed to delete document',
-        variant: 'destructive',
+        title: "Error",
+        description: "Failed to delete document",
+        variant: "destructive",
       });
     }
   };
@@ -216,18 +217,16 @@ export function DocumentManager() {
       <Dialog open={!!previewUrl} onOpenChange={() => setPreviewUrl(null)}>
         <DialogContent className="max-w-4xl">
           <DialogHeader>
-            <DialogTitle>
-              {selectedDocument?.name}
-            </DialogTitle>
+            <DialogTitle>{selectedDocument?.name}</DialogTitle>
           </DialogHeader>
           <div className="aspect-video">
-            {selectedDocument?.type.startsWith('image/') ? (
+            {selectedDocument?.type.startsWith("image/") ? (
               <img
                 src={previewUrl!}
                 alt={selectedDocument.name}
                 className="w-full h-full object-contain"
               />
-            ) : selectedDocument?.type === 'application/pdf' ? (
+            ) : selectedDocument?.type === "application/pdf" ? (
               <iframe
                 src={previewUrl!}
                 className="w-full h-full"
@@ -240,7 +239,12 @@ export function DocumentManager() {
                   Preview not available for this file type
                 </p>
                 <Button asChild>
-                  <a href={previewUrl!} download target="_blank" rel="noopener noreferrer">
+                  <a
+                    href={previewUrl!}
+                    download
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
                     <Download className="w-4 h-4 mr-2" />
                     Download
                   </a>
@@ -252,4 +256,4 @@ export function DocumentManager() {
       </Dialog>
     </Card>
   );
-} 
+}

@@ -5,24 +5,24 @@
   --foreground: #ffffff;
   --muted: #1a1a1a;
   --muted-foreground: #ffffff;
-  
+
   /* Primary colors */
   --primary: #ffff00;
   --primary-foreground: #000000;
-  
+
   /* Secondary colors */
   --secondary: #00ffff;
   --secondary-foreground: #000000;
-  
+
   /* Accent colors */
   --accent: #ff00ff;
   --accent-foreground: #000000;
-  
+
   /* Border colors */
   --border: #ffffff;
   --input: #ffffff;
   --ring: #ffff00;
-  
+
   /* Status colors */
   --destructive: #ff0000;
   --destructive-foreground: #ffffff;
@@ -30,20 +30,20 @@
   --success-foreground: #000000;
   --warning: #ffff00;
   --warning-foreground: #000000;
-  
+
   /* Focus styles */
   --focus-ring: 0 0 0 3px var(--ring);
   --focus-visible-ring: 0 0 0 3px var(--ring);
-  
+
   /* Card styles */
   --card: #1a1a1a;
   --card-foreground: #ffffff;
   --card-border: #ffffff;
-  
+
   /* Popover styles */
   --popover: #000000;
   --popover-foreground: #ffffff;
-  
+
   /* Button styles */
   --btn-background: #ffffff;
   --btn-foreground: #000000;
@@ -188,4 +188,4 @@
 
 [data-theme="high-contrast"] ::-webkit-scrollbar-thumb:hover {
   background: var(--primary);
-} 
+}

@@ -9,8 +9,8 @@ export interface TaskSummaryItem {
   id: string;
   title: string;
   dueDate: Date;
-  priority: 'low' | 'medium' | 'high';
-  status: 'not_started' | 'in_progress' | 'completed' | 'overdue';
+  priority: "low" | "medium" | "high";
+  status: "not_started" | "in_progress" | "completed" | "overdue";
   assignedTo?: string;
   projectId?: string;
   clientId?: string;
@@ -21,8 +21,8 @@ export interface TaskSummaryFilters {
     start: Date;
     end: Date;
   };
-  priority?: TaskSummaryItem['priority'][];
-  status?: TaskSummaryItem['status'][];
+  priority?: TaskSummaryItem["priority"][];
+  status?: TaskSummaryItem["status"][];
   assignedTo?: string[];
   projectId?: string[];
   clientId?: string[];

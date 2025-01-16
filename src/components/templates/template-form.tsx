@@ -1,45 +1,40 @@
-'use client'
+"use client";
 
-import { useState, useEffect } from 'react';
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardContent
-} from '../ui/card';
-import { Tables } from '@/types/database.types';
-import { Button } from '../ui/button';
-import { Input } from '../ui/input';
-import { Textarea } from '../ui/textarea';
-import { Form, FormProvider } from '../ui/form';
+import { useState, useEffect } from "react";
+import { Card, CardHeader, CardTitle, CardContent } from "../ui/card";
+import { Tables } from "@/types/database.types";
+import { Button } from "../ui/button";
+import { Input } from "../ui/input";
+import { Textarea } from "../ui/textarea";
+import { Form, FormProvider } from "../ui/form";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '../ui/select';
-import { Plus, Minus, GripVertical } from 'lucide-react';
-import { Database } from '@/types/database.types'
+} from "../ui/select";
+import { Plus, Minus, GripVertical } from "lucide-react";
+import { Database } from "@/types/database.types";
 
 interface TemplateTask {
   id?: string;
   title: string;
   description?: string;
-  priority: Database['public']['Enums']['task_priority'];
+  priority: Database["public"]["Enums"]["task_priority"];
   dependencies: string[];
   order_index: number;
   required_skills?: string[];
 }
 
 interface TemplateFormProps {
-  mode: 'create' | 'edit';
-  template?: Tables<'project_templates'> & {
+  mode: "create" | "edit";
+  template?: Tables<"project_templates"> & {
     tasks?: TemplateTask[];
     version?: number;
     is_archived?: boolean;
   };
-  categories: Tables<'template_categories'>[];
+  categories: Tables<"template_categories">[];
   onSuccess: () => void;
 }
 
@@ -56,73 +51,77 @@ export default function TemplateForm({
   onSuccess,
 }: TemplateFormProps) {
   const [formData, setFormData] = useState({
-    title: template?.title || '',
-    description: template?.description || '',
-    categoryId: template?.category_id || '',
-    priority: template?.default_priority || 'medium' as Database['public']['Enums']['task_priority'],
+    title: template?.title || "",
+    description: template?.description || "",
+    categoryId: template?.category_id || "",
+    priority:
+      template?.default_priority ||
+      ("medium" as Database["public"]["Enums"]["task_priority"]),
     version: template?.version || 1,
     is_archived: template?.is_archived || false,
-    tasks: template?.tasks || [] as TemplateTask[],
+    tasks: template?.tasks || ([] as TemplateTask[]),
     project_defaults: template?.project_defaults || {},
     recurring_schedule: template?.recurring_schedule || null,
     seasonal_priority: template?.seasonal_priority || null,
   });
 
-  const [newTask, setNewTask] = useState('');
+  const [newTask, setNewTask] = useState("");
   const [templatePreview, setTemplatePreview] = useState<TemplatePreview>({
     total_tasks: 0,
     required_skills: [],
-    dependencies: {}
+    dependencies: {},
   });
 
   useEffect(() => {
     // Calculate template preview stats
     const totalTasks = formData.tasks.length;
-    const requiredSkills = Array.from(new Set(
-      formData.tasks.flatMap(task => task.required_skills || [])
-    ));
-    const dependencies = formData.tasks.reduce((acc, task) => {
-      if (task.dependencies && task.dependencies.length > 0) {
-        acc[task.title] = task.dependencies;
-      }
-      return acc;
-    }, {} as Record<string, string[]>);
+    const requiredSkills = Array.from(
+      new Set(formData.tasks.flatMap((task) => task.required_skills || [])),
+    );
+    const dependencies = formData.tasks.reduce(
+      (acc, task) => {
+        if (task.dependencies && task.dependencies.length > 0) {
+          acc[task.title] = task.dependencies;
+        }
+        return acc;
+      },
+      {} as Record<string, string[]>,
+    );
 
     setTemplatePreview({
       total_tasks: totalTasks,
       required_skills: requiredSkills,
-      dependencies: dependencies
+      dependencies: dependencies,
     });
   }, [formData.tasks]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    
+
     try {
-      const url = mode === 'create'
-        ? '/api/templates'
-        : `/api/templates/${template?.id}`;
-        
-      const method = mode === 'create' ? 'POST' : 'PUT';
-      
+      const url =
+        mode === "create" ? "/api/templates" : `/api/templates/${template?.id}`;
+
+      const method = mode === "create" ? "POST" : "PUT";
+
       const response = await fetch(url, {
         method,
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           ...formData,
-          ...(mode === 'edit' && { id: template?.id }),
+          ...(mode === "edit" && { id: template?.id }),
         }),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to save template');
+        throw new Error("Failed to save template");
       }
 
       onSuccess();
     } catch (error) {
-      console.error('Error saving template:', error);
+      console.error("Error saving template:", error);
       // TODO: Add error notification
     }
   };
@@ -131,34 +130,40 @@ export default function TemplateForm({
     if (newTask.trim()) {
       const newTaskData: TemplateTask = {
         title: newTask,
-        priority: 'medium',
+        priority: "medium",
         dependencies: [],
         order_index: formData.tasks.length,
-        required_skills: []
+        required_skills: [],
       };
-      
+
       setFormData({
         ...formData,
         tasks: [...formData.tasks, newTaskData],
       });
-      setNewTask('');
+      setNewTask("");
     }
   };
 
-  const updateTask = (index: number, field: keyof TemplateTask, value: string | number | string[] | undefined) => {
+  const updateTask = (
+    index: number,
+    field: keyof TemplateTask,
+    value: string | number | string[] | undefined,
+  ) => {
     const updatedTasks = [...formData.tasks];
     updatedTasks[index] = {
       ...updatedTasks[index],
-      [field]: value
+      [field]: value,
     };
     setFormData({
       ...formData,
-      tasks: updatedTasks
+      tasks: updatedTasks,
     });
   };
 
   const removeTask = (index: number) => {
-    const updatedTasks = formData.tasks.filter((task: TemplateTask, i: number) => i !== index);
+    const updatedTasks = formData.tasks.filter(
+      (task: TemplateTask, i: number) => i !== index,
+    );
     setFormData({
       ...formData,
       tasks: updatedTasks,
@@ -175,7 +180,7 @@ export default function TemplateForm({
           <Input
             id="title"
             value={formData.title}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => 
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
               setFormData({ ...formData, title: e.target.value })
             }
             required
@@ -184,7 +189,10 @@ export default function TemplateForm({
         </div>
 
         <div>
-          <label htmlFor="description" className="block text-sm font-medium mb-2">
+          <label
+            htmlFor="description"
+            className="block text-sm font-medium mb-2"
+          >
             Description
           </label>
           <Textarea
@@ -199,7 +207,10 @@ export default function TemplateForm({
 
         <div className="grid grid-cols-2 gap-6">
           <div className="space-y-2">
-            <label htmlFor="category" className="block text-sm font-medium mb-2">
+            <label
+              htmlFor="category"
+              className="block text-sm font-medium mb-2"
+            >
               Category
             </label>
             <Select
@@ -222,7 +233,10 @@ export default function TemplateForm({
           </div>
 
           <div className="space-y-2">
-            <label htmlFor="priority" className="block text-sm font-medium mb-2">
+            <label
+              htmlFor="priority"
+              className="block text-sm font-medium mb-2"
+            >
               Priority
             </label>
             <Select
@@ -253,7 +267,7 @@ export default function TemplateForm({
                 <GripVertical className="w-4 h-4 text-muted-foreground" />
                 <Input
                   value={task.title}
-                  onChange={(e) => updateTask(index, 'title', e.target.value)}
+                  onChange={(e) => updateTask(index, "title", e.target.value)}
                   className="flex-1"
                   placeholder="Task title"
                 />
@@ -266,13 +280,15 @@ export default function TemplateForm({
                   <Minus className="w-4 h-4" />
                 </Button>
               </div>
-              
+
               <div className="grid grid-cols-1 gap-4">
                 <div>
                   <label className="text-sm font-medium">Priority</label>
                   <Select
                     value={task.priority}
-                    onValueChange={(value) => updateTask(index, 'priority', value)}
+                    onValueChange={(value) =>
+                      updateTask(index, "priority", value)
+                    }
                   >
                     <SelectTrigger className="w-full">
                       <SelectValue placeholder="Select priority" />
@@ -289,8 +305,14 @@ export default function TemplateForm({
               <div>
                 <label className="text-sm font-medium">Required Skills</label>
                 <Input
-                  value={task.required_skills?.join(', ') || ''}
-                  onChange={(e) => updateTask(index, 'required_skills', e.target.value.split(',').map(s => s.trim()))}
+                  value={task.required_skills?.join(", ") || ""}
+                  onChange={(e) =>
+                    updateTask(
+                      index,
+                      "required_skills",
+                      e.target.value.split(",").map((s) => s.trim()),
+                    )
+                  }
                   placeholder="Comma separated skills"
                 />
               </div>
@@ -298,8 +320,14 @@ export default function TemplateForm({
               <div>
                 <label className="text-sm font-medium">Dependencies</label>
                 <Input
-                  value={task.dependencies?.join(', ') || ''}
-                  onChange={(e) => updateTask(index, 'dependencies', e.target.value.split(',').map(s => s.trim()))}
+                  value={task.dependencies?.join(", ") || ""}
+                  onChange={(e) =>
+                    updateTask(
+                      index,
+                      "dependencies",
+                      e.target.value.split(",").map((s) => s.trim()),
+                    )
+                  }
                   placeholder="Comma separated task titles"
                 />
               </div>
@@ -308,7 +336,9 @@ export default function TemplateForm({
           <div className="flex gap-3">
             <Input
               value={newTask}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewTask(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                setNewTask(e.target.value)
+              }
               placeholder="Add new task"
               className="flex-1"
             />
@@ -335,17 +365,19 @@ export default function TemplateForm({
             <div>
               <label className="text-sm font-medium">Required Skills</label>
               <div className="text-lg font-semibold">
-                {templatePreview.required_skills.join(', ') || 'None'}
+                {templatePreview.required_skills.join(", ") || "None"}
               </div>
             </div>
             <div>
               <label className="text-sm font-medium">Task Dependencies</label>
               <div className="space-y-1">
-                {Object.entries(templatePreview.dependencies).map(([task, deps]) => (
-                  <div key={task} className="text-sm">
-                    {task}: {deps.join(', ')}
-                  </div>
-                ))}
+                {Object.entries(templatePreview.dependencies).map(
+                  ([task, deps]) => (
+                    <div key={task} className="text-sm">
+                      {task}: {deps.join(", ")}
+                    </div>
+                  ),
+                )}
               </div>
             </div>
           </div>
@@ -360,11 +392,11 @@ export default function TemplateForm({
             onClick={() => {
               setFormData({
                 ...formData,
-                is_archived: !formData.is_archived
+                is_archived: !formData.is_archived,
               });
             }}
           >
-            {formData.is_archived ? 'Unarchive' : 'Archive'}
+            {formData.is_archived ? "Unarchive" : "Archive"}
           </Button>
           <Button
             type="button"
@@ -372,7 +404,7 @@ export default function TemplateForm({
             onClick={() => {
               setFormData({
                 ...formData,
-                version: formData.version + 1
+                version: formData.version + 1,
               });
             }}
           >
@@ -380,7 +412,7 @@ export default function TemplateForm({
           </Button>
         </div>
         <Button type="submit">
-          {mode === 'create' ? 'Create Template' : 'Save Changes'}
+          {mode === "create" ? "Create Template" : "Save Changes"}
         </Button>
       </div>
     </Form>

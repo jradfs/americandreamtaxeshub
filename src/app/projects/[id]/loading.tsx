@@ -30,7 +30,7 @@ export default function ProjectLoading() {
             <TabsTrigger value="tasks">Tasks</TabsTrigger>
             <TabsTrigger value="details">Details</TabsTrigger>
           </TabsList>
-          
+
           <TabsContent value="tasks" className="mt-4">
             <div className="space-y-4">
               {[1, 2, 3].map((i) => (
@@ -41,7 +41,7 @@ export default function ProjectLoading() {
               ))}
             </div>
           </TabsContent>
-          
+
           <TabsContent value="details" className="mt-4">
             <div className="grid gap-6 md:grid-cols-2">
               <div className="border rounded-lg p-6">

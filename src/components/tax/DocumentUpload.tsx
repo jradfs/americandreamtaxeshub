@@ -1,7 +1,7 @@
-'use client'
+"use client";
 
-import { DropZone } from "@/components/shared/DropZone"
-import { ProcessingStatus } from "@/components/ai/ProcessingStatus"
+import { DropZone } from "@/components/shared/DropZone";
+import { ProcessingStatus } from "@/components/ai/ProcessingStatus";
 
 function UploadInstructions() {
   return (
@@ -11,18 +11,18 @@ function UploadInstructions() {
         Supported formats: PDF, JPG, PNG
       </p>
     </div>
-  )
+  );
 }
 
 export function DocumentUpload({ taxReturnId }: { taxReturnId: string }) {
   const handleUpload = async (files: FileList) => {
     // Implementation will be handled by the AI processing service
-  }
-  
+  };
+
   return (
     <DropZone onDrop={handleUpload}>
       <UploadInstructions />
       <ProcessingStatus documentId={taxReturnId} />
     </DropZone>
-  )
-} 
+  );
+}

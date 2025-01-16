@@ -7,7 +7,7 @@ export interface CalendarEvent {
   allDay?: boolean;
   location?: string;
   attendees?: string[];
-  status?: 'pending' | 'confirmed' | 'cancelled';
+  status?: "pending" | "confirmed" | "cancelled";
   createdBy: string;
   createdAt: Date;
   updatedAt: Date;
@@ -28,7 +28,7 @@ export interface CalendarEventUpdate extends Partial<CalendarEventCreate> {
 }
 
 export interface RecurrencePattern {
-  frequency: 'daily' | 'weekly' | 'monthly' | 'yearly';
+  frequency: "daily" | "weekly" | "monthly" | "yearly";
   interval: number;
   byDay?: string[];
   byMonthDay?: number[];
@@ -39,8 +39,8 @@ export interface RecurrencePattern {
 
 export interface CalendarReminder {
   minutesBefore: number;
-  method: 'email' | 'push' | 'both';
-  status: 'pending' | 'sent' | 'failed';
+  method: "email" | "push" | "both";
+  status: "pending" | "sent" | "failed";
   sentAt?: Date;
 }
 
@@ -53,14 +53,14 @@ export interface RecurringCalendarEvent extends CalendarEvent {
 export interface CalendarEventFilter {
   startDate?: Date;
   endDate?: Date;
-  status?: CalendarEvent['status'];
+  status?: CalendarEvent["status"];
   createdBy?: string;
   search?: string;
 }
 
 export interface CalendarEventSort {
-  field: 'start' | 'end' | 'createdAt' | 'title';
-  direction: 'asc' | 'desc';
+  field: "start" | "end" | "createdAt" | "title";
+  direction: "asc" | "desc";
 }
 
 export interface PaginatedCalendarEvents {
@@ -73,6 +73,6 @@ export interface PaginatedCalendarEvents {
 
 export interface CalendarEventNotification {
   event: CalendarEvent;
-  type: 'created' | 'updated' | 'deleted';
+  type: "created" | "updated" | "deleted";
   timestamp: Date;
 }

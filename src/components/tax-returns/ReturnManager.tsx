@@ -1,58 +1,83 @@
-import { useState } from 'react';
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { useState, useEffect } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { useSupabase } from '@/hooks/useSupabase';
-import { Plus, Loader2 } from 'lucide-react';
-import { useToast } from '@/components/ui/use-toast';
-import { TaxReturn, Client } from '@/lib/supabase/schema';
+} from "@/components/ui/select";
+import { useSupabase } from "@/hooks/useSupabase";
+import { Plus, Loader2 } from "lucide-react";
+import { useToast } from "@/components/ui/use-toast";
+import { TaxReturn, Client, Project } from "@/lib/supabase/schema";
+import {
+  validateTaxYear,
+  validateDueDate,
+} from "@/lib/validations/tax-returns";
 
 export function ReturnManager() {
-  const { data: returns, error: returnsError, mutate: mutateReturns } = useSupabase('tax_returns');
-  const { data: clients } = useSupabase('clients');
+  const {
+    data: returns,
+    error: returnsError,
+    mutate: mutateReturns,
+  } = useSupabase("tax_returns");
+  const { data: clients } = useSupabase("clients");
+  const { data: projects } = useSupabase("projects");
   const { toast } = useToast();
   const [isAddingReturn, setIsAddingReturn] = useState(false);
 
   const addReturn = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
-    const clientId = formData.get('clientId') as string;
-    const client = clients?.find(c => c.id === clientId);
+    const clientId = formData.get("clientId") as string;
+    const client = clients?.find((c) => c.id === clientId);
 
     if (!client) return;
 
     const newReturn = {
       client_id: clientId,
       client_name: client.name,
-      type: formData.get('type') as string,
-      tax_year: parseInt(formData.get('year') as string),
-      status: 'pending' as const,
-      due_date: formData.get('dueDate') as string,
+      type: formData.get("type") as
+        | "individual"
+        | "corporate"
+        | "partnership"
+        | "non-profit",
+      tax_year: parseInt(formData.get("year") as string, 10),
+      status: "pending" as const,
+      due_date: formData.get("dueDate") as string,
+      project_id: (formData.get("projectId") as string) || null,
+      filing_status: "not_started",
+      last_updated: new Date().toISOString(),
+      notes: "",
+      documents: [],
+      assigned_preparer: null,
+      assigned_reviewer: null,
+      review_status: "pending",
+      filing_method: "electronic",
+      payment_status: "pending",
+      estimated_completion_date: null,
+      extension_filed: false,
+      extension_date: null,
+      complexity_level: "medium",
+      priority_level: "normal",
+      related_returns: [],
+      audit_trail: [],
     };
 
     try {
       const { data, error } = await supabase
-        .from('tax_returns')
+        .from("tax_returns")
         .insert([newReturn])
         .select()
         .single();
@@ -62,14 +87,14 @@ export function ReturnManager() {
       mutateReturns();
       setIsAddingReturn(false);
       toast({
-        title: 'Success',
-        description: 'Tax return created successfully',
+        title: "Success",
+        description: "Tax return created successfully",
       });
     } catch (error) {
       toast({
-        title: 'Error',
-        description: 'Failed to create tax return',
-        variant: 'destructive',
+        title: "Error",
+        description: "Failed to create tax return",
+        variant: "destructive",
       });
     }
   };
@@ -115,6 +140,7 @@ export function ReturnManager() {
                   </SelectContent>
                 </Select>
               </div>
+
               <div className="space-y-2">
                 <Label htmlFor="type">Return Type</Label>
                 <Select name="type" required>
@@ -122,34 +148,69 @@ export function ReturnManager() {
                     <SelectValue placeholder="Select type" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="1040">1040 Individual</SelectItem>
-                    <SelectItem value="1120">1120 Corporate</SelectItem>
-                    <SelectItem value="1065">1065 Partnership</SelectItem>
-                    <SelectItem value="990">990 Non-Profit</SelectItem>
+                    <SelectItem value="individual">1040 Individual</SelectItem>
+                    <SelectItem value="corporate">1120 Corporate</SelectItem>
+                    <SelectItem value="partnership">
+                      1065 Partnership
+                    </SelectItem>
+                    <SelectItem value="non-profit">990 Non-Profit</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
+
               <div className="space-y-2">
                 <Label htmlFor="year">Tax Year</Label>
-                <Input 
-                  id="year" 
-                  name="year" 
-                  type="number" 
+                <Input
+                  id="year"
+                  name="year"
+                  type="number"
                   defaultValue={new Date().getFullYear() - 1}
                   min={new Date().getFullYear() - 7}
                   max={new Date().getFullYear()}
-                  required 
+                  required
+                  onChange={(e) => {
+                    const isValid = validateTaxYear(
+                      parseInt(e.target.value, 10),
+                    );
+                    e.target.setCustomValidity(
+                      isValid ? "" : "Invalid tax year",
+                    );
+                  }}
                 />
               </div>
+
               <div className="space-y-2">
                 <Label htmlFor="dueDate">Due Date</Label>
-                <Input 
-                  id="dueDate" 
-                  name="dueDate" 
-                  type="date" 
-                  required 
+                <Input
+                  id="dueDate"
+                  name="dueDate"
+                  type="date"
+                  required
+                  onChange={(e) => {
+                    const isValid = validateDueDate(e.target.value);
+                    e.target.setCustomValidity(
+                      isValid ? "" : "Invalid due date",
+                    );
+                  }}
                 />
               </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="projectId">Link to Project (Optional)</Label>
+                <Select name="projectId">
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select project" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {projects?.map((project) => (
+                      <SelectItem key={project.id} value={project.id}>
+                        {project.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
               <div className="flex justify-end space-x-2">
                 <Button
                   type="button"
@@ -192,14 +253,20 @@ export function ReturnManager() {
                   </p>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <span className={`px-2 py-1 rounded text-sm ${
-                    {
-                      pending: 'bg-yellow-100 text-yellow-700',
-                      in_progress: 'bg-blue-100 text-blue-700',
-                      review: 'bg-purple-100 text-purple-700',
-                      completed: 'bg-green-100 text-green-700',
-                    }[taxReturn.status]
-                  }`}>
+                  <span
+                    className={`px-2 py-1 rounded text-sm ${
+                      {
+                        pending: "bg-yellow-100 text-yellow-700",
+                        in_progress: "bg-blue-100 text-blue-700",
+                        under_review: "bg-purple-100 text-purple-700",
+                        approved: "bg-green-100 text-green-700",
+                        filed: "bg-blue-100 text-blue-700",
+                        completed: "bg-emerald-100 text-emerald-700",
+                        rejected: "bg-red-100 text-red-700",
+                        on_hold: "bg-gray-100 text-gray-700",
+                      }[taxReturn.status]
+                    }`}
+                  >
                     {taxReturn.status}
                   </span>
                   <Button variant="ghost" size="sm">
@@ -213,4 +280,4 @@ export function ReturnManager() {
       </CardContent>
     </Card>
   );
-} 
+}

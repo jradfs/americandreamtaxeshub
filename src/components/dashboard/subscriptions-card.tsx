@@ -1,15 +1,19 @@
-'use client'
+"use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { BarChart } from "@/components/ui/bar-chart"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { BarChart } from "@/components/ui/bar-chart";
 
 interface SubscriptionsCardProps {
-  count: number
-  percentageChange: number
-  data: number[]
+  count: number;
+  percentageChange: number;
+  data: number[];
 }
 
-export function SubscriptionsCard({ count, percentageChange, data }: SubscriptionsCardProps) {
+export function SubscriptionsCard({
+  count,
+  percentageChange,
+  data,
+}: SubscriptionsCardProps) {
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -21,7 +25,7 @@ export function SubscriptionsCard({ count, percentageChange, data }: Subscriptio
           +{percentageChange}% from last month
         </p>
         <div className="h-[80px]">
-          <BarChart 
+          <BarChart
             data={data}
             className="h-full w-full"
             pathClassName="fill-[hsl(var(--chart-2))]"
@@ -29,5 +33,5 @@ export function SubscriptionsCard({ count, percentageChange, data }: Subscriptio
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }

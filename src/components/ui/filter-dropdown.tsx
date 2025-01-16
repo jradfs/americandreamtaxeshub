@@ -1,30 +1,30 @@
-import { Check, ChevronDown } from "lucide-react"
-import { Button } from "./button"
+import { Check, ChevronDown } from "lucide-react";
+import { Button } from "./button";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuTrigger,
-} from "./dropdown-menu"
-import { Calendar } from "./calendar"
-import { Popover, PopoverContent, PopoverTrigger } from "./popover"
-import { cn } from "@/lib/utils"
-import { format } from "date-fns"
-import { useState } from "react"
+} from "./dropdown-menu";
+import { Calendar } from "./calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "./popover";
+import { cn } from "@/lib/utils";
+import { format } from "date-fns";
+import { useState } from "react";
 
 interface FilterOption {
-  label: string
-  value: string
+  label: string;
+  value: string;
 }
 
 interface FilterDropdownProps {
-  label: string
-  options?: FilterOption[]
-  type?: "select" | "date"
-  multiple?: boolean
-  value?: string | string[] | Date
-  onChange?: (value: string | string[] | Date) => void
-  className?: string
+  label: string;
+  options?: FilterOption[];
+  type?: "select" | "date";
+  multiple?: boolean;
+  value?: string | string[] | Date;
+  onChange?: (value: string | string[] | Date) => void;
+  className?: string;
 }
 
 export function FilterDropdown({
@@ -36,7 +36,7 @@ export function FilterDropdown({
   onChange,
   className,
 }: FilterDropdownProps) {
-  const [selectedDate, setSelectedDate] = useState<Date>()
+  const [selectedDate, setSelectedDate] = useState<Date>();
 
   if (type === "date") {
     return (
@@ -47,7 +47,7 @@ export function FilterDropdown({
             className={cn(
               "justify-between min-w-[150px]",
               !selectedDate && "text-muted-foreground",
-              className
+              className,
             )}
           >
             {selectedDate ? format(selectedDate, "PPP") : label}
@@ -59,14 +59,14 @@ export function FilterDropdown({
             mode="single"
             selected={selectedDate}
             onSelect={(date) => {
-              setSelectedDate(date)
-              onChange?.(date as Date)
+              setSelectedDate(date);
+              onChange?.(date as Date);
             }}
             initialFocus
           />
         </PopoverContent>
       </Popover>
-    )
+    );
   }
 
   return (
@@ -84,18 +84,19 @@ export function FilterDropdown({
         {options.map((option) => (
           <DropdownMenuCheckboxItem
             key={option.value}
-            checked={multiple
-              ? Array.isArray(value) && value.includes(option.value)
-              : value === option.value
+            checked={
+              multiple
+                ? Array.isArray(value) && value.includes(option.value)
+                : value === option.value
             }
             onCheckedChange={(checked) => {
               if (multiple && Array.isArray(value)) {
                 const newValue = checked
                   ? [...value, option.value]
-                  : value.filter((v) => v !== option.value)
-                onChange?.(newValue)
+                  : value.filter((v) => v !== option.value);
+                onChange?.(newValue);
               } else {
-                onChange?.(checked ? option.value : "")
+                onChange?.(checked ? option.value : "");
               }
             }}
           >
@@ -104,5 +105,5 @@ export function FilterDropdown({
         ))}
       </DropdownMenuContent>
     </DropdownMenu>
-  )
+  );
 }

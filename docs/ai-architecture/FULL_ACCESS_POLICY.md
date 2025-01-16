@@ -7,11 +7,13 @@ This document outlines our "Full Access" policy for all authenticated users. Thi
 ## Core Principles
 
 1. **Authentication Only**
+
    - Only check if a user is authenticated
    - No role-based restrictions
    - No complex permissions
 
 2. **Full CRUD Access**
+
    - All authenticated users can Create, Read, Update, and Delete
    - Access to all tables
    - No table-specific restrictions
@@ -27,14 +29,14 @@ This document outlines our "Full Access" policy for all authenticated users. Thi
 
 ```typescript
 // ✅ CORRECT - Simple authentication check
-const { user } = useSupabase()
+const { user } = useSupabase();
 if (!user) {
-  throw new Error('Authentication required')
+  throw new Error("Authentication required");
 }
 
 // ❌ INCORRECT - Don't check roles or permissions
-if (user.role !== 'admin') {
-  throw new Error('Admin access required')
+if (user.role !== "admin") {
+  throw new Error("Admin access required");
 }
 ```
 
@@ -42,15 +44,13 @@ if (user.role !== 'admin') {
 
 ```typescript
 // ✅ CORRECT - Direct table access
-const { data } = await supabase
-  .from('tax_returns')
-  .select('*')
+const { data } = await supabase.from("tax_returns").select("*");
 
 // ❌ INCORRECT - Don't filter by user role/access
 const { data } = await supabase
-  .from('tax_returns')
-  .select('*')
-  .eq('assigned_to', user.id)
+  .from("tax_returns")
+  .select("*")
+  .eq("assigned_to", user.id);
 ```
 
 ### UI Components
@@ -76,6 +76,7 @@ if (user.role === 'admin') {
 ## Database Tables
 
 All authenticated users have full access to:
+
 - `clients`
 - `tax_returns`
 - `users`
@@ -85,11 +86,13 @@ All authenticated users have full access to:
 ## Error Handling
 
 Only handle these cases:
+
 1. User not authenticated
 2. Operation failed (e.g., network error)
 3. Invalid data format
 
 Don't handle:
+
 - Permission denied errors (shouldn't occur)
 - Role-based restrictions (don't exist)
 - Access level violations (not applicable)
@@ -97,11 +100,13 @@ Don't handle:
 ## Benefits
 
 1. **Faster Development**
+
    - No complex permission logic
    - Simpler testing
    - Faster feature iteration
 
 2. **Better Collaboration**
+
    - No access barriers
    - Team members can help each other
    - Simplified workflow
@@ -116,4 +121,4 @@ Don't handle:
 - Authentication is the only gate
 - All authenticated users are trusted
 - Focus on building features, not restrictions
-- Keep it simple and collaborative 
+- Keep it simple and collaborative

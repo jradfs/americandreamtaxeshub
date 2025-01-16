@@ -1,11 +1,11 @@
-import React from 'react';
-import { render } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import { FormProvider, useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { clientFormSchema } from '@/lib/validations/client';
-import { ToastProvider } from '@/components/ui/use-toast';
-import { vi } from 'vitest';
+import React from "react";
+import { render } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { FormProvider, useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { clientFormSchema } from "@/lib/validations/client";
+import { ToastProvider } from "@/components/ui/use-toast";
+import { vi } from "vitest";
 
 // Create a more robust mock Supabase client
 export const mockSupabaseClient = {
@@ -18,7 +18,7 @@ export const mockSupabaseClient = {
 };
 
 // Mock Supabase client
-vi.mock('@supabase/auth-helpers-react', () => ({
+vi.mock("@supabase/auth-helpers-react", () => ({
   useSupabaseClient: () => mockSupabaseClient,
 }));
 
@@ -28,36 +28,34 @@ export const renderWithForm = (ui: React.ReactElement) => {
     const form = useForm({
       resolver: zodResolver(clientFormSchema),
       defaultValues: {
-        full_name: '',
-        company_name: '',
-        contact_email: '',
-        onboarding_notes: '',
-        status: 'pending',
-        type: 'individual',
+        full_name: "",
+        company_name: "",
+        contact_email: "",
+        onboarding_notes: "",
+        status: "pending",
+        type: "individual",
         contact_details: {
-          phone: '',
-          address: '',
-          city: '',
-          state: '',
-          zip: '',
+          phone: "",
+          address: "",
+          city: "",
+          state: "",
+          zip: "",
         },
         tax_info: {
-          filing_status: '',
-          tax_id: '',
+          filing_status: "",
+          tax_id: "",
           tax_year: new Date().getFullYear(),
           filing_type: null,
           tax_id_type: null,
           dependents: [],
-          previous_returns: []
-        }
-      }
+          previous_returns: [],
+        },
+      },
     });
 
     return (
       <FormProvider {...form}>
-        <ToastProvider>
-          {children}
-        </ToastProvider>
+        <ToastProvider>{children}</ToastProvider>
       </FormProvider>
     );
   };
@@ -69,4 +67,4 @@ export const renderWithForm = (ui: React.ReactElement) => {
       wrapper: Wrapper,
     }),
   };
-}; 
+};

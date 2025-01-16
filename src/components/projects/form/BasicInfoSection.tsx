@@ -1,13 +1,13 @@
-'use client';
+"use client";
 
-import { Card, CardContent } from '@/components/ui/card';
-import { FormField } from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { useProjectFormContext } from './ProjectFormContext';
-import { ClientSelect } from '@/components/clients/client-select';
-import { PrioritySelect } from '@/components/shared/priority-select';
-import { useClients } from '@/hooks/useClients';
+import { Card, CardContent } from "@/components/ui/card";
+import { FormField } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { useProjectFormContext } from "./ProjectFormContext";
+import { ClientSelect } from "@/components/clients/client-select";
+import { PrioritySelect } from "@/components/shared/priority-select";
+import { useClients } from "@/hooks/useClients";
 
 export function BasicInfoSection() {
   const { form } = useProjectFormContext();
@@ -45,7 +45,7 @@ export function BasicInfoSection() {
                 id={field.name}
                 placeholder="Enter project description"
                 {...field}
-                value={field.value || ''}
+                value={field.value || ""}
               />
             </div>
           )}
@@ -87,4 +87,4 @@ export function BasicInfoSection() {
       </CardContent>
     </Card>
   );
-} 
+}

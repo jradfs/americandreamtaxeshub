@@ -1,19 +1,21 @@
-import Sidebar from "@/components/dashboard/Sidebar"
-import { UserNav } from "@/components/dashboard/UserNav"
-import Link from "next/link"
-import { redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
+import Sidebar from "@/components/dashboard/Sidebar";
+import { UserNav } from "@/components/dashboard/UserNav";
+import Link from "next/link";
+import { redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
 
 export default async function DashboardLayout({
   children,
 }: {
-  children: React.ReactNode
+  children: React.ReactNode;
 }) {
-  const supabase = createClient()
-  const { data: { session } } = await supabase.auth.getSession()
+  const supabase = createClient();
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
 
   if (!session) {
-    redirect('/auth/login')
+    redirect("/auth/login");
   }
 
   return (
@@ -26,10 +28,8 @@ export default async function DashboardLayout({
           </Link>
           <UserNav />
         </header>
-        <main className="flex-1 overflow-y-auto p-6">
-          {children}
-        </main>
+        <main className="flex-1 overflow-y-auto p-6">{children}</main>
       </div>
     </div>
-  )
+  );
 }

@@ -3,7 +3,7 @@ export function handleAIFallback(error: Error, context: Record<string, any>) {
   return {
     success: false,
     fallbackUsed: true,
-    message: "An error occurred, defaulting to fallback response."
+    message: "An error occurred, defaulting to fallback response.",
   };
 }
 
@@ -24,4 +24,4 @@ async function someAICall(input: any) {
   }
   // Placeholder for the real AI integration
   return { prediction: "AI response here" };
-} 
+}

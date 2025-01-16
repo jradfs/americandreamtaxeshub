@@ -1,46 +1,49 @@
-'use client'
+"use client";
 
-import React, { Component, ErrorInfo } from 'react'
-import { captureError } from '@/lib/error-reporting'
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
-import { Button } from '@/components/ui/button'
-import { AlertTriangle } from 'lucide-react'
+import React, { Component, ErrorInfo } from "react";
+import { captureError } from "@/lib/error-reporting";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { AlertTriangle } from "lucide-react";
 
 interface ErrorBoundaryProps {
-  children: React.ReactNode
+  children: React.ReactNode;
 }
 
 interface ErrorBoundaryState {
-  hasError: boolean
-  error: Error | null
+  hasError: boolean;
+  error: Error | null;
 }
 
-export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
+export class ErrorBoundary extends Component<
+  ErrorBoundaryProps,
+  ErrorBoundaryState
+> {
   constructor(props: ErrorBoundaryProps) {
-    super(props)
+    super(props);
     this.state = {
       hasError: false,
-      error: null
-    }
+      error: null,
+    };
   }
 
   static getDerivedStateFromError(error: Error) {
     return {
       hasError: true,
-      error
-    }
+      error,
+    };
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    captureError(error, errorInfo)
+    captureError(error, errorInfo);
   }
 
   resetError = () => {
     this.setState({
       hasError: false,
-      error: null
-    })
-  }
+      error: null,
+    });
+  };
 
   render() {
     if (this.state.hasError) {
@@ -49,7 +52,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
           <AlertTriangle className="h-4 w-4" />
           <AlertTitle>Something went wrong</AlertTitle>
           <AlertDescription className="mt-2">
-            <p>{this.state.error?.message || 'An unexpected error occurred'}</p>
+            <p>{this.state.error?.message || "An unexpected error occurred"}</p>
             <Button
               onClick={this.resetError}
               variant="outline"
@@ -60,9 +63,9 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
             </Button>
           </AlertDescription>
         </Alert>
-      )
+      );
     }
 
-    return this.props.children
+    return this.props.children;
   }
-} 
+}

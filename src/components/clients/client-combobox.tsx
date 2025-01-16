@@ -1,29 +1,29 @@
-'use client'
+"use client";
 
-import React from 'react'
-import { getBrowserClient } from '@/lib/supabase/browser-client'
-import { Check, ChevronsUpDown } from 'lucide-react'
-import { cn } from '@/lib/utils'
-import { Button } from '@/components/ui/button'
+import React from "react";
+import { getBrowserClient } from "@/lib/supabase/browser-client";
+import { Check, ChevronsUpDown } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 import {
   Command,
   CommandEmpty,
   CommandGroup,
   CommandInput,
   CommandItem,
-} from '@/components/ui/command'
+} from "@/components/ui/command";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from '@/components/ui/popover'
-import type { Database } from '@/types/database.types'
+} from "@/components/ui/popover";
+import type { Database } from "@/types/database.types";
 
 interface Client {
-  id: string
-  full_name: string | null
-  company_name: string | null
-  type: 'business' | 'individual'
+  id: string;
+  full_name: string | null;
+  company_name: string | null;
+  type: "business" | "individual";
 }
 
 interface ClientComboboxProps {
@@ -33,55 +33,62 @@ interface ClientComboboxProps {
   value?: string | null;
 }
 
-export function ClientCombobox({ 
-  onSelectAction, 
-  onChange, 
-  selectedId, 
-  value 
+export function ClientCombobox({
+  onSelectAction,
+  onChange,
+  selectedId,
+  value,
 }: ClientComboboxProps) {
-  const [open, setOpen] = React.useState(false)
-  const [clients, setClients] = React.useState<Client[]>([])
-  const [loading, setLoading] = React.useState(true)
-  const supabase = getBrowserClient()
+  const [open, setOpen] = React.useState(false);
+  const [clients, setClients] = React.useState<Client[]>([]);
+  const [loading, setLoading] = React.useState(true);
+  const supabase = getBrowserClient();
 
   React.useEffect(() => {
     async function loadClients() {
       const { data } = await supabase
-        .from('clients')
-        .select('id, full_name, company_name, type')
-        .order('type', { ascending: true })
-        .order('company_name', { ascending: true })
-        .order('full_name', { ascending: true })
+        .from("clients")
+        .select("id, full_name, company_name, type")
+        .order("type", { ascending: true })
+        .order("company_name", { ascending: true })
+        .order("full_name", { ascending: true });
 
-      setClients((data || []).filter((client): client is Client => 
-        client.type === 'business' || client.type === 'individual'
-      ))
-      setLoading(false)
+      setClients(
+        (data || []).filter(
+          (client): client is Client =>
+            client.type === "business" || client.type === "individual",
+        ),
+      );
+      setLoading(false);
     }
 
-    loadClients()
-  }, [])
+    loadClients();
+  }, []);
 
   const selected = React.useMemo(
-    () => clients.find(client => client.id === (value ?? selectedId)),
-    [clients, value, selectedId]
-  )
+    () => clients.find((client) => client.id === (value ?? selectedId)),
+    [clients, value, selectedId],
+  );
 
   const getDisplayName = (client: Client) => {
-    if (client.type === 'business' && client.company_name) {
-      return client.company_name
+    if (client.type === "business" && client.company_name) {
+      return client.company_name;
     }
-    return client.full_name || 'Unnamed Client'
-  }
+    return client.full_name || "Unnamed Client";
+  };
 
   const handleSelect = (clientId: string) => {
-    onSelectAction?.(clientId)
-    onChange?.(clientId)
-    setOpen(false)
-  }
+    onSelectAction?.(clientId);
+    onChange?.(clientId);
+    setOpen(false);
+  };
 
   if (loading) {
-    return <Button variant="outline" className="w-full justify-between">Loading clients...</Button>
+    return (
+      <Button variant="outline" className="w-full justify-between">
+        Loading clients...
+      </Button>
+    );
   }
 
   return (
@@ -111,7 +118,7 @@ export function ClientCombobox({
                 <Check
                   className={cn(
                     "mr-2 h-4 w-4",
-                    selected?.id === client.id ? "opacity-100" : "opacity-0"
+                    selected?.id === client.id ? "opacity-100" : "opacity-0",
                   )}
                 />
                 {getDisplayName(client)}
@@ -121,6 +128,5 @@ export function ClientCombobox({
         </Command>
       </PopoverContent>
     </Popover>
-  )
+  );
 }
-

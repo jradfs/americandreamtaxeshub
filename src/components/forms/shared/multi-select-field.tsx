@@ -1,8 +1,14 @@
-'use client';
+"use client";
 
-import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { MultiSelect } from '@/components/ui/multi-select';
-import { UseFormReturn } from 'react-hook-form';
+import {
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { MultiSelect } from "@/components/ui/multi-select";
+import { UseFormReturn } from "react-hook-form";
 
 interface Option {
   value: string;
@@ -24,7 +30,7 @@ export function MultiSelectField({
   label,
   options,
   placeholder = "Select options",
-  description
+  description,
 }: MultiSelectFieldProps) {
   return (
     <FormField
@@ -39,7 +45,9 @@ export function MultiSelectField({
             onChange={field.onChange}
             placeholder={placeholder}
           />
-          {description && <p className="text-sm text-muted-foreground">{description}</p>}
+          {description && (
+            <p className="text-sm text-muted-foreground">{description}</p>
+          )}
           <FormMessage />
         </FormItem>
       )}

@@ -1,9 +1,14 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { useState } from "react";
+import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatDistanceToNow, isAfter, subDays } from "date-fns";
@@ -27,7 +32,7 @@ import type { Database } from "@/types/database.types";
 import { ProjectFormData } from "@/types/projects";
 import { useToast } from "@/components/ui/use-toast";
 
-type DbProject = Database['public']['Views']['project_dashboard']['Row'];
+type DbProject = Database["public"]["Views"]["project_dashboard"]["Row"];
 
 interface ProjectCardProps {
   project: DbProject;
@@ -51,22 +56,22 @@ export function ProjectCard({ project, onDelete }: ProjectCardProps) {
   const handleUpdateProject = async (data: ProjectFormData) => {
     try {
       const { error } = await supabase
-        .from('projects')
+        .from("projects")
         .update({
           name: data.name,
           service_type: data.service_type,
           status: data.status,
         })
-        .eq('id', project.id);
+        .eq("id", project.id);
 
       if (error) throw error;
       router.refresh();
     } catch (error) {
-      console.error('Error updating project:', error);
+      console.error("Error updating project:", error);
       toast({
-        title: 'Error',
-        description: 'Failed to update project',
-        variant: 'destructive',
+        title: "Error",
+        description: "Failed to update project",
+        variant: "destructive",
       });
     }
   };
@@ -141,7 +146,7 @@ export function ProjectCard({ project, onDelete }: ProjectCardProps) {
             "capitalize",
             project.status === "completed" && "border-green-500 text-green-500",
             project.status === "in_progress" && "border-blue-500 text-blue-500",
-            project.status === "blocked" && "border-red-500 text-red-500"
+            project.status === "blocked" && "border-red-500 text-red-500",
           )}
         >
           {project.status?.replace("_", " ")}
@@ -151,7 +156,7 @@ export function ProjectCard({ project, onDelete }: ProjectCardProps) {
             variant="outline"
             className={cn(
               isOverdue && "border-red-500 text-red-500",
-              isDueSoon && "border-yellow-500 text-yellow-500"
+              isDueSoon && "border-yellow-500 text-yellow-500",
             )}
           >
             {isOverdue ? "Overdue" : "Due Soon"}

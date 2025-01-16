@@ -3,21 +3,17 @@ const nextConfig = {
   reactStrictMode: true,
   typescript: {
     ignoreBuildErrors: false,
-    tsconfigPath: './tsconfig.json',
+    tsconfigPath: "./tsconfig.json",
   },
-  transpilePackages: [
-    '@supabase/ssr',
-    '@tanstack/react-table',
-    'lucide-react',
-  ],
+  transpilePackages: ["@supabase/ssr", "@tanstack/react-table", "lucide-react"],
   webpack: (config, { isServer }) => {
     config.resolve = {
       ...config.resolve,
       alias: {
         ...config.resolve?.alias,
-        '@': './src',
+        "@": "./src",
       },
-      extensions: ['.ts', '.tsx', '.js', '.jsx', '.json'],
+      extensions: [".ts", ".tsx", ".js", ".jsx", ".json"],
     };
     if (!isServer) {
       config.resolve.fallback = {
@@ -34,20 +30,28 @@ const nextConfig = {
   },
   experimental: {
     optimizePackageImports: [
-      '@radix-ui/react-icons',
-      '@supabase/ssr',
-      '@tanstack/react-table'
+      "@radix-ui/react-icons",
+      "@supabase/ssr",
+      "@tanstack/react-table",
     ],
     serverActions: {
-      bodySizeLimit: '2mb',
-      allowedOrigins: ['localhost:3000', 'localhost:3001'],
+      bodySizeLimit: "2mb",
+      allowedOrigins: ["localhost:3000", "localhost:3001"],
     },
   },
   compiler: {
-    removeConsole: process.env.NODE_ENV === 'production',
+    removeConsole: process.env.NODE_ENV === "production",
   },
   productionBrowserSourceMaps: false,
-}
+  async redirects() {
+    return [
+      {
+        source: '/auth/login',
+        destination: '/login',
+        permanent: true,
+      },
+    ];
+  },
+};
 
 module.exports = nextConfig;
-

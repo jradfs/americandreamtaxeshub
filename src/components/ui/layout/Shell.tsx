@@ -1,19 +1,19 @@
-import React from 'react';
-import { useRouter } from 'next/router';
+import React from "react";
+import { useRouter } from "next/router";
 import {
   LayoutDashboard,
   Users,
   FileText,
   CheckSquare,
-  Settings
-} from 'lucide-react';
-import { Button } from '@/components/ui/button';
+  Settings,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
   Sheet,
   SheetContent,
   SheetHeader,
   SheetTitle,
-} from '@/components/ui/sheet';
+} from "@/components/ui/sheet";
 
 const Shell = ({ children }: { children: React.ReactNode }) => {
   const router = useRouter();
@@ -21,25 +21,25 @@ const Shell = ({ children }: { children: React.ReactNode }) => {
 
   const menuItems = [
     {
-      name: 'Dashboard',
+      name: "Dashboard",
       icon: LayoutDashboard,
-      path: '/dashboard'
+      path: "/dashboard",
     },
     {
-      name: 'Clients',
+      name: "Clients",
       icon: Users,
-      path: '/clients'
+      path: "/clients",
     },
     {
-      name: 'Documents',
+      name: "Documents",
       icon: FileText,
-      path: '/documents'
+      path: "/documents",
     },
     {
-      name: 'Tasks',
+      name: "Tasks",
       icon: CheckSquare,
-      path: '/tasks'
-    }
+      path: "/tasks",
+    },
   ];
 
   return (
@@ -54,7 +54,7 @@ const Shell = ({ children }: { children: React.ReactNode }) => {
             {menuItems.map((item) => (
               <Button
                 key={item.path}
-                variant={router.pathname === item.path ? 'secondary' : 'ghost'}
+                variant={router.pathname === item.path ? "secondary" : "ghost"}
                 className="w-full justify-start"
                 onClick={() => router.push(item.path)}
               >
@@ -67,7 +67,7 @@ const Shell = ({ children }: { children: React.ReactNode }) => {
             <Button
               variant="ghost"
               className="w-full justify-start"
-              onClick={() => router.push('/settings')}
+              onClick={() => router.push("/settings")}
             >
               <Settings className="mr-2 h-4 w-4" />
               Settings
@@ -113,7 +113,7 @@ const Shell = ({ children }: { children: React.ReactNode }) => {
             {menuItems.map((item) => (
               <Button
                 key={item.path}
-                variant={router.pathname === item.path ? 'secondary' : 'ghost'}
+                variant={router.pathname === item.path ? "secondary" : "ghost"}
                 className="w-full justify-start"
                 onClick={() => {
                   router.push(item.path);
@@ -136,4 +136,4 @@ const Shell = ({ children }: { children: React.ReactNode }) => {
   );
 };
 
-export default Shell; 
+export default Shell;

@@ -9,7 +9,7 @@ export function WorkflowStageComponent({
   stage,
   tasks,
   completedTasks,
-  totalTasks
+  totalTasks,
 }: WorkflowStageProps) {
   return (
     <div className="border rounded-lg p-4">
@@ -20,11 +20,7 @@ export function WorkflowStageComponent({
       <ul className="space-y-1">
         {tasks.map((task, index) => (
           <li key={index} className="flex items-center">
-            <input
-              type="checkbox"
-              className="mr-2"
-              onChange={() => {}}
-            />
+            <input type="checkbox" className="mr-2" onChange={() => {}} />
             <span>{task}</span>
           </li>
         ))}

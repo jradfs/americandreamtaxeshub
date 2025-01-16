@@ -1,4 +1,4 @@
-import type { DocumentCategory } from '@/types/documents';
+import type { DocumentCategory } from "@/types/documents";
 
 interface CategoryPattern {
   category: DocumentCategory;
@@ -8,7 +8,7 @@ interface CategoryPattern {
 
 const categoryPatterns: CategoryPattern[] = [
   {
-    category: 'tax_return',
+    category: "tax_return",
     patterns: [
       /1040/i,
       /tax.?return/i,
@@ -16,12 +16,12 @@ const categoryPatterns: CategoryPattern[] = [
       /form.?(w-2|1099|941|940)/i,
       /k-1/i,
       /1120s?/i,
-      /1065/i
+      /1065/i,
     ],
-    fileTypes: ['application/pdf']
+    fileTypes: ["application/pdf"],
   },
   {
-    category: 'financial_statement',
+    category: "financial_statement",
     patterns: [
       /balance.?sheet/i,
       /income.?statement/i,
@@ -29,12 +29,15 @@ const categoryPatterns: CategoryPattern[] = [
       /profit.?(and|&).?loss/i,
       /p&l/i,
       /financial.?statement/i,
-      /trial.?balance/i
+      /trial.?balance/i,
     ],
-    fileTypes: ['application/pdf', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet']
+    fileTypes: [
+      "application/pdf",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    ],
   },
   {
-    category: 'payroll',
+    category: "payroll",
     patterns: [
       /payroll/i,
       /form.?941/i,
@@ -43,11 +46,11 @@ const categoryPatterns: CategoryPattern[] = [
       /1099/i,
       /wage.?report/i,
       /time.?sheet/i,
-      /pay.?stub/i
-    ]
+      /pay.?stub/i,
+    ],
   },
   {
-    category: 'corporate',
+    category: "corporate",
     patterns: [
       /articles.?of.?incorporation/i,
       /operating.?agreement/i,
@@ -55,34 +58,34 @@ const categoryPatterns: CategoryPattern[] = [
       /board.?resolution/i,
       /meeting.?minutes/i,
       /ein/i,
-      /certificate.?of.?(good.?standing|formation)/i
-    ]
-  }
+      /certificate.?of.?(good.?standing|formation)/i,
+    ],
+  },
 ];
 
 export async function categorizeDocument(
   fileName: string,
-  fileType: string
+  fileType: string,
 ): Promise<DocumentCategory> {
   // First, try to match based on file name patterns
   for (const { category, patterns, fileTypes } of categoryPatterns) {
     if (fileTypes && !fileTypes.includes(fileType)) continue;
-    if (patterns.some(pattern => pattern.test(fileName))) {
+    if (patterns.some((pattern) => pattern.test(fileName))) {
       return category;
     }
   }
 
   // If no patterns match, try to categorize based on file type
-  if (fileType.includes('pdf')) {
-    return 'tax_return'; // Most PDFs in tax practice are likely tax returns
+  if (fileType.includes("pdf")) {
+    return "tax_return"; // Most PDFs in tax practice are likely tax returns
   }
 
-  if (fileType.includes('sheet') || fileType.includes('excel')) {
-    return 'financial_statement';
+  if (fileType.includes("sheet") || fileType.includes("excel")) {
+    return "financial_statement";
   }
 
   // Default category for unrecognized documents
-  return 'supporting';
+  return "supporting";
 }
 
 export function suggestDocumentName(
@@ -95,19 +98,23 @@ export function suggestDocumentName(
     business_type?: string;
     quarter?: number;
     month?: number;
-  }
+  },
 ): string {
   const cleanName = originalName
     .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '_')
-    .replace(/^_|_$/g, '');
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_|_$/g, "");
 
-  const yearStr = year ? `_${year}` : '';
-  const formType = metadata?.form_type ? `_${metadata.form_type}` : '';
-  const businessType = metadata?.business_type ? `_${metadata.business_type}` : '';
-  const quarter = metadata?.quarter ? `_q${metadata.quarter}` : '';
-  const month = metadata?.month ? `_m${String(metadata.month).padStart(2, '0')}` : '';
-  
+  const yearStr = year ? `_${year}` : "";
+  const formType = metadata?.form_type ? `_${metadata.form_type}` : "";
+  const businessType = metadata?.business_type
+    ? `_${metadata.business_type}`
+    : "";
+  const quarter = metadata?.quarter ? `_q${metadata.quarter}` : "";
+  const month = metadata?.month
+    ? `_m${String(metadata.month).padStart(2, "0")}`
+    : "";
+
   return `${category}/${cleanName}${yearStr}${formType}${businessType}${quarter}${month}`;
 }
 
@@ -128,10 +135,10 @@ export function extractYearFromFileName(fileName: string): number | undefined {
 
 export function validateDocumentCategory(
   category: DocumentCategory,
-  allowedCategories?: DocumentCategory[]
+  allowedCategories?: DocumentCategory[],
 ): boolean {
   if (!allowedCategories || allowedCategories.length === 0) {
     return true;
   }
   return allowedCategories.includes(category);
-} 
+}

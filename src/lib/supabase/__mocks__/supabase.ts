@@ -1,4 +1,4 @@
-import { jest } from '@jest/globals'
+import { jest } from "@jest/globals";
 
 export const createMockSupabaseClient = () => ({
   auth: {
@@ -39,4 +39,4 @@ export const createMockSupabaseClient = () => ({
   then: jest.fn(),
   catch: jest.fn(),
   finally: jest.fn(),
-})
+});

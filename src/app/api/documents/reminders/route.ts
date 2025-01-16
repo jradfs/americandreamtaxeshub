@@ -1,7 +1,8 @@
-import { createServerClient } from '@supabase/ssr'
-import { cookies } from 'next/headers'
-import { NextResponse } from 'next/server'
-import type { Database } from '@/types/database.types'
+import { createServerClient } from "@supabase/ssr";
+import { cookies } from "next/headers";
+import { handleError } from "@/lib/error-handler";
+import { NextResponse } from "next/server";
+import type { Database } from "@/types/database.types";
 
 export async function GET(request: Request) {
   try {
@@ -11,33 +12,29 @@ export async function GET(request: Request) {
       {
         cookies: {
           get(name: string) {
-            return cookies().get(name)?.value
-          }
+            return cookies().get(name)?.value;
+          },
         },
         auth: {
           persistSession: true,
           autoRefreshToken: true,
           detectSessionInUrl: true,
-          flowType: 'pkce'
-        }
-      }
-    )
+          flowType: "pkce",
+        },
+      },
+    );
 
     const { data, error } = await supabase
-      .from('document_reminders')
-      .select('*')
-      .order('due_date', { ascending: true })
+      .from("client_documents")
+      .select("*")
+      .order("uploaded_at", { ascending: true });
 
     if (error) {
-      throw error
+      throw error;
     }
 
-    return NextResponse.json(data)
+    return NextResponse.json(data);
   } catch (error) {
-    console.error('Error fetching reminders:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch reminders' },
-      { status: 500 }
-    )
+    return handleError(error, "Error fetching reminders");
   }
 }

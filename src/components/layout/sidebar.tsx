@@ -58,7 +58,7 @@ export function Sidebar() {
     <aside
       className={cn(
         "fixed left-0 top-0 z-40 h-full border-r bg-background transition-all duration-300 ease-in-out",
-        isCollapsed ? "w-16" : "w-64"
+        isCollapsed ? "w-16" : "w-64",
       )}
       style={{ zIndex: 50 }}
     >
@@ -93,7 +93,7 @@ export function Sidebar() {
                     className={cn(
                       "w-full justify-start gap-2",
                       pathname === item.href && "bg-muted",
-                      isCollapsed && "justify-center"
+                      isCollapsed && "justify-center",
                     )}
                   >
                     <Icon size={20} />

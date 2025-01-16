@@ -1,37 +1,37 @@
-'use client';
+"use client";
 
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { DatePickerField } from '../shared/date-picker-field';
-import { MultiSelectField } from '../shared/multi-select-field';
-import { UseFormReturn } from 'react-hook-form';
-import { ProjectFormValues } from '@/lib/validations/project';
-import { TaskForm } from './task-form';
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { DatePickerField } from "../shared/date-picker-field";
+import { MultiSelectField } from "../shared/multi-select-field";
+import { UseFormReturn } from "react-hook-form";
+import { ProjectFormValues } from "@/lib/validations/project";
+import { TaskForm } from "./task-form";
 
 interface TimelineTeamFormProps {
   form: UseFormReturn<ProjectFormValues>;
-  teamMembers: Array<{ id: string; name: string; }>;
+  teamMembers: Array<{ id: string; name: string }>;
 }
 
 export function TimelineTeamForm({ form, teamMembers }: TimelineTeamFormProps) {
-  const teamMemberOptions = teamMembers.map(member => ({
+  const teamMemberOptions = teamMembers.map((member) => ({
     value: member.id,
-    label: member.name
+    label: member.name,
   }));
 
   const handleAddTask = () => {
-    const currentTasks = form.getValues('template_tasks') || [];
-    form.setValue('template_tasks', [
+    const currentTasks = form.getValues("template_tasks") || [];
+    form.setValue("template_tasks", [
       ...currentTasks,
       {
-        title: '',
-        description: '',
-        priority: 'medium',
+        title: "",
+        description: "",
+        priority: "medium",
         dependencies: [],
         assigned_team: [],
-        status: 'not_started',
-        progress: 0
-      }
+        status: "not_started",
+        progress: 0,
+      },
     ]);
   };
 
@@ -42,11 +42,7 @@ export function TimelineTeamForm({ form, teamMembers }: TimelineTeamFormProps) {
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <DatePickerField
-            form={form}
-            name="due_date"
-            label="Due Date"
-          />
+          <DatePickerField form={form} name="due_date" label="Due Date" />
 
           <MultiSelectField
             form={form}
@@ -70,18 +66,18 @@ export function TimelineTeamForm({ form, teamMembers }: TimelineTeamFormProps) {
             </Button>
           </div>
 
-          {form.watch('template_tasks')?.map((_, index) => (
+          {form.watch("template_tasks")?.map((_, index) => (
             <TaskForm
               key={index}
               defaultValues={{
-                title: '',
-                description: '',
-                status: 'todo',
-                priority: 'medium'
+                title: "",
+                description: "",
+                status: "todo",
+                priority: "medium",
               }}
               onSubmit={async (data) => {
                 // Handle task submission
-                console.log('Task submitted:', data)
+                console.log("Task submitted:", data);
               }}
             />
           ))}

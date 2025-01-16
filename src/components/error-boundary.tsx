@@ -1,19 +1,19 @@
-'use client'
+"use client";
 
-import { useEffect } from 'react'
-import { toast } from 'sonner'
+import { useEffect } from "react";
+import { toast } from "sonner";
 
 export default function ErrorBoundary({
   error,
   reset,
 }: {
-  error: Error & { digest?: string }
-  reset: () => void
+  error: Error & { digest?: string };
+  reset: () => void;
 }) {
   useEffect(() => {
-    console.error(error)
-    toast.error('Something went wrong!')
-  }, [error])
+    console.error(error);
+    toast.error("Something went wrong!");
+  }, [error]);
 
   return (
     <div className="flex min-h-screen items-center justify-center">
@@ -27,8 +27,8 @@ export default function ErrorBoundary({
         </button>
       </div>
     </div>
-  )
+  );
 }
 
 // Named export for direct imports
-export { ErrorBoundary } 
+export { ErrorBoundary };

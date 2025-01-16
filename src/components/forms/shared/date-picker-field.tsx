@@ -1,13 +1,23 @@
-'use client';
+"use client";
 
-import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Button } from '@/components/ui/button';
-import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CalendarIcon } from 'lucide-react';
-import { format } from 'date-fns';
-import { cn } from '@/lib/utils';
-import { UseFormReturn } from 'react-hook-form';
+import {
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { CalendarIcon } from "lucide-react";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
+import { UseFormReturn } from "react-hook-form";
 
 interface DatePickerFieldProps {
   form: UseFormReturn<any>;
@@ -22,7 +32,7 @@ export function DatePickerField({
   name,
   label,
   placeholder = "Pick a date",
-  disabled = (date) => date < new Date() || date < new Date("1900-01-01")
+  disabled = (date) => date < new Date() || date < new Date("1900-01-01"),
 }: DatePickerFieldProps) {
   return (
     <FormField
@@ -38,7 +48,7 @@ export function DatePickerField({
                   variant="outline"
                   className={cn(
                     "w-full pl-3 text-left font-normal",
-                    !field.value && "text-muted-foreground"
+                    !field.value && "text-muted-foreground",
                   )}
                 >
                   {field.value ? (

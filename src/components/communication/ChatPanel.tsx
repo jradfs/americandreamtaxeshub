@@ -50,4 +50,4 @@ export default function ChatPanel() {
       </div>
     </Card>
   );
-} 
+}

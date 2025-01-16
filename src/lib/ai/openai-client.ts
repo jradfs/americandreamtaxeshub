@@ -1,4 +1,4 @@
-import { OpenAI } from 'openai';
+import { OpenAI } from "openai";
 
 // Initialize OpenAI client with environment variable
 const openai = new OpenAI({
@@ -8,7 +8,7 @@ const openai = new OpenAI({
 // Utility function for making API calls
 export async function createChatCompletion(
   messages: OpenAI.ChatCompletionMessageParam[],
-  model: string = 'gpt-4'
+  model: string = "gpt-4",
 ) {
   try {
     const response = await openai.chat.completions.create({
@@ -19,7 +19,7 @@ export async function createChatCompletion(
     });
     return response.choices[0].message?.content;
   } catch (error) {
-    console.error('OpenAI API Error:', error);
-    throw new Error('Failed to process AI request');
+    console.error("OpenAI API Error:", error);
+    throw new Error("Failed to process AI request");
   }
 }

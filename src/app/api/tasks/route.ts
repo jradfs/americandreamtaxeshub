@@ -1,285 +1,214 @@
-import { createServerClient } from '@supabase/ssr';
-import { cookies } from 'next/headers';
+import createClient from '@/lib/supabase/client';
 import { NextResponse } from 'next/server';
-import { Database } from '@/types/database.types';
-import { taskSchema } from '@/types/validation';
-import type { z } from 'zod';
+import { cookies } from 'next/headers';
 
-type TaskInsert = Database['public']['Tables']['tasks']['Insert'];
-type ValidatedTask = z.infer<typeof taskSchema>;
-type ChecklistItemInsert = Database['public']['Tables']['checklist_items']['Insert'];
-type ActivityLogInsert = Database['public']['Tables']['activity_log_entries']['Insert'];
+// Initialize Supabase client
+const supabase = createClient();
 
-interface TaskInput extends ValidatedTask {
-  checklistItems?: Array<{
-    title: string;
-    description?: string | null;
-    completed?: boolean;
-  }>;
+async function checkAuth() {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) {
+    return NextResponse.json(
+      { error: 'Unauthorized' },
+      { status: 401 }
+    );
+  }
+  return null;
 }
 
-export async function GET(request: Request) {
+// Create new task
+export async function POST(request: Request) {
+  const authError = await checkAuth();
+  if (authError) return authError;
+  
   try {
-    const { searchParams } = new URL(request.url);
-    const projectId = searchParams.get('projectId');
-    const clientId = searchParams.get('clientId');
-    const assigneeId = searchParams.get('assigneeId');
+    const taskData = await request.json();
+    
+    // Validate required fields
+    if (!taskData.title || !taskData.project_id) {
+      return NextResponse.json(
+        { error: 'Task title and project ID are required' },
+        { status: 400 }
+      );
+    }
 
-    const supabase = createServerClient<Database>(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          get(name: string) {
-            return cookies().get(name)?.value
-          }
-        }
-      }
-    );
-
-    let query = supabase
+    const { data, error } = await supabase
       .from('tasks')
-      .select(`
-        *,
-        assignee:profiles(id, full_name, email),
-        project:projects(id, name),
-        parent_task:tasks(id, title),
-        checklist_items(*),
-        activity_log_entries(*)
-      `);
-
-    if (projectId) {
-      query = query.eq('project_id', projectId);
-    }
-    if (clientId) {
-      query = query.eq('client_id', clientId);
-    }
-    if (assigneeId) {
-      query = query.eq('assignee_id', assigneeId);
-    }
-
-    const { data, error } = await query;
+      .insert([taskData])
+      .select()
+      .single();
 
     if (error) {
-      throw error;
+      return NextResponse.json(
+        { error: error.message },
+        { status: 500 }
+      );
     }
 
     return NextResponse.json(data);
   } catch (error) {
-    console.error('Error fetching tasks:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch tasks' },
+      { error: 'Internal server error' },
       { status: 500 }
     );
   }
 }
 
-export async function POST(request: Request) {
+// Get tasks - handles both list and single task
+export async function GET(
+  request: Request,
+  { params }: { params?: { id: string } }
+) {
+  const authError = await checkAuth();
+  if (authError) return authError;
+  
   try {
-    const formData: TaskInput = await request.json();
-    const { checklistItems, ...taskData } = formData;
-    const validatedData = taskSchema.parse(taskData);
+    if (params?.id) {
+      // Get single task
+      const { data, error } = await supabase
+        .from('tasks')
+        .select('*')
+        .eq('id', params.id)
+        .single();
 
-    const supabase = createServerClient<Database>(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          get(name: string) {
-            return cookies().get(name)?.value
-          }
-        }
-      }
-    );
-
-    // Insert task first
-    const { data: task, error: taskError } = await supabase
-      .from('tasks')
-      .insert([{
-        title: validatedData.title,
-        description: validatedData.description,
-        status: validatedData.status,
-        priority: validatedData.priority,
-        due_date: validatedData.due_date,
-        assignee_id: validatedData.assignee_id,
-        project_id: validatedData.project_id,
-      } satisfies TaskInsert])
-      .select()
-      .single();
-
-    if (taskError) throw taskError;
-
-    // Handle checklist items if provided
-    if (checklistItems?.length) {
-      const { error: checklistError } = await supabase
-        .from('checklist_items')
-        .insert(
-          checklistItems.map(item => ({
-            task_id: task.id,
-            title: item.title,
-            description: item.description,
-            completed: item.completed || false
-          }))
+      if (error) {
+        return NextResponse.json(
+          { error: error.message },
+          { status: 500 }
         );
+      }
 
-      if (checklistError) throw checklistError;
+      if (!data) {
+        return NextResponse.json(
+          { error: 'Task not found' },
+          { status: 404 }
+        );
+      }
+
+      return NextResponse.json(data);
+    } else {
+      // Get all tasks
+      const { data, error } = await supabase
+        .from('tasks')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        return NextResponse.json(
+          { error: error.message },
+          { status: 500 }
+        );
+      }
+
+      return NextResponse.json(data);
     }
-
-    // Add activity log entry
-    const { error: activityError } = await supabase
-      .from('activity_log_entries')
-      .insert({
-        task_id: task.id,
-        action: 'created',
-        details: { status: task.status }
-      });
-
-    if (activityError) throw activityError;
-
-    return NextResponse.json(task);
   } catch (error) {
-    console.error('Error creating task:', error);
     return NextResponse.json(
-      { error: 'Failed to create task' },
+      { error: 'Internal server error' },
       { status: 500 }
     );
   }
 }
 
-export async function PUT(request: Request) {
+// Update task
+export async function PUT(
+  request: Request,
+  { params }: { params: { id: string } }
+) {
+  const authError = await checkAuth();
+  if (authError) return authError;
+  
   try {
-    const { id, checklistItems, ...updates }: TaskInput & { id: string } = await request.json();
+    const taskData = await request.json();
     
-    if (!id || typeof id !== 'string') {
+    // Validate required fields
+    if (!taskData.title || !taskData.project_id) {
       return NextResponse.json(
-        { error: 'Valid task ID (UUID) is required' },
+        { error: 'Task title and project ID are required' },
         { status: 400 }
       );
     }
 
-    const validatedData = taskSchema.partial().parse(updates);
-    const supabase = createServerClient<Database>(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          get(name: string) {
-            return cookies().get(name)?.value
-          }
-        }
-      }
-    );
-
-    // Update task
-    const { data: task, error: taskError } = await supabase
+    const { data, error } = await supabase
       .from('tasks')
-      .update({
-        title: validatedData.title,
-        description: validatedData.description,
-        status: validatedData.status,
-        priority: validatedData.priority,
-        due_date: validatedData.due_date,
-        assignee_id: validatedData.assignee_id,
-        project_id: validatedData.project_id,
-      })
-      .eq('id', id)
+      .update(taskData)
+      .eq('id', params.id)
       .select()
       .single();
 
-    if (taskError) throw taskError;
-
-    // Handle checklist items if provided
-    if (checklistItems !== undefined) {
-      // Delete existing items
-      await supabase
-        .from('checklist_items')
-        .delete()
-        .eq('task_id', id);
-
-      // Insert new items
-      if (checklistItems.length > 0) {
-        const { error: checklistError } = await supabase
-          .from('checklist_items')
-          .insert(
-            checklistItems.map(item => ({
-              task_id: id,
-              title: item.title,
-              description: item.description,
-              completed: item.completed || false
-            } satisfies ChecklistItemInsert))
-          );
-
-        if (checklistError) throw checklistError;
-      }
+    if (error) {
+      return NextResponse.json(
+        { error: error.message },
+        { status: 500 }
+      );
     }
 
-    // Add activity log entry for update
-    const { error: activityError } = await supabase
-      .from('activity_log_entries')
-      .insert({
-        task_id: id,
-        action: 'updated',
-        details: { updates: validatedData }
-      } satisfies ActivityLogInsert);
-
-    if (activityError) throw activityError;
-
-    return NextResponse.json(task);
+    return NextResponse.json(data);
   } catch (error) {
-    console.error('Error updating task:', error);
     return NextResponse.json(
-      { error: 'Failed to update task' },
+      { error: 'Internal server error' },
       { status: 500 }
     );
   }
 }
 
-export async function DELETE(request: Request) {
+// Get task's subtasks
+export async function GET(
+  request: Request,
+  { params }: { params: { id: string } }
+) {
+  const authError = await checkAuth();
+  if (authError) return authError;
+  
   try {
-    const { searchParams } = new URL(request.url);
-    const id = searchParams.get('id');
+    const { data, error } = await supabase
+      .from('tasks')
+      .select('*')
+      .eq('parent_task_id', params.id)
+      .order('created_at', { ascending: false });
 
-    if (!id || typeof id !== 'string') {
+    if (error) {
       return NextResponse.json(
-        { error: 'Valid task ID (UUID) is required' },
-        { status: 400 }
+        { error: error.message },
+        { status: 500 }
       );
     }
 
-    const supabase = createServerClient<Database>(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          get(name: string) {
-            return cookies().get(name)?.value
-          }
-        }
-      }
+    return NextResponse.json(data);
+  } catch (error) {
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
     );
+  }
+}
 
-    // Delete related records first (due to foreign key constraints)
-    await Promise.all([
-      supabase.from('checklist_items').delete().eq('task_id', id),
-      supabase.from('activity_log_entries').delete().eq('task_id', id)
-    ]);
-
-    // Then delete the task
+// Delete task
+export async function DELETE(
+  request: Request,
+  { params }: { params: { id: string } }
+) {
+  const authError = await checkAuth();
+  if (authError) return authError;
+  
+  try {
     const { error } = await supabase
       .from('tasks')
       .delete()
-      .eq('id', id);
+      .eq('id', params.id);
 
-    if (error) throw error;
+    if (error) {
+      return NextResponse.json(
+        { error: error.message },
+        { status: 500 }
+      );
+    }
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Error deleting task:', error);
     return NextResponse.json(
-      { error: 'Failed to delete task' },
+      { error: 'Internal server error' },
       { status: 500 }
     );
   }
 }
-
-export const dynamic = 'force-dynamic'

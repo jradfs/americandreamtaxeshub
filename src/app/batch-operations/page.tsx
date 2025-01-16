@@ -1,34 +1,35 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { supabaseBrowserClient } from "@/lib/supabaseBrowserClient"
+import { useState } from "react";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { supabaseBrowserClient } from "@/lib/supabaseBrowserClient";
 
 interface SelectedItem {
-  type: "client" | "document" | "return"
-  id: string | number
+  type: "client" | "document" | "return";
+  id: string | number;
 }
 
 export default function BatchOperationsPage() {
-  const [selectedItems, setSelectedItems] = useState<SelectedItem[]>([])
+  const [selectedItems, setSelectedItems] = useState<SelectedItem[]>([]);
 
   function addSelectedItem(item: SelectedItem) {
-    setSelectedItems((prev) => [...prev, item])
+    setSelectedItems((prev) => [...prev, item]);
   }
 
   async function handleDeleteAll() {
     for (const item of selectedItems) {
       // This is a naive approach; real logic will vary
-      const table = item.type === "client"
-        ? "clients"
-        : item.type === "document"
-        ? "documents"
-        : "tax_returns"
-      await supabaseBrowserClient.from(table).delete().eq("id", item.id)
+      const table =
+        item.type === "client"
+          ? "clients"
+          : item.type === "document"
+            ? "documents"
+            : "tax_returns";
+      await supabaseBrowserClient.from(table).delete().eq("id", item.id);
     }
-    alert(`Deleted ${selectedItems.length} items.`)
-    setSelectedItems([])
+    alert(`Deleted ${selectedItems.length} items.`);
+    setSelectedItems([]);
   }
 
   return (
@@ -39,7 +40,8 @@ export default function BatchOperationsPage() {
         </CardHeader>
         <CardContent>
           <p className="text-sm text-muted-foreground">
-            Select multiple items from different tables and perform bulk actions.
+            Select multiple items from different tables and perform bulk
+            actions.
           </p>
           <Button className="mt-2" variant="outline" onClick={handleDeleteAll}>
             Delete Selected
@@ -91,5 +93,5 @@ export default function BatchOperationsPage() {
         </Card>
       )}
     </div>
-  )
-} 
+  );
+}

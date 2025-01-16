@@ -1,25 +1,25 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
-import { Slider } from "@/components/ui/slider"
-import { Progress } from "@/components/ui/progress"
-import { Button } from "@/components/ui/button"
+import { useState } from "react";
+import { Slider } from "@/components/ui/slider";
+import { Progress } from "@/components/ui/progress";
+import { Button } from "@/components/ui/button";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@/components/ui/tooltip"
-import { Clock, Minus, Plus } from 'lucide-react'
+} from "@/components/ui/tooltip";
+import { Clock, Minus, Plus } from "lucide-react";
 
 interface ProgressTrackerProps {
-  progress: number
-  estimatedHours?: number
-  actualHours?: number
-  onProgressChange?: (value: number) => void
-  onActualHoursChange?: (hours: number) => void
-  showTimeTracking?: boolean
-  readOnly?: boolean
+  progress: number;
+  estimatedHours?: number;
+  actualHours?: number;
+  onProgressChange?: (value: number) => void;
+  onActualHoursChange?: (hours: number) => void;
+  showTimeTracking?: boolean;
+  readOnly?: boolean;
 }
 
 export function ProgressTracker({
@@ -29,33 +29,35 @@ export function ProgressTracker({
   onProgressChange,
   onActualHoursChange,
   showTimeTracking = false,
-  readOnly = false
+  readOnly = false,
 }: ProgressTrackerProps) {
-  const [isTracking, setIsTracking] = useState(false)
-  const [trackingStartTime, setTrackingStartTime] = useState<Date | null>(null)
+  const [isTracking, setIsTracking] = useState(false);
+  const [trackingStartTime, setTrackingStartTime] = useState<Date | null>(null);
 
   const handleTrackingToggle = () => {
     if (isTracking) {
       // Stop tracking
       if (trackingStartTime && onActualHoursChange) {
-        const elapsedHours = (new Date().getTime() - trackingStartTime.getTime()) / (1000 * 60 * 60)
-        onActualHoursChange((actualHours || 0) + elapsedHours)
+        const elapsedHours =
+          (new Date().getTime() - trackingStartTime.getTime()) /
+          (1000 * 60 * 60);
+        onActualHoursChange((actualHours || 0) + elapsedHours);
       }
-      setIsTracking(false)
-      setTrackingStartTime(null)
+      setIsTracking(false);
+      setTrackingStartTime(null);
     } else {
       // Start tracking
-      setIsTracking(true)
-      setTrackingStartTime(new Date())
+      setIsTracking(true);
+      setTrackingStartTime(new Date());
     }
-  }
+  };
 
   const adjustActualHours = (increment: boolean) => {
-    if (!onActualHoursChange) return
-    const change = increment ? 0.5 : -0.5
-    const newHours = Math.max(0, (actualHours || 0) + change)
-    onActualHoursChange(newHours)
-  }
+    if (!onActualHoursChange) return;
+    const change = increment ? 0.5 : -0.5;
+    const newHours = Math.max(0, (actualHours || 0) + change);
+    onActualHoursChange(newHours);
+  };
 
   return (
     <div className="space-y-2">
@@ -73,9 +75,7 @@ export function ProgressTracker({
             />
           )}
         </div>
-        <div className="w-12 text-sm text-muted-foreground">
-          {progress}%
-        </div>
+        <div className="w-12 text-sm text-muted-foreground">{progress}%</div>
       </div>
 
       {showTimeTracking && (
@@ -126,5 +126,5 @@ export function ProgressTracker({
         </div>
       )}
     </div>
-  )
+  );
 }

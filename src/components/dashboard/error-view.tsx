@@ -1,12 +1,12 @@
-'use client'
+"use client";
 
-import { Button } from '@/components/ui/button'
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
-import { AlertTriangle } from 'lucide-react'
+import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { AlertTriangle } from "lucide-react";
 
 interface ErrorViewProps {
-  title: string
-  message: string
+  title: string;
+  message: string;
 }
 
 export function ErrorView({ title, message }: ErrorViewProps) {
@@ -16,8 +16,8 @@ export function ErrorView({ title, message }: ErrorViewProps) {
       <AlertTitle>{title}</AlertTitle>
       <AlertDescription className="mt-2 flex flex-col gap-3">
         <p>{message}</p>
-        <Button 
-          variant="outline" 
+        <Button
+          variant="outline"
           onClick={() => window.location.reload()}
           className="w-fit"
         >
@@ -25,5 +25,5 @@ export function ErrorView({ title, message }: ErrorViewProps) {
         </Button>
       </AlertDescription>
     </Alert>
-  )
-} 
+  );
+}

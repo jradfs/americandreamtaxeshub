@@ -1,10 +1,10 @@
-'use client'
+"use client";
 
-import { useAuth } from '@/hooks/use-auth'
-import Link from 'next/link'
+import { useAuth } from "@/hooks/use-auth";
+import Link from "next/link";
 
 export function Header() {
-  const { user, signOut, loading } = useAuth()
+  const { user, signOut, loading } = useAuth();
 
   return (
     <header className="border-b">
@@ -12,7 +12,7 @@ export function Header() {
         <Link href="/" className="text-xl font-bold">
           American Dream Taxes
         </Link>
-        
+
         <nav className="flex items-center gap-4">
           {!loading && user ? (
             <>
@@ -35,5 +35,5 @@ export function Header() {
         </nav>
       </div>
     </header>
-  )
-} 
+  );
+}

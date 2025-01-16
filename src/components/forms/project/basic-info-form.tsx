@@ -1,17 +1,31 @@
-'use client';
+"use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { UseFormReturn } from 'react-hook-form';
-import { ProjectFormValues } from '@/lib/validations/project';
-import { Tables } from '@/types/database.types';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { UseFormReturn } from "react-hook-form";
+import { ProjectFormValues } from "@/lib/validations/project";
+import { Tables } from "@/types/database.types";
 
-type Client = Tables<'clients'>;
-type ProjectTemplate = Tables<'project_templates'> & {
-  tasks: Tables<'template_tasks'>[];
+type Client = Tables<"clients">;
+type ProjectTemplate = Tables<"project_templates"> & {
+  tasks: Tables<"template_tasks">[];
 };
 
 interface BasicInfoFormProps {
@@ -21,37 +35,39 @@ interface BasicInfoFormProps {
   templatesLoading?: boolean;
 }
 
-export function BasicInfoForm({ 
-  form, 
+export function BasicInfoForm({
+  form,
   clients,
   templates = [],
-  templatesLoading = false 
+  templatesLoading = false,
 }: BasicInfoFormProps) {
   // Group clients by type and create appropriate labels
   const clientOptions = clients
     .sort((a, b) => {
       // Sort by type first, then by name
       if (a.type !== b.type) {
-        return a.type === 'business' ? -1 : 1;
+        return a.type === "business" ? -1 : 1;
       }
       // For businesses, sort by company name
-      if (a.type === 'business') {
-        return (a.company_name || '').localeCompare(b.company_name || '');
+      if (a.type === "business") {
+        return (a.company_name || "").localeCompare(b.company_name || "");
       }
       // For individuals, sort by full name
-      return (a.full_name || '').localeCompare(b.full_name || '');
+      return (a.full_name || "").localeCompare(b.full_name || "");
     })
-    .map(client => ({
+    .map((client) => ({
       value: client.id,
-      label: client.type === 'business' 
-        ? `${client.company_name || 'Unnamed Business'}`
-        : `${client.full_name || 'Unnamed Individual'}`,
-      group: client.type === 'business' ? 'Business Clients' : 'Individual Clients'
+      label:
+        client.type === "business"
+          ? `${client.company_name || "Unnamed Business"}`
+          : `${client.full_name || "Unnamed Individual"}`,
+      group:
+        client.type === "business" ? "Business Clients" : "Individual Clients",
     }));
 
-  const templateOptions = templates.map(template => ({
+  const templateOptions = templates.map((template) => ({
     value: template.id,
-    label: template.title
+    label: template.title,
   }));
 
   return (
@@ -82,7 +98,7 @@ export function BasicInfoForm({
               <FormLabel>Client</FormLabel>
               <FormControl>
                 <Select
-                  value={field.value || ''}
+                  value={field.value || ""}
                   onValueChange={field.onChange}
                 >
                   <SelectTrigger>
@@ -92,24 +108,24 @@ export function BasicInfoForm({
                     <SelectGroup>
                       <SelectLabel>Business Clients</SelectLabel>
                       {clientOptions
-                        .filter(option => option.group === 'Business Clients')
-                        .map(option => (
+                        .filter((option) => option.group === "Business Clients")
+                        .map((option) => (
                           <SelectItem key={option.value} value={option.value}>
                             {option.label}
                           </SelectItem>
-                        ))
-                      }
+                        ))}
                     </SelectGroup>
                     <SelectGroup>
                       <SelectLabel>Individual Clients</SelectLabel>
                       {clientOptions
-                        .filter(option => option.group === 'Individual Clients')
-                        .map(option => (
+                        .filter(
+                          (option) => option.group === "Individual Clients",
+                        )
+                        .map((option) => (
                           <SelectItem key={option.value} value={option.value}>
                             {option.label}
                           </SelectItem>
-                        ))
-                      }
+                        ))}
                     </SelectGroup>
                   </SelectContent>
                 </Select>
@@ -127,14 +143,20 @@ export function BasicInfoForm({
               <FormLabel>Project Template</FormLabel>
               <FormControl>
                 <Select
-                  value={field.value || ''}
+                  value={field.value || ""}
                   onValueChange={field.onChange}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder={templatesLoading ? "Loading templates..." : "Select a template"} />
+                    <SelectValue
+                      placeholder={
+                        templatesLoading
+                          ? "Loading templates..."
+                          : "Select a template"
+                      }
+                    />
                   </SelectTrigger>
                   <SelectContent>
-                    {templateOptions.map(option => (
+                    {templateOptions.map((option) => (
                       <SelectItem key={option.value} value={option.value}>
                         {option.label}
                       </SelectItem>
@@ -154,8 +176,8 @@ export function BasicInfoForm({
             <FormItem>
               <FormLabel>Description</FormLabel>
               <FormControl>
-                <Textarea 
-                  value={value || ''}
+                <Textarea
+                  value={value || ""}
                   onChange={onChange}
                   {...field}
                   placeholder="Enter project description"

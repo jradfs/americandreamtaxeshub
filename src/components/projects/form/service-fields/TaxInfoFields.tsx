@@ -1,9 +1,15 @@
-'use client';
+"use client";
 
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { TaxInfo } from '@/types/projects';
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { TaxInfo } from "@/types/projects";
 
 interface TaxInfoFieldsProps {
   value: TaxInfo;
@@ -23,8 +29,8 @@ export function TaxInfoFields({ value, onChange }: TaxInfoFieldsProps) {
       <div className="space-y-2">
         <Label>Return Type</Label>
         <Select
-          value={value.return_type || ''}
-          onValueChange={(newValue) => handleChange('return_type', newValue)}
+          value={value.return_type || ""}
+          onValueChange={(newValue) => handleChange("return_type", newValue)}
         >
           <SelectTrigger>
             <SelectValue placeholder="Select return type" />
@@ -42,18 +48,24 @@ export function TaxInfoFields({ value, onChange }: TaxInfoFieldsProps) {
       <div className="space-y-2">
         <Label>Filing Status</Label>
         <Select
-          value={value.filing_status || ''}
-          onValueChange={(newValue) => handleChange('filing_status', newValue)}
+          value={value.filing_status || ""}
+          onValueChange={(newValue) => handleChange("filing_status", newValue)}
         >
           <SelectTrigger>
             <SelectValue placeholder="Select filing status" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="single">Single</SelectItem>
-            <SelectItem value="married_joint">Married Filing Jointly</SelectItem>
-            <SelectItem value="married_separate">Married Filing Separately</SelectItem>
+            <SelectItem value="married_joint">
+              Married Filing Jointly
+            </SelectItem>
+            <SelectItem value="married_separate">
+              Married Filing Separately
+            </SelectItem>
             <SelectItem value="head_household">Head of Household</SelectItem>
-            <SelectItem value="qualifying_widow">Qualifying Widow(er)</SelectItem>
+            <SelectItem value="qualifying_widow">
+              Qualifying Widow(er)
+            </SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -62,8 +74,10 @@ export function TaxInfoFields({ value, onChange }: TaxInfoFieldsProps) {
         <Label>Tax Year</Label>
         <Input
           type="number"
-          value={value.tax_year || ''}
-          onChange={(e) => handleChange('tax_year', parseInt(e.target.value, 10))}
+          value={value.tax_year || ""}
+          onChange={(e) =>
+            handleChange("tax_year", parseInt(e.target.value, 10))
+          }
           placeholder="Enter tax year"
         />
       </div>
@@ -72,8 +86,8 @@ export function TaxInfoFields({ value, onChange }: TaxInfoFieldsProps) {
         <Label>Due Date</Label>
         <Input
           type="date"
-          value={value.due_date || ''}
-          onChange={(e) => handleChange('due_date', e.target.value)}
+          value={value.due_date || ""}
+          onChange={(e) => handleChange("due_date", e.target.value)}
         />
       </div>
 
@@ -81,8 +95,8 @@ export function TaxInfoFields({ value, onChange }: TaxInfoFieldsProps) {
         <Label>Extension Date</Label>
         <Input
           type="date"
-          value={value.extension_date || ''}
-          onChange={(e) => handleChange('extension_date', e.target.value)}
+          value={value.extension_date || ""}
+          onChange={(e) => handleChange("extension_date", e.target.value)}
         />
       </div>
 
@@ -90,8 +104,10 @@ export function TaxInfoFields({ value, onChange }: TaxInfoFieldsProps) {
         <Label>Estimated Refund</Label>
         <Input
           type="number"
-          value={value.estimated_refund || ''}
-          onChange={(e) => handleChange('estimated_refund', parseFloat(e.target.value))}
+          value={value.estimated_refund || ""}
+          onChange={(e) =>
+            handleChange("estimated_refund", parseFloat(e.target.value))
+          }
           placeholder="Enter estimated refund amount"
         />
       </div>
@@ -100,8 +116,10 @@ export function TaxInfoFields({ value, onChange }: TaxInfoFieldsProps) {
         <Label>Estimated Liability</Label>
         <Input
           type="number"
-          value={value.estimated_liability || ''}
-          onChange={(e) => handleChange('estimated_liability', parseFloat(e.target.value))}
+          value={value.estimated_liability || ""}
+          onChange={(e) =>
+            handleChange("estimated_liability", parseFloat(e.target.value))
+          }
           placeholder="Enter estimated liability amount"
         />
       </div>
@@ -109,11 +127,11 @@ export function TaxInfoFields({ value, onChange }: TaxInfoFieldsProps) {
       <div className="space-y-2">
         <Label>Notes</Label>
         <Input
-          value={value.notes || ''}
-          onChange={(e) => handleChange('notes', e.target.value)}
+          value={value.notes || ""}
+          onChange={(e) => handleChange("notes", e.target.value)}
           placeholder="Additional notes..."
         />
       </div>
     </div>
   );
-} 
+}

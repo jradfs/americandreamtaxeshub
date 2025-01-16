@@ -1,21 +1,27 @@
-'use client'
+"use client";
 
-import type { Database } from "@/types/database.types"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { format } from "date-fns"
-import { Calendar, Clock, Mail, Phone, Building, FileText } from "lucide-react"
-import Link from "next/link"
+import type { Database } from "@/types/database.types";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { format } from "date-fns";
+import { Calendar, Clock, Mail, Phone, Building, FileText } from "lucide-react";
+import Link from "next/link";
 
-type DbProject = Database['public']['Views']['project_dashboard']['Row']
+type DbProject = Database["public"]["Views"]["project_dashboard"]["Row"];
 
 interface ProjectDetailsProps {
-  project: DbProject
+  project: DbProject;
 }
 
 export function ProjectDetails({ project }: ProjectDetailsProps) {
-  if (!project) return <div>No project data available</div>
+  if (!project) return <div>No project data available</div>;
 
   return (
     <div className="grid gap-6 md:grid-cols-2">
@@ -23,19 +29,25 @@ export function ProjectDetails({ project }: ProjectDetailsProps) {
       <Card>
         <CardHeader>
           <CardTitle>Client Information</CardTitle>
-          <CardDescription>Details about the client associated with this project</CardDescription>
+          <CardDescription>
+            Details about the client associated with this project
+          </CardDescription>
         </CardHeader>
         <CardContent>
           {project.client_name ? (
             <div className="space-y-4">
               <div className="flex items-center gap-4">
                 <Avatar className="h-10 w-10">
-                  <AvatarFallback>{project.client_name.charAt(0)}</AvatarFallback>
+                  <AvatarFallback>
+                    {project.client_name.charAt(0)}
+                  </AvatarFallback>
                 </Avatar>
                 <div>
                   <div className="font-medium">{project.client_name}</div>
                   {project.company_name && (
-                    <div className="text-sm text-muted-foreground">{project.company_name}</div>
+                    <div className="text-sm text-muted-foreground">
+                      {project.company_name}
+                    </div>
                   )}
                 </div>
               </div>
@@ -60,18 +72,28 @@ export function ProjectDetails({ project }: ProjectDetailsProps) {
       <Card>
         <CardHeader>
           <CardTitle>Project Details</CardTitle>
-          <CardDescription>Important dates and project information</CardDescription>
+          <CardDescription>
+            Important dates and project information
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
             <div className="grid gap-2">
               <div className="flex items-center gap-2 text-sm">
                 <Clock className="h-4 w-4" />
-                <span>Due: {project.due_date ? format(new Date(project.due_date), 'MMMM d, yyyy') : 'No due date'}</span>
+                <span>
+                  Due:{" "}
+                  {project.due_date
+                    ? format(new Date(project.due_date), "MMMM d, yyyy")
+                    : "No due date"}
+                </span>
               </div>
               <div className="flex items-center gap-2 text-sm">
                 <FileText className="h-4 w-4" />
-                <span>Service Type: {project.service_type?.replace("_", " ") || 'Not specified'}</span>
+                <span>
+                  Service Type:{" "}
+                  {project.service_type?.replace("_", " ") || "Not specified"}
+                </span>
               </div>
             </div>
           </div>
@@ -91,7 +113,9 @@ export function ProjectDetails({ project }: ProjectDetailsProps) {
                 <div className="text-2xl font-bold">
                   {Math.round(project.completion_percentage || 0)}%
                 </div>
-                <div className="text-sm text-muted-foreground">Overall Progress</div>
+                <div className="text-sm text-muted-foreground">
+                  Overall Progress
+                </div>
               </div>
               <div>
                 <div className="text-2xl font-bold">
@@ -125,11 +149,13 @@ export function ProjectDetails({ project }: ProjectDetailsProps) {
             {project.assigned_team_members ? (
               <span className="text-sm">{project.assigned_team_members}</span>
             ) : (
-              <span className="text-sm text-muted-foreground">No team members assigned</span>
+              <span className="text-sm text-muted-foreground">
+                No team members assigned
+              </span>
             )}
           </div>
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

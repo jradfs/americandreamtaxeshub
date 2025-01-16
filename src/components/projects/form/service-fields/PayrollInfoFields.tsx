@@ -1,11 +1,17 @@
-'use client';
+"use client";
 
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { PayrollInfo } from '@/types/projects';
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { PayrollInfo } from "@/types/projects";
 
-type PayrollSchedule = 'weekly' | 'bi-weekly' | 'semi-monthly' | 'monthly';
+type PayrollSchedule = "weekly" | "bi-weekly" | "semi-monthly" | "monthly";
 
 interface PayrollInfoFieldsProps {
   value: PayrollInfo;
@@ -13,7 +19,10 @@ interface PayrollInfoFieldsProps {
 }
 
 export function PayrollInfoFields({ value, onChange }: PayrollInfoFieldsProps) {
-  const handleChange = (field: keyof PayrollInfo, newValue: string | number) => {
+  const handleChange = (
+    field: keyof PayrollInfo,
+    newValue: string | number,
+  ) => {
     onChange({
       ...value,
       [field]: newValue,
@@ -25,8 +34,10 @@ export function PayrollInfoFields({ value, onChange }: PayrollInfoFieldsProps) {
       <div className="space-y-2">
         <Label>Payroll Schedule</Label>
         <Select
-          value={value.payroll_schedule || ''}
-          onValueChange={(newValue) => handleChange('payroll_schedule', newValue)}
+          value={value.payroll_schedule || ""}
+          onValueChange={(newValue) =>
+            handleChange("payroll_schedule", newValue)
+          }
         >
           <SelectTrigger>
             <SelectValue placeholder="Select payroll schedule" />
@@ -44,8 +55,10 @@ export function PayrollInfoFields({ value, onChange }: PayrollInfoFieldsProps) {
         <Label>Employee Count</Label>
         <Input
           type="number"
-          value={value.employee_count || ''}
-          onChange={(e) => handleChange('employee_count', parseInt(e.target.value, 10))}
+          value={value.employee_count || ""}
+          onChange={(e) =>
+            handleChange("employee_count", parseInt(e.target.value, 10))
+          }
           placeholder="Number of employees"
         />
       </div>
@@ -54,8 +67,8 @@ export function PayrollInfoFields({ value, onChange }: PayrollInfoFieldsProps) {
         <Label>Last Payroll Date</Label>
         <Input
           type="date"
-          value={value.last_payroll_date || ''}
-          onChange={(e) => handleChange('last_payroll_date', e.target.value)}
+          value={value.last_payroll_date || ""}
+          onChange={(e) => handleChange("last_payroll_date", e.target.value)}
         />
       </div>
 
@@ -63,16 +76,16 @@ export function PayrollInfoFields({ value, onChange }: PayrollInfoFieldsProps) {
         <Label>Next Payroll Date</Label>
         <Input
           type="date"
-          value={value.next_payroll_date || ''}
-          onChange={(e) => handleChange('next_payroll_date', e.target.value)}
+          value={value.next_payroll_date || ""}
+          onChange={(e) => handleChange("next_payroll_date", e.target.value)}
         />
       </div>
 
       <div className="space-y-2">
         <Label>Payroll Provider</Label>
         <Input
-          value={value.payroll_provider || ''}
-          onChange={(e) => handleChange('payroll_provider', e.target.value)}
+          value={value.payroll_provider || ""}
+          onChange={(e) => handleChange("payroll_provider", e.target.value)}
           placeholder="e.g., ADP, Paychex"
         />
       </div>
@@ -80,11 +93,11 @@ export function PayrollInfoFields({ value, onChange }: PayrollInfoFieldsProps) {
       <div className="space-y-2">
         <Label>Notes</Label>
         <Input
-          value={value.notes || ''}
-          onChange={(e) => handleChange('notes', e.target.value)}
+          value={value.notes || ""}
+          onChange={(e) => handleChange("notes", e.target.value)}
           placeholder="Additional notes..."
         />
       </div>
     </div>
   );
-} 
+}

@@ -126,7 +126,7 @@ supabase login
 
 Response
 You can generate an access token from https://supabase.com/dashboard/account/tokens
-Enter your access token: sbp_****************************************
+Enter your access token: sbp\_******************\*\*\*\*******************
 Finished supabase login.
 
 supabase link
@@ -152,10 +152,10 @@ Project ref of the Supabase project.
 Basic usage
 Link without database password
 Link using DNS-over-HTTPS resolver
-supabase link --project-ref ********************
+supabase link --project-ref ********\*\*\*\*********
 
 Response
-Enter your database password (or leave blank to skip): ********
+Enter your database password (or leave blank to skip): **\*\*\*\***
 Finished supabase link.
 
 supabase start
@@ -250,6 +250,7 @@ supabase local development setup is running.
     Inbucket URL: http://127.0.0.1:54324
       JWT secret: super-secret-jwt-token-with-at-least-32-characters-long
         anon key: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0
+
 service_role key: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU
 
 supabase test
@@ -285,7 +286,7 @@ Response
 /tmp/supabase/tests/nested/order_test.pg .. ok
 /tmp/supabase/tests/pet_test.sql .......... ok
 All tests successful.
-Files=2, Tests=2,  6 wallclock secs ( 0.03 usr  0.01 sys +  0.05 cusr  0.02 csys =  0.11 CPU)
+Files=2, Tests=2, 6 wallclock secs ( 0.03 usr 0.01 sys + 0.05 cusr 0.02 csys = 0.11 CPU)
 Result: PASS
 
 supabase test new
@@ -684,7 +685,7 @@ supabase migration up
 supabase migration new
 Creates a new migration file locally.
 
-A supabase/migrations directory will be created if it does not already exists in your current workdir. All schema migration files must be created in this directory following the pattern <timestamp>_<name>.sql.
+A supabase/migrations directory will be created if it does not already exists in your current workdir. All schema migration files must be created in this directory following the pattern <timestamp>\_<name>.sql.
 
 Outputs from other commands like db diff may be piped to migration new <name> via stdin.
 
@@ -728,11 +729,11 @@ Connect to self-hosted database
 supabase migration list
 
 Response
-      LOCAL      │     REMOTE     │     TIME (UTC)
+LOCAL │ REMOTE │ TIME (UTC)
 ─────────────────┼────────────────┼──────────────────────
-                 │ 20230103054303 │ 2023-01-03 05:43:03
-                 │ 20230103093141 │ 2023-01-03 09:31:41
-  20230222032233 │                │ 2023-02-22 03:22:33
+│ 20230103054303 │ 2023-01-03 05:43:03
+│ 20230103093141 │ 2023-01-03 09:31:41
+20230222032233 │ │ 2023-02-22 03:22:33
 
 supabase migration fetch
 Flags
@@ -758,18 +759,18 @@ If your local and remote migration history goes out of sync, you can repair the 
 For example, your migration history may look like the table below, with missing entries in either local or remote.
 
 $ supabase migration list
-        LOCAL      │     REMOTE     │     TIME (UTC)
-  ─────────────────┼────────────────┼──────────────────────
-                   │ 20230103054303 │ 2023-01-03 05:43:03
-   20230103054315  │                │ 2023-01-03 05:43:15
+LOCAL │ REMOTE │ TIME (UTC)
+─────────────────┼────────────────┼──────────────────────
+│ 20230103054303 │ 2023-01-03 05:43:03
+20230103054315 │ │ 2023-01-03 05:43:15
 To reset your migration history to a clean state, first delete your local migration file.
 
 $ rm supabase/migrations/20230103054315_remote_commit.sql
 
 $ supabase migration list
-        LOCAL      │     REMOTE     │     TIME (UTC)
-  ─────────────────┼────────────────┼──────────────────────
-                   │ 20230103054303 │ 2023-01-03 05:43:03
+LOCAL │ REMOTE │ TIME (UTC)
+─────────────────┼────────────────┼──────────────────────
+│ 20230103054303 │ 2023-01-03 05:43:03
 Then mark the remote migration 20230103054303 as reverted.
 
 $ supabase migration repair 20230103054303 --status reverted
@@ -778,8 +779,8 @@ Repaired migration history: [20220810154537] => reverted
 Finished supabase migration repair.
 
 $ supabase migration list
-        LOCAL      │     REMOTE     │     TIME (UTC)
-  ─────────────────┼────────────────┼──────────────────────
+LOCAL │ REMOTE │ TIME (UTC)
+─────────────────┼────────────────┼──────────────────────
 Now you can run db pull again to dump the remote schema as a local migration file.
 
 $ supabase db pull
@@ -790,9 +791,9 @@ Repaired migration history: [20240414044403] => applied
 Finished supabase db pull.
 
 $ supabase migration list
-        LOCAL      │     REMOTE     │     TIME (UTC)
-  ─────────────────┼────────────────┼──────────────────────
-    20240414044403 │ 20240414044403 │ 2024-04-14 04:44:03
+LOCAL │ REMOTE │ TIME (UTC)
+─────────────────┼────────────────┼──────────────────────
+20240414044403 │ 20240414044403 │ 2024-04-14 04:44:03
 Flags
 --db-url <string>
 Optional
@@ -828,7 +829,7 @@ The squashed migration is equivalent to a schema only dump of the local database
 
 However, one limitation is that data manipulation statements, such as insert, update, or delete, are omitted from the squashed migration. You will have to add them back manually in a new migration file. This includes cron jobs, storage buckets, and any encrypted secrets in vault.
 
-By default, the latest <timestamp>_<name>.sql file will be updated to contain the squashed migration. You can override the target version using the --version <timestamp> flag.
+By default, the latest <timestamp>\_<name>.sql file will be updated to contain the squashed migration. You can override the target version using the --version <timestamp> flag.
 
 If your supabase/migrations directory is empty, running supabase squash will do nothing.
 
@@ -911,12 +912,12 @@ This command is much like the supabase inspect db outliers command, but ordered 
 
 You can use this information to see which queries are called most often, which can potentially be good candidates for optimisation.
 
-
                         QUERY                      │ TOTAL EXECUTION TIME │ PROPORTION OF TOTAL EXEC TIME │ NUMBER CALLS │  SYNC IO TIME
-  ─────────────────────────────────────────────────┼──────────────────────┼───────────────────────────────┼──────────────┼──────────────────
-    SELECT * FROM users WHERE id = $1              │ 14:50:11.828939      │ 89.8%                         │  183,389,757 │ 00:00:00.002018
-    SELECT * FROM user_events                      │ 01:20:23.466633      │ 1.4%                          │       78,325 │ 00:00:00
-    INSERT INTO users (email, name) VALUES ($1, $2)│ 00:40:11.616882      │ 0.8%                          │       54,003 │ 00:00:00.000322
+
+─────────────────────────────────────────────────┼──────────────────────┼───────────────────────────────┼──────────────┼──────────────────
+SELECT _ FROM users WHERE id = $1 │ 14:50:11.828939 │ 89.8% │ 183,389,757 │ 00:00:00.002018
+SELECT _ FROM user_events │ 01:20:23.466633 │ 1.4% │ 78,325 │ 00:00:00
+INSERT INTO users (email, name) VALUES ($1, $2)│ 00:40:11.616882 │ 0.8% │ 54,003 │ 00:00:00.000322
 
 Flags
 --db-url <string>
@@ -934,11 +935,11 @@ Inspect the local database.
 supabase inspect db long-running-queries
 This command displays currently running queries, that have been running for longer than 5 minutes, descending by duration. Very long running queries can be a source of multiple issues, such as preventing DDL statements completing or vacuum being unable to update relfrozenxid.
 
-  PID  │     DURATION    │                                         QUERY
+PID │ DURATION │ QUERY
 ───────┼─────────────────┼───────────────────────────────────────────────────────────────────────────────────────
- 19578 | 02:29:11.200129 | EXPLAIN SELECT  "students".* FROM "students"  WHERE "students"."id" = 1450645 LIMIT 1
- 19465 | 02:26:05.542653 | EXPLAIN SELECT  "students".* FROM "students"  WHERE "students"."id" = 1889881 LIMIT 1
- 19632 | 02:24:46.962818 | EXPLAIN SELECT  "students".* FROM "students"  WHERE "students"."id" = 1581884 LIMIT 1
+19578 | 02:29:11.200129 | EXPLAIN SELECT "students"._ FROM "students" WHERE "students"."id" = 1450645 LIMIT 1
+19465 | 02:26:05.542653 | EXPLAIN SELECT "students"._ FROM "students" WHERE "students"."id" = 1889881 LIMIT 1
+19632 | 02:24:46.962818 | EXPLAIN SELECT "students".\* FROM "students" WHERE "students"."id" = 1581884 LIMIT 1
 Flags
 --db-url <string>
 Optional
@@ -957,14 +958,14 @@ This command displays statements, obtained from pg_stat_statements, ordered by t
 
 Typically, an efficient query will have an appropriate ratio of calls to total execution time, with as little time spent on I/O as possible. Queries that have a high total execution time but low call count should be investigated to improve their performance. Queries that have a high proportion of execution time being spent on synchronous I/O should also be investigated.
 
-
                  QUERY                   │ EXECUTION TIME   │ PROPORTION OF EXEC TIME │ NUMBER CALLS │ SYNC IO TIME
+
 ─────────────────────────────────────────┼──────────────────┼─────────────────────────┼──────────────┼───────────────
- SELECT * FROM archivable_usage_events.. │ 154:39:26.431466 │ 72.2%                   │ 34,211,877   │ 00:00:00
- COPY public.archivable_usage_events (.. │ 50:38:33.198418  │ 23.6%                   │ 13           │ 13:34:21.00108
- COPY public.usage_events (id, reporte.. │ 02:32:16.335233  │ 1.2%                    │ 13           │ 00:34:19.784318
- INSERT INTO usage_events (id, retaine.. │ 01:42:59.436532  │ 0.8%                    │ 12,328,187   │ 00:00:00
- SELECT * FROM usage_events WHERE (alp.. │ 01:18:10.754354  │ 0.6%                    │ 102,114,301  │ 00:00:00
+SELECT _ FROM archivable_usage_events.. │ 154:39:26.431466 │ 72.2% │ 34,211,877 │ 00:00:00
+COPY public.archivable_usage_events (.. │ 50:38:33.198418 │ 23.6% │ 13 │ 13:34:21.00108
+COPY public.usage_events (id, reporte.. │ 02:32:16.335233 │ 1.2% │ 13 │ 00:34:19.784318
+INSERT INTO usage_events (id, retaine.. │ 01:42:59.436532 │ 0.8% │ 12,328,187 │ 00:00:00
+SELECT _ FROM usage_events WHERE (alp.. │ 01:18:10.754354 │ 0.6% │ 102,114,301 │ 00:00:00
 Flags
 --db-url <string>
 Optional
@@ -982,8 +983,9 @@ supabase inspect db blocking
 This command shows you statements that are currently holding locks and blocking, as well as the statement that is being blocked. This can be used in conjunction with inspect db locks to determine which statements need to be terminated in order to resolve lock contention.
 
     BLOCKED PID │ BLOCKING STATEMENT           │ BLOCKING DURATION │ BLOCKING PID │ BLOCKED STATEMENT                                                                      │ BLOCKED DURATION
-  ──────────────┼──────────────────────────────┼───────────────────┼──────────────┼────────────────────────────────────────────────────────────────────────────────────────┼───────────────────
-    253         │ select count(*) from mytable │ 00:00:03.838314   │        13495 │ UPDATE "mytable" SET "updated_at" = '2023─08─03 14:07:04.746688' WHERE "id" = 83719341 │ 00:00:03.821826
+
+──────────────┼──────────────────────────────┼───────────────────┼──────────────┼────────────────────────────────────────────────────────────────────────────────────────┼───────────────────
+253 │ select count(\*) from mytable │ 00:00:03.838314 │ 13495 │ UPDATE "mytable" SET "updated_at" = '2023─08─03 14:07:04.746688' WHERE "id" = 83719341 │ 00:00:03.821826
 Flags
 --db-url <string>
 Optional
@@ -1003,8 +1005,9 @@ This command displays queries that have taken out an exclusive lock on a relatio
 If you see a query that is hanging for a very long time or causing blocking issues you may consider killing the query by connecting to the database and running SELECT pg_cancel_backend(PID); to cancel the query. If the query still does not stop you can force a hard stop by running SELECT pg_terminate_backend(PID);
 
      PID   │ RELNAME │ TRANSACTION ID │ GRANTED │                  QUERY                  │   AGE
-  ─────────┼─────────┼────────────────┼─────────┼─────────────────────────────────────────┼───────────
-    328112 │ null    │              0 │ t       │ SELECT * FROM logs;                     │ 00:04:20
+
+─────────┼─────────┼────────────────┼─────────┼─────────────────────────────────────────┼───────────
+328112 │ null │ 0 │ t │ SELECT \* FROM logs; │ 00:04:20
 Flags
 --db-url <string>
 Optional
@@ -1022,8 +1025,9 @@ supabase inspect db total-index-size
 This command displays the total size of all indexes on the database. It is calculated by taking the number of pages (reported in relpages) and multiplying it by the page size (8192 bytes).
 
     SIZE
-  ─────────
-    12 MB
+
+─────────
+12 MB
 Flags
 --db-url <string>
 Optional
@@ -1041,13 +1045,14 @@ supabase inspect db index-sizes
 This command displays the size of each each index in the database. It is calculated by taking the number of pages (reported in relpages) and multiplying it by the page size (8192 bytes).
 
               NAME              │    SIZE
-  ──────────────────────────────┼─────────────
-    user_events_index           │ 2082 MB
-    job_run_details_pkey        │ 3856 kB
-    schema_migrations_pkey      │ 16 kB
-    refresh_tokens_token_unique │ 8192 bytes
-    users_instance_id_idx       │ 0 bytes
-    buckets_pkey                │ 0 bytes
+
+──────────────────────────────┼─────────────
+user_events_index │ 2082 MB
+job_run_details_pkey │ 3856 kB
+schema_migrations_pkey │ 16 kB
+refresh_tokens_token_unique │ 8192 bytes
+users_instance_id_idx │ 0 bytes
+buckets_pkey │ 0 bytes
 Flags
 --db-url <string>
 Optional
@@ -1065,13 +1070,14 @@ supabase inspect db index-usage
 This command provides information on the efficiency of indexes, represented as what percentage of total scans were index scans. A low percentage can indicate under indexing, or wrong data being indexed.
 
        TABLE NAME     │ PERCENTAGE OF TIMES INDEX USED │ ROWS IN TABLE
-  ────────────────────┼────────────────────────────────┼────────────────
-    user_events       │                             99 │       4225318 
-    user_feed         │                             99 │       3581573
-    unindexed_table   │                              0 │        322911
-    job               │                            100 │         33242
-    schema_migrations │                             97 │             0
-    migrations        │ Insufficient data              │             0
+
+────────────────────┼────────────────────────────────┼────────────────
+user_events │ 99 │ 4225318
+user_feed │ 99 │ 3581573
+unindexed_table │ 0 │ 322911
+job │ 100 │ 33242
+schema_migrations │ 97 │ 0
+migrations │ Insufficient data │ 0
 Flags
 --db-url <string>
 Optional
@@ -1089,8 +1095,9 @@ supabase inspect db unused-indexes
 This command displays indexes that have < 50 scans recorded against them, and are greater than 5 pages in size, ordered by size relative to the number of index scans. This command is generally useful for discovering indexes that are unused. Indexes can impact write performance, as well as read performance should they occupy space in memory, its a good idea to remove indexes that are not needed or being used.
 
         TABLE        │                   INDEX                    │ INDEX SIZE │ INDEX SCANS
+
 ─────────────────────┼────────────────────────────────────────────┼────────────┼──────────────
- public.users        │ user_id_created_at_idx                     │ 97 MB      │           0
+public.users │ user_id_created_at_idx │ 97 MB │ 0
 Flags
 --db-url <string>
 Optional
@@ -1108,10 +1115,11 @@ supabase inspect db total-table-sizes
 This command displays the total size of each table in the database. It is the sum of the values that pg_table_size() and pg_indexes_size() gives for each table. System tables inside pg_catalog and information_schema are not included.
 
                 NAME               │    SIZE
+
 ───────────────────────────────────┼─────────────
-  job_run_details                  │ 395 MB
-  slack_msgs                       │ 648 kB
-  emails                           │ 640 kB
+job_run_details │ 395 MB
+slack_msgs │ 648 kB
+emails │ 640 kB
 Flags
 --db-url <string>
 Optional
@@ -1129,12 +1137,13 @@ supabase inspect db table-sizes
 This command displays the size of each table in the database. It is calculated by using the system administration function pg_table_size(), which includes the size of the main data fork, free space map, visibility map and TOAST data. It does not include the size of the table's indexes.
 
                   NAME               │    SIZE
-  ───────────────────────────────────┼─────────────
-    job_run_details                  │ 385 MB
-    emails                           │ 584 kB
-    job                              │ 40 kB
-    sessions                         │ 0 bytes
-    prod_resource_notifications_meta │ 0 bytes
+
+───────────────────────────────────┼─────────────
+job_run_details │ 385 MB
+emails │ 584 kB
+job │ 40 kB
+sessions │ 0 bytes
+prod_resource_notifications_meta │ 0 bytes
 Flags
 --db-url <string>
 Optional
@@ -1152,12 +1161,13 @@ supabase inspect db table-index-sizes
 This command displays the total size of indexes for each table. It is calculated by using the system administration function pg_indexes_size().
 
                  TABLE               │ INDEX SIZE
-  ───────────────────────────────────┼─────────────
-    job_run_details                  │ 10104 kB
-    users                            │ 128 kB
-    job                              │ 32 kB
-    instances                        │ 8192 bytes
-    http_request_queue               │ 0 bytes
+
+───────────────────────────────────┼─────────────
+job_run_details │ 10104 kB
+users │ 128 kB
+job │ 32 kB
+instances │ 8192 bytes
+http_request_queue │ 0 bytes
 Flags
 --db-url <string>
 Optional
@@ -1179,9 +1189,10 @@ The hit rates are calculated as a ratio of number of table or index blocks fetch
 On smaller compute plans (free, small, medium), a ratio of below 99% can indicate a problem. On larger plans the hit rates may be lower but performance will remain constant as the data may use the OS cache rather than Postgres buffer cache.
 
          NAME      │  RATIO
-  ─────────────────┼───────────
-    index hit rate │ 0.996621
-    table hit rate │ 0.999341
+
+─────────────────┼───────────
+index hit rate │ 0.996621
+table hit rate │ 0.999341
 Flags
 --db-url <string>
 Optional
@@ -1199,11 +1210,12 @@ supabase inspect db table-record-counts
 This command displays an estimated count of rows per table, descending by estimated count. The estimated count is derived from n_live_tup, which is updated by vacuum operations. Due to the way n_live_tup is populated, sparse vs. dense pages can result in estimations that are significantly out from the real count of rows.
 
        NAME    │ ESTIMATED COUNT
-  ─────────────┼──────────────────
-    logs       │          322943
-    emails     │            1103
-    job        │               1
-    migrations │               0
+
+─────────────┼──────────────────
+logs │ 322943
+emails │ 1103
+job │ 1
+migrations │ 0
 Flags
 --db-url <string>
 Optional
@@ -1221,12 +1233,13 @@ supabase inspect db seq-scans
 This command displays the number of sequential scans recorded against all tables, descending by count of sequential scans. Tables that have very high numbers of sequential scans may be underindexed, and it may be worth investigating queries that read from these tables.
 
                   NAME               │ COUNT
-  ───────────────────────────────────┼─────────
-    emails                           │ 182435
-    users                            │  25063
-    job_run_details                  │     60
-    schema_migrations                │      0
-    migrations                       │      0
+
+───────────────────────────────────┼─────────
+emails │ 182435
+users │ 25063
+job_run_details │ 60
+schema_migrations │ 0
+migrations │ 0
 Flags
 --db-url <string>
 Optional
@@ -1246,9 +1259,10 @@ This command shows information about logical replication slots that are setup on
 This command is useful to check that the amount of replication lag is as low as possible, replication lag can occur due to network latency issues, slow disk I/O, long running transactions or lack of ability for the subscriber to consume WAL fast enough.
 
                        NAME                    │ ACTIVE │ STATE   │ REPLICATION CLIENT ADDRESS │ REPLICATION LAG GB
-  ─────────────────────────────────────────────┼────────┼─────────┼────────────────────────────┼─────────────────────
-    supabase_realtime_replication_slot         │ t      │ N/A     │ N/A                        │                  0
-    datastream                                 │ t      │ catchup │ 24.201.24.106              │                 45
+
+─────────────────────────────────────────────┼────────┼─────────┼────────────────────────────┼─────────────────────
+supabase_realtime_replication_slot │ t │ N/A │ N/A │ 0
+datastream │ t │ catchup │ 24.201.24.106 │ 45
 Flags
 --db-url <string>
 Optional
@@ -1270,25 +1284,24 @@ https://app.supabase.com/project/_/database/roles
 
 The maximum number of active connections depends on your instance size. You can manually overwrite the allowed number of connection but it is not advised.
 
-
-
             ROLE NAME         │ ACTIVE CONNCTION
-  ────────────────────────────┼───────────────────
-    authenticator             │                5
-    postgres                  │                5
-    supabase_admin            │                1
-    pgbouncer                 │                1
-    anon                      │                0
-    authenticated             │                0
-    service_role              │                0
-    dashboard_user            │                0
-    supabase_auth_admin       │                0
-    supabase_storage_admin    │                0
-    supabase_functions_admin  │                0
-    pgsodium_keyholder        │                0
-    pg_read_all_data          │                0
-    pg_write_all_data         │                0
-    pg_monitor                │                0
+
+────────────────────────────┼───────────────────
+authenticator │ 5
+postgres │ 5
+supabase_admin │ 1
+pgbouncer │ 1
+anon │ 0
+authenticated │ 0
+service_role │ 0
+dashboard_user │ 0
+supabase_auth_admin │ 0
+supabase_storage_admin │ 0
+supabase_functions_admin │ 0
+pgsodium_keyholder │ 0
+pg_read_all_data │ 0
+pg_write_all_data │ 0
+pg_monitor │ 0
 
 Active connections 12/90
 
@@ -1311,11 +1324,12 @@ This command displays an estimation of table "bloat" - Due to Postgres' MVCC whe
 Tables with a high bloat ratio should be investigated to see if there are vacuuming is not quick enough or there are other issues.
 
     TYPE  │ SCHEMA NAME │        OBJECT NAME         │ BLOAT │ WASTE
-  ────────┼─────────────┼────────────────────────────┼───────┼─────────────
-    table │ public      │ very_bloated_table         │  41.0 │ 700 MB
-    table │ public      │ my_table                   │   4.0 │ 76 MB
-    table │ public      │ happy_table                │   1.0 │ 1472 kB
-    index │ public      │ happy_table::my_nice_index │   0.7 │ 880 kB
+
+────────┼─────────────┼────────────────────────────┼───────┼─────────────
+table │ public │ very_bloated_table │ 41.0 │ 700 MB
+table │ public │ my_table │ 4.0 │ 76 MB
+table │ public │ happy_table │ 1.0 │ 1472 kB
+index │ public │ happy_table::my_nice_index │ 0.7 │ 880 kB
 Flags
 --db-url <string>
 Optional
@@ -1335,13 +1349,14 @@ This shows you stats about the vacuum activities for each table. Due to Postgres
 The command lists when the last vacuum and last auto vacuum took place, the row count on the table as well as the count of dead rows and whether autovacuum is expected to run or not. If the number of dead rows is much higher than the row count, or if an autovacuum is expected but has not been performed for some time, this can indicate that autovacuum is not able to keep up and that your vacuum settings need to be tweaked or that you require more compute or disk IOPS to allow autovaccum to complete.
 
         SCHEMA        │              TABLE               │ LAST VACUUM │ LAST AUTO VACUUM │      ROW COUNT       │ DEAD ROW COUNT │ EXPECT AUTOVACUUM?
+
 ──────────────────────┼──────────────────────────────────┼─────────────┼──────────────────┼──────────────────────┼────────────────┼─────────────────────
- auth                 │ users                            │             │ 2023-06-26 12:34 │               18,030 │              0 │ no
- public               │ profiles                         │             │ 2023-06-26 23:45 │               13,420 │             28 │ no
- public               │ logs                             │             │ 2023-06-26 01:23 │            1,313,033 │      3,318,228 │ yes
- storage              │ objects                          │             │                  │             No stats │              0 │ no
- storage              │ buckets                          │             │                  │             No stats │              0 │ no
- supabase_migrations  │ schema_migrations                │             │                  │             No stats │              0 │ no
+auth │ users │ │ 2023-06-26 12:34 │ 18,030 │ 0 │ no
+public │ profiles │ │ 2023-06-26 23:45 │ 13,420 │ 28 │ no
+public │ logs │ │ 2023-06-26 01:23 │ 1,313,033 │ 3,318,228 │ yes
+storage │ objects │ │ │ No stats │ 0 │ no
+storage │ buckets │ │ │ No stats │ 0 │ no
+supabase_migrations │ schema_migrations │ │ │ No stats │ 0 │ no
 
 Flags
 --db-url <string>
@@ -1804,10 +1819,10 @@ Project ref of the Supabase project.
 Add with Metadata URL
 Add with Metadata File
 supabase sso add \
-  --project-ref abcdefgijklmnopqrst \
-  --type saml \
-  --metadata-url 'https://...' \
-  --domains company.com
+ --project-ref abcdefgijklmnopqrst \
+ --type saml \
+ --metadata-url 'https://...' \
+ --domains company.com
 
 Response
 Information about the added identity provider. You can use
@@ -1837,7 +1852,7 @@ Project ref of the Supabase project.
 Show information
 Get raw SAML 2.0 Metadata XML
 supabase sso show 6df4d73f-bf21-405f-a084-b11adf19fea5 \
-  --project-ref abcdefghijklmnopqrst
+ --project-ref abcdefghijklmnopqrst
 
 Response
 Information about the identity provider in pretty output.
@@ -1896,8 +1911,8 @@ Replace domains
 Add an additional domain
 Remove a domain
 supabase sso update 6df4d73f-bf21-405f-a084-b11adf19fea5 \
-  --project-ref abcdefghijklmnopqrst \
-  --domains new-company.com,new-company.net
+ --project-ref abcdefghijklmnopqrst \
+ --domains new-company.com,new-company.net
 
 Response
 Information about the updated provider.
@@ -1912,7 +1927,7 @@ Project ref of the Supabase project.
 
 Remove a provider
 supabase sso remove 6df4d73f-bf21-405f-a084-b11adf19fea5 \
-  --project-ref abcdefghijklmnopqrst
+ --project-ref abcdefghijklmnopqrst
 
 Response
 Information about the removed identity provider. It's a good idea to
@@ -2228,9 +2243,9 @@ source <(supabase completion zsh)
 To load completions for every new session, execute once:
 
 Linux:
-supabase completion zsh > "${fpath[1]}/_supabase"
+supabase completion zsh > "${fpath[1]}/\_supabase"
 macOS:
-supabase completion zsh > $(brew --prefix)/share/zsh/site-functions/_supabase
+supabase completion zsh > $(brew --prefix)/share/zsh/site-functions/\_supabase
 You will need to start a new shell for this setup to take effect.
 
 Flags

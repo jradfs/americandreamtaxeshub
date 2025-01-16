@@ -1,20 +1,20 @@
-'use client';
+"use client";
 
-import { useState, useRef, KeyboardEvent } from 'react';
-import { TaskWithRelations } from '@/types/tasks';
-import { TaskDialog } from './task-dialog';
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Skeleton } from '@/components/ui/skeleton';
-import { formatDistanceToNow } from 'date-fns';
-import { CheckCircle2, Circle, MoreVertical, Trash2 } from 'lucide-react';
+import { useState, useRef, KeyboardEvent } from "react";
+import { TaskWithRelations } from "@/types/tasks";
+import { TaskDialog } from "./task-dialog";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { formatDistanceToNow } from "date-fns";
+import { CheckCircle2, Circle, MoreVertical, Trash2 } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+} from "@/components/ui/dropdown-menu";
 
 interface TaskItemProps {
   task: TaskWithRelations;
@@ -23,7 +23,12 @@ interface TaskItemProps {
   showDetails?: boolean;
 }
 
-export function TaskItem({ task, onUpdate, onDelete, showDetails = false }: TaskItemProps) {
+export function TaskItem({
+  task,
+  onUpdate,
+  onDelete,
+  showDetails = false,
+}: TaskItemProps) {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const dropdownTriggerRef = useRef<HTMLButtonElement>(null);
@@ -31,8 +36,9 @@ export function TaskItem({ task, onUpdate, onDelete, showDetails = false }: Task
   const handleStatusToggle = async () => {
     await onUpdate({
       id: task.id,
-      status: task.status === 'completed' ? 'in_progress' : 'completed',
-      completed_at: task.status === 'completed' ? null : new Date().toISOString()
+      status: task.status === "completed" ? "in_progress" : "completed",
+      completed_at:
+        task.status === "completed" ? null : new Date().toISOString(),
     });
   };
 
@@ -47,18 +53,18 @@ export function TaskItem({ task, onUpdate, onDelete, showDetails = false }: Task
 
   const handleKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
     switch (e.key) {
-      case 'Enter':
-      case ' ':
+      case "Enter":
+      case " ":
         e.preventDefault();
         handleStatusToggle();
         break;
-      case 'e':
+      case "e":
         if (e.ctrlKey || e.metaKey) {
           e.preventDefault();
           setIsEditDialogOpen(true);
         }
         break;
-      case 'Delete':
+      case "Delete":
         if (e.ctrlKey || e.metaKey) {
           e.preventDefault();
           handleDelete();
@@ -82,21 +88,31 @@ export function TaskItem({ task, onUpdate, onDelete, showDetails = false }: Task
             size="icon"
             className="mt-0.5"
             onClick={handleStatusToggle}
-            aria-label={`Mark task as ${task.status === 'completed' ? 'incomplete' : 'complete'}`}
+            aria-label={`Mark task as ${task.status === "completed" ? "incomplete" : "complete"}`}
           >
-            {task.status === 'completed' ? (
-              <CheckCircle2 className="h-5 w-5 text-green-500" aria-hidden="true" />
+            {task.status === "completed" ? (
+              <CheckCircle2
+                className="h-5 w-5 text-green-500"
+                aria-hidden="true"
+              />
             ) : (
-              <Circle className="h-5 w-5 text-muted-foreground" aria-hidden="true" />
+              <Circle
+                className="h-5 w-5 text-muted-foreground"
+                aria-hidden="true"
+              />
             )}
           </Button>
 
           <div className="flex-1 min-w-0">
             <div className="flex items-start justify-between gap-4">
               <div className="space-y-1">
-                <h3 
-                  className={`font-medium ${task.status === 'completed' ? 'line-through text-muted-foreground' : ''}`}
-                  aria-label={task.status === 'completed' ? 'Completed task' : 'Active task'}
+                <h3
+                  className={`font-medium ${task.status === "completed" ? "line-through text-muted-foreground" : ""}`}
+                  aria-label={
+                    task.status === "completed"
+                      ? "Completed task"
+                      : "Active task"
+                  }
                 >
                   {task.title}
                 </h3>
@@ -109,9 +125,9 @@ export function TaskItem({ task, onUpdate, onDelete, showDetails = false }: Task
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
+                  <Button
+                    variant="ghost"
+                    size="icon"
                     disabled={isDeleting}
                     ref={dropdownTriggerRef}
                     aria-label="Task actions"
@@ -120,7 +136,7 @@ export function TaskItem({ task, onUpdate, onDelete, showDetails = false }: Task
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  <DropdownMenuItem 
+                  <DropdownMenuItem
                     onClick={() => setIsEditDialogOpen(true)}
                     onSelect={() => dropdownTriggerRef.current?.focus()}
                   >
@@ -133,29 +149,38 @@ export function TaskItem({ task, onUpdate, onDelete, showDetails = false }: Task
                     onSelect={() => dropdownTriggerRef.current?.focus()}
                   >
                     <Trash2 className="h-4 w-4 mr-2" aria-hidden="true" />
-                    {isDeleting ? 'Deleting...' : 'Delete'}
+                    {isDeleting ? "Deleting..." : "Delete"}
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
 
             {showDetails && (
-              <div className="mt-4 space-y-2" role="region" aria-label="Task details">
+              <div
+                className="mt-4 space-y-2"
+                role="region"
+                aria-label="Task details"
+              >
                 <div className="flex flex-wrap gap-2">
                   {task.priority && (
-                    <Badge 
-                      variant={task.priority === 'high' ? 'destructive' : 'secondary'}
+                    <Badge
+                      variant={
+                        task.priority === "high" ? "destructive" : "secondary"
+                      }
                       aria-label={`Priority: ${task.priority}`}
                     >
-                      {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)} Priority
+                      {task.priority.charAt(0).toUpperCase() +
+                        task.priority.slice(1)}{" "}
+                      Priority
                     </Badge>
                   )}
                   {task.status && (
-                    <Badge 
+                    <Badge
                       variant="outline"
                       aria-label={`Status: ${task.status}`}
                     >
-                      {task.status.charAt(0).toUpperCase() + task.status.slice(1)}
+                      {task.status.charAt(0).toUpperCase() +
+                        task.status.slice(1)}
                     </Badge>
                   )}
                 </div>
@@ -167,8 +192,11 @@ export function TaskItem({ task, onUpdate, onDelete, showDetails = false }: Task
                     </p>
                   )}
                   {task.assignee && (
-                    <p aria-label={`Assigned to: ${task.assignee.full_name || task.assignee.email}`}>
-                      Assigned to: {task.assignee.full_name || task.assignee.email}
+                    <p
+                      aria-label={`Assigned to: ${task.assignee.full_name || task.assignee.email}`}
+                    >
+                      Assigned to:{" "}
+                      {task.assignee.full_name || task.assignee.email}
                     </p>
                   )}
                   {task.parent_task && (
@@ -177,13 +205,23 @@ export function TaskItem({ task, onUpdate, onDelete, showDetails = false }: Task
                     </p>
                   )}
                   {task.created_at && (
-                    <p aria-label={`Created ${formatDistanceToNow(new Date(task.created_at))} ago`}>
-                      Created {formatDistanceToNow(new Date(task.created_at))} ago
+                    <p
+                      aria-label={`Created ${formatDistanceToNow(new Date(task.created_at))} ago`}
+                    >
+                      Created {formatDistanceToNow(new Date(task.created_at))}{" "}
+                      ago
                     </p>
                   )}
                   {task.checklist_items && task.checklist_items.length > 0 && (
-                    <p aria-label={`Checklist: ${task.checklist_items.filter(item => item.completed).length} of ${task.checklist_items.length} items completed`}>
-                      Checklist: {task.checklist_items.filter(item => item.completed).length}/{task.checklist_items.length} completed
+                    <p
+                      aria-label={`Checklist: ${task.checklist_items.filter((item) => item.completed).length} of ${task.checklist_items.length} items completed`}
+                    >
+                      Checklist:{" "}
+                      {
+                        task.checklist_items.filter((item) => item.completed)
+                          .length
+                      }
+                      /{task.checklist_items.length} completed
                     </p>
                   )}
                 </div>
@@ -218,4 +256,4 @@ export function TaskItemSkeleton() {
       </div>
     </Card>
   );
-} 
+}

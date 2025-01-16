@@ -1,15 +1,19 @@
-'use client'
+"use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { LineChart } from "@/components/ui/line-chart"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { LineChart } from "@/components/ui/line-chart";
 
 interface RevenueCardProps {
-  revenue: number
-  percentageChange: number
-  data: number[]
+  revenue: number;
+  percentageChange: number;
+  data: number[];
 }
 
-export function RevenueCard({ revenue, percentageChange, data }: RevenueCardProps) {
+export function RevenueCard({
+  revenue,
+  percentageChange,
+  data,
+}: RevenueCardProps) {
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -21,7 +25,7 @@ export function RevenueCard({ revenue, percentageChange, data }: RevenueCardProp
           +{percentageChange}% from last month
         </p>
         <div className="h-[80px]">
-          <LineChart 
+          <LineChart
             data={data}
             className="h-full w-full"
             pathClassName="stroke-[hsl(var(--chart-1))]"
@@ -29,5 +33,5 @@ export function RevenueCard({ revenue, percentageChange, data }: RevenueCardProp
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }

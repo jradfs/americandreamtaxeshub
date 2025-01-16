@@ -9,16 +9,19 @@ This directory contains the database migrations for implementing Phase 1 of the 
 This migration implements core functionality for:
 
 1. Project Templates & Automation
+
    - Template-based project creation
    - Workflow state tracking
    - Automation configuration
 
 2. Enhanced Client Service Tracking
+
    - Service configuration
    - Document requirements
    - Onboarding progress tracking
 
 3. Document Management
+
    - Document processing status
    - Verification workflow
    - Document relationships
@@ -32,16 +35,19 @@ This migration implements core functionality for:
 ### How to Apply Migrations
 
 1. Ensure you have Supabase CLI installed:
+
    ```bash
    npm install -g supabase
    ```
 
 2. Link your project:
+
    ```bash
    supabase link --project-ref your-project-ref
    ```
 
 3. Apply migrations:
+
    ```bash
    supabase db push
    ```
@@ -56,20 +62,20 @@ This migration implements core functionality for:
 The migration adds:
 
 1. New Tables:
+
    - `document_templates`
    - `workflow_templates`
 
 2. New Columns to Existing Tables:
+
    - Projects:
      - `automation_config`
      - `template_data`
      - `workflow_state`
-   
    - Clients:
      - `service_config`
      - `document_requirements`
      - `onboarding_progress`
-   
    - Documents:
      - `processing_status`
      - `verification_status`
@@ -86,13 +92,14 @@ The migration adds:
 To rollback this migration:
 
 1. Create a rollback migration:
+
    ```sql
    -- Drop new tables
    DROP TABLE IF EXISTS document_templates;
    DROP TABLE IF EXISTS workflow_templates;
 
    -- Remove new columns
-   ALTER TABLE projects 
+   ALTER TABLE projects
    DROP COLUMN IF EXISTS automation_config,
    DROP COLUMN IF EXISTS template_data,
    DROP COLUMN IF EXISTS workflow_state;
@@ -115,4 +122,4 @@ The migration includes comprehensive tests in `supabase/tests/20250110110000_tes
 4. Client service tracking
 5. Document validation rules
 
-Run tests after migration to ensure everything is working as expected. 
+Run tests after migration to ensure everything is working as expected.

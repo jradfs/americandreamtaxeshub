@@ -1,6 +1,12 @@
 import * as React from "react";
 import { useController, UseControllerProps } from "react-hook-form";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "./select";
 import { FormControl, FormLabel, FormMessage, FormItem } from "./form";
 import { Database } from "@/types/database.types";
 
@@ -22,14 +28,19 @@ export function StatusSelect<TFieldValues>({
   placeholder = "Select status",
 }: StatusSelectProps<TFieldValues>) {
   const { field, fieldState } = useController({ name, control });
-  const statusOptions: Status[] = ["todo", "in_progress", "review", "completed"];
+  const statusOptions: Status[] = [
+    "todo",
+    "in_progress",
+    "review",
+    "completed",
+  ];
 
   return (
     <FormItem>
       {label && <FormLabel>{label}</FormLabel>}
       <FormControl>
-        <Select 
-          onValueChange={field.onChange} 
+        <Select
+          onValueChange={field.onChange}
           value={field.value as string}
           defaultValue={field.value as string}
         >
@@ -39,7 +50,9 @@ export function StatusSelect<TFieldValues>({
           <SelectContent>
             {statusOptions.map((status) => (
               <SelectItem key={status} value={status}>
-                {status.replace(/_/g, " ").replace(/\b\w/g, l => l.toUpperCase())}
+                {status
+                  .replace(/_/g, " ")
+                  .replace(/\b\w/g, (l) => l.toUpperCase())}
               </SelectItem>
             ))}
           </SelectContent>
@@ -48,4 +61,4 @@ export function StatusSelect<TFieldValues>({
       <FormMessage>{fieldState.error?.message}</FormMessage>
     </FormItem>
   );
-} 
+}

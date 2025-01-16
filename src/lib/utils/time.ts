@@ -3,7 +3,7 @@ export function hoursToMinutes(hours: number): number {
 }
 
 export function minutesToHours(minutes: number): number {
-  return Math.round(minutes / 60 * 100) / 100;
+  return Math.round((minutes / 60) * 100) / 100;
 }
 
 export function roundToNearest(value: number, nearest: number = 1): number {

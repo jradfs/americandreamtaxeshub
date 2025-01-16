@@ -1,8 +1,20 @@
-'use client';
+"use client";
 
-import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { UseFormReturn } from 'react-hook-form';
+import {
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { UseFormReturn } from "react-hook-form";
 
 interface Option {
   value: string;
@@ -26,7 +38,7 @@ export function SelectField({
   options,
   placeholder = "Select an option",
   defaultValue,
-  description
+  description,
 }: SelectFieldProps) {
   return (
     <FormField
@@ -45,14 +57,16 @@ export function SelectField({
               </SelectTrigger>
             </FormControl>
             <SelectContent>
-              {options.map(option => (
+              {options.map((option) => (
                 <SelectItem key={option.value} value={option.value}>
                   {option.label}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
-          {description && <p className="text-sm text-muted-foreground">{description}</p>}
+          {description && (
+            <p className="text-sm text-muted-foreground">{description}</p>
+          )}
           <FormMessage />
         </FormItem>
       )}

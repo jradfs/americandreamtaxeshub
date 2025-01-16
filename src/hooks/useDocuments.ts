@@ -1,11 +1,12 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { supabaseBrowserClient } from '@/lib/supabaseBrowserClient';
-import { Database } from '@/types/database.types';
+import { useState, useEffect } from "react";
+import { supabaseBrowserClient } from "@/lib/supabaseBrowserClient";
+import { Database } from "@/types/database.types";
 
-type Document = Database['public']['Tables']['client_documents']['Row'];
-type DocumentInsert = Database['public']['Tables']['client_documents']['Insert'];
+type Document = Database["public"]["Tables"]["client_documents"]["Row"];
+type DocumentInsert =
+  Database["public"]["Tables"]["client_documents"]["Insert"];
 
 export const useDocuments = (clientId: string) => {
   const [documents, setDocuments] = useState<Document[]>([]);
@@ -18,12 +19,12 @@ export const useDocuments = (clientId: string) => {
   const fetchDocuments = async () => {
     setIsLoading(true);
     const { data, error } = await supabaseBrowserClient
-      .from('client_documents')
-      .select('*')
-      .eq('client_id', clientId);
+      .from("client_documents")
+      .select("*")
+      .eq("client_id", clientId);
 
     if (error) {
-      console.error('Error fetching documents:', error);
+      console.error("Error fetching documents:", error);
       return;
     }
 
@@ -34,6 +35,6 @@ export const useDocuments = (clientId: string) => {
   return {
     documents,
     isLoading,
-    fetchDocuments
+    fetchDocuments,
   };
 };

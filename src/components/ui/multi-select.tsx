@@ -1,24 +1,34 @@
-'use client'
+"use client";
 
-import * as React from 'react'
-import { X } from 'lucide-react'
-import { Badge } from '@/components/ui/badge'
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from '@/components/ui/command'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { cn } from '@/lib/utils'
-import { Button } from './button'
+import * as React from "react";
+import { X } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+} from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
+import { Button } from "./button";
 
 export type Option = {
-  label: string
-  value: string
-}
+  label: string;
+  value: string;
+};
 
 interface MultiSelectProps {
-  options: Option[]
-  selected: string[]
-  onChange: (values: string[]) => void
-  className?: string
-  placeholder?: string
+  options: Option[];
+  selected: string[];
+  onChange: (values: string[]) => void;
+  className?: string;
+  placeholder?: string;
 }
 
 export function MultiSelect({
@@ -28,11 +38,11 @@ export function MultiSelect({
   className,
   placeholder = "Select items...",
 }: MultiSelectProps) {
-  const [open, setOpen] = React.useState(false)
+  const [open, setOpen] = React.useState(false);
 
   const handleUnselect = (item: string) => {
-    onChange(selected.filter((i) => i !== item))
-  }
+    onChange(selected.filter((i) => i !== item));
+  };
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -51,8 +61,8 @@ export function MultiSelect({
                 key={item}
                 className="mr-1"
                 onClick={(e) => {
-                  e.stopPropagation()
-                  handleUnselect(item)
+                  e.stopPropagation();
+                  handleUnselect(item);
                 }}
               >
                 {options.find((option) => option.value === item)?.label}
@@ -60,17 +70,17 @@ export function MultiSelect({
                   className="ml-1 ring-offset-background rounded-full outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
                   onKeyDown={(e) => {
                     if (e.key === "Enter") {
-                      handleUnselect(item)
+                      handleUnselect(item);
                     }
                   }}
                   onMouseDown={(e) => {
-                    e.preventDefault()
-                    e.stopPropagation()
+                    e.preventDefault();
+                    e.stopPropagation();
                   }}
                   onClick={(e) => {
-                    e.preventDefault()
-                    e.stopPropagation()
-                    handleUnselect(item)
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleUnselect(item);
                   }}
                 >
                   <X className="h-3 w-3 text-muted-foreground hover:text-foreground" />
@@ -92,9 +102,9 @@ export function MultiSelect({
                   onChange(
                     selected.includes(option.value)
                       ? selected.filter((item) => item !== option.value)
-                      : [...selected, option.value]
-                  )
-                  setOpen(true)
+                      : [...selected, option.value],
+                  );
+                  setOpen(true);
                 }}
               >
                 <div
@@ -102,7 +112,7 @@ export function MultiSelect({
                     "mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary",
                     selected.includes(option.value)
                       ? "bg-primary text-primary-foreground"
-                      : "opacity-50 [&_svg]:invisible"
+                      : "opacity-50 [&_svg]:invisible",
                   )}
                 >
                   <span className="h-4 w-4 text-xs">✓</span>
@@ -114,5 +124,5 @@ export function MultiSelect({
         </Command>
       </PopoverContent>
     </Popover>
-  )
+  );
 }

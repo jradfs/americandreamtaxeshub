@@ -14,6 +14,7 @@ A modern, collaborative platform for tax preparation and client management.
 ## Database Access
 
 All authenticated users have full access to:
+
 - Clients
 - Tax Returns
 - Users
@@ -63,8 +64,8 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 ## Database Access Policy
 
 Simple policy for maximum collaboration:
+
 - ✅ All authenticated users have full CRUD access
 - ✅ No role restrictions
 - ✅ Access all tables freely
 - ✅ Focus on building features
-

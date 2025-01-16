@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import { useState } from "react";
 import { ProjectFilters as ProjectFiltersComponent } from "@/components/projects/project-filters";
@@ -8,7 +8,9 @@ interface ProjectFiltersWrapperProps {
   clientOptions: Array<{ id: string; label: string }>;
 }
 
-export function ProjectFiltersWrapper({ clientOptions }: ProjectFiltersWrapperProps) {
+export function ProjectFiltersWrapper({
+  clientOptions,
+}: ProjectFiltersWrapperProps) {
   const [filters, setFilters] = useState<ProjectFilters>({
     search: "",
     status: [],
@@ -18,7 +20,7 @@ export function ProjectFiltersWrapper({ clientOptions }: ProjectFiltersWrapperPr
     dateRange: undefined,
     sortBy: "due_date",
     sortOrder: "asc",
-    groupBy: "status"
+    groupBy: "status",
   });
 
   return (

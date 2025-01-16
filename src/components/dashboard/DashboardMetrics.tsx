@@ -1,37 +1,38 @@
-import { Card } from '@/components/ui/card'
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 
 interface DashboardMetricsProps {
   metrics: {
-    totalActiveClients: number
-    pendingTaxReturns: number
-    activeProjects: number
-    upcomingDeadlines: number
-  }
+    totalActiveClients: number;
+    pendingTaxReturns: number;
+    activeProjects: number;
+    upcomingDeadlines: number;
+  };
 }
 
 export function DashboardMetrics({ metrics }: DashboardMetricsProps) {
   const metricsData = [
     {
-      title: 'Active Clients',
+      title: "Active Clients",
       value: metrics.totalActiveClients,
-      description: 'Total number of active clients',
+      description: "Total number of active clients",
     },
     {
-      title: 'Pending Returns',
+      title: "Pending Returns",
       value: metrics.pendingTaxReturns,
-      description: 'Tax returns awaiting completion',
+      description: "Tax returns awaiting completion",
     },
     {
-      title: 'Active Projects',
+      title: "Active Projects",
       value: metrics.activeProjects,
-      description: 'Projects in progress or review',
+      description: "Projects in progress or review",
     },
     {
-      title: 'Upcoming Deadlines',
+      title: "Upcoming Deadlines",
       value: metrics.upcomingDeadlines,
-      description: 'Tasks due in the next 7 days',
+      description: "Tasks due in the next 7 days",
     },
-  ]
+  ];
 
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -40,10 +41,29 @@ export function DashboardMetrics({ metrics }: DashboardMetricsProps) {
           <div className="flex flex-col gap-2">
             <h3 className="text-lg font-semibold">{metric.title}</h3>
             <p className="text-3xl font-bold">{metric.value}</p>
-            <p className="text-sm text-muted-foreground">{metric.description}</p>
+            <p className="text-sm text-muted-foreground">
+              {metric.description}
+            </p>
+            <div className="mt-4">
+              <Button size="sm" asChild>
+                <a
+                  href={
+                    metric.title === "Active Clients"
+                      ? "/clients"
+                      : metric.title === "Pending Returns"
+                        ? "/tax-returns"
+                        : metric.title === "Active Projects"
+                          ? "/projects"
+                          : "/tasks"
+                  }
+                >
+                  View {metric.title}
+                </a>
+              </Button>
+            </div>
           </div>
         </Card>
       ))}
     </div>
-  )
-} 
+  );
+}

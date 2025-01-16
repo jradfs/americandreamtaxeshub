@@ -1,36 +1,36 @@
-'use client'
+"use client";
 
-import { ProjectWithRelations } from "@/types/projects"
-import { TaskDialog } from "@/components/tasks/task-dialog"
-import { TaskList } from "@/components/tasks/task-list"
-import { useTasks } from "@/hooks/useTasks"
-import { Button } from "@/components/ui/button"
-import { Plus } from "lucide-react"
-import { useState } from "react"
-import { Database } from "@/types/database.types"
-import { TaskWithRelations } from "@/types/tasks"
+import { ProjectWithRelations } from "@/types/projects";
+import { TaskDialog } from "@/components/tasks/task-dialog";
+import { TaskList } from "@/components/tasks/task-list";
+import { useTasks } from "@/hooks/useTasks";
+import { Button } from "@/components/ui/button";
+import { Plus } from "lucide-react";
+import { useState } from "react";
+import { Database } from "@/types/database.types";
+import { TaskWithRelations } from "@/types/tasks";
 
-type DbTaskInsert = Database['public']['Tables']['tasks']['Insert']
+type DbTaskInsert = Database["public"]["Tables"]["tasks"]["Insert"];
 
 interface ProjectTasksProps {
-  project: ProjectWithRelations
+  project: ProjectWithRelations;
 }
 
 export function ProjectTasks({ project }: ProjectTasksProps) {
-  const [dialogOpen, setDialogOpen] = useState(false)
-  const { tasks, isLoading, error, mutate } = useTasks(project.id)
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const { tasks, isLoading, error, mutate } = useTasks(project.id);
 
   const handleCreateTask = async (data: DbTaskInsert) => {
     // Handle task creation
-    console.log('Create task:', data)
-    setDialogOpen(false)
-  }
+    console.log("Create task:", data);
+    setDialogOpen(false);
+  };
 
   const handleUpdateTask = async (task: DbTaskInsert, taskId: string) => {
     // Handle task update
-    console.log('Update task:', task)
-    await mutate()
-  }
+    console.log("Update task:", task);
+    await mutate();
+  };
 
   return (
     <div className="space-y-4">
@@ -58,10 +58,10 @@ export function ProjectTasks({ project }: ProjectTasksProps) {
         onSubmit={handleCreateTask}
         initialData={{
           project_id: project.id,
-          status: 'todo',
-          priority: 'medium'
+          status: "todo",
+          priority: "medium",
         }}
       />
     </div>
-  )
+  );
 }

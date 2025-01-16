@@ -1,6 +1,6 @@
-import { useState } from 'react';
-import { StorageService } from '@/lib/storage/storage';
-import { type FileObject } from '@supabase/storage-js';
+import { useState } from "react";
+import { StorageService } from "@/lib/storage/storage";
+import { type FileObject } from "@supabase/storage-js";
 
 interface UseStorageReturn {
   uploadFile: (file: File, path: string) => Promise<FileObject | null>;
@@ -20,7 +20,7 @@ export function useStorage(): UseStorageReturn {
 
   const handleOperation = async <T>(
     operation: () => Promise<T>,
-    errorMessage: string
+    errorMessage: string,
   ): Promise<T | null> => {
     setLoading(true);
     setError(null);
@@ -39,28 +39,28 @@ export function useStorage(): UseStorageReturn {
   const uploadFile = async (file: File, path: string) => {
     return handleOperation(
       () => storageService.uploadFile(file, path),
-      'Error uploading file'
+      "Error uploading file",
     );
   };
 
   const downloadFile = async (path: string) => {
     return handleOperation(
       () => storageService.downloadFile(path),
-      'Error downloading file'
+      "Error downloading file",
     );
   };
 
   const deleteFile = async (path: string) => {
     return handleOperation(
       () => storageService.deleteFile(path),
-      'Error deleting file'
+      "Error deleting file",
     );
   };
 
   const listFiles = async (prefix?: string) => {
     return handleOperation(
       () => storageService.listFiles(prefix),
-      'Error listing files'
+      "Error listing files",
     );
   };
 
@@ -68,8 +68,10 @@ export function useStorage(): UseStorageReturn {
     try {
       return storageService.getPublicUrl(path);
     } catch (err) {
-      console.error('Error getting public URL:', err);
-      setError(err instanceof Error ? err : new Error('Error getting public URL'));
+      console.error("Error getting public URL:", err);
+      setError(
+        err instanceof Error ? err : new Error("Error getting public URL"),
+      );
       return null;
     }
   };

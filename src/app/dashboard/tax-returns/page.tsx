@@ -1,18 +1,26 @@
-import { createClient } from '@/lib/supabase/server'
-import { redirect } from 'next/navigation'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Plus } from 'lucide-react'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { TaxReturnList } from '@/components/tax/TaxReturnList'
-import { DocumentUpload } from '@/components/tax/DocumentUpload'
+import { createClient } from "@/lib/supabase/server";
+import { redirect } from "next/navigation";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Plus } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { TaxReturnList } from "@/components/tax/TaxReturnList";
+import { DocumentUpload } from "@/components/tax/DocumentUpload";
 
 export default async function TaxReturnsPage() {
-  const supabase = createClient()
-  const { data: { session } } = await supabase.auth.getSession()
+  const supabase = createClient();
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
 
   if (!session) {
-    redirect('/auth/login')
+    redirect("/auth/login");
   }
 
   return (
@@ -33,9 +41,7 @@ export default async function TaxReturnsPage() {
       <Card>
         <CardHeader>
           <CardTitle>Document Upload</CardTitle>
-          <CardDescription>
-            Upload tax documents for processing
-          </CardDescription>
+          <CardDescription>Upload tax documents for processing</CardDescription>
         </CardHeader>
         <CardContent>
           <DocumentUpload taxReturnId="new" />
@@ -89,5 +95,5 @@ export default async function TaxReturnsPage() {
         </TabsContent>
       </Tabs>
     </div>
-  )
-} 
+  );
+}

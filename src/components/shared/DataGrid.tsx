@@ -1,14 +1,21 @@
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 interface Column {
-  field: string
-  header: string
-  render?: (row: any) => React.ReactNode
+  field: string;
+  header: string;
+  render?: (row: any) => React.ReactNode;
 }
 
 interface DataGridProps {
-  data: any[]
-  columns: Column[]
+  data: any[];
+  columns: Column[];
 }
 
 export function DataGrid({ data, columns }: DataGridProps) {
@@ -35,5 +42,5 @@ export function DataGrid({ data, columns }: DataGridProps) {
         </TableBody>
       </Table>
     </div>
-  )
-} 
+  );
+}

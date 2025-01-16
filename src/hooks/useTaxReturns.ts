@@ -1,16 +1,18 @@
-'use client'
+"use client";
 
-import { useState, useEffect } from 'react';
-import { supabaseBrowserClient } from '@/lib/supabaseBrowserClient';
-import { handleError } from '@/lib/error-handler';
-import { Database } from '@/types/database.types';
+import { useState, useEffect } from "react";
+import { supabaseBrowserClient } from "@/lib/supabaseBrowserClient";
+import { handleError } from "@/lib/error-handler";
+import { Database } from "@/types/database.types";
 
-type TaxReturn = Database['public']['Tables']['tax_returns']['Row'];
+type TaxReturn = Database["public"]["Tables"]["tax_returns"]["Row"];
 
 export function useTaxReturns(initialReturns?: TaxReturn[] | null) {
-  const [taxReturns, setTaxReturns] = useState<TaxReturn[]>(initialReturns || []);
+  const [taxReturns, setTaxReturns] = useState<TaxReturn[]>(
+    initialReturns || [],
+  );
   const [loading, setLoading] = useState(!initialReturns);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
   useEffect(() => {
     if (!initialReturns) {
@@ -18,10 +20,14 @@ export function useTaxReturns(initialReturns?: TaxReturn[] | null) {
     }
 
     const channel = supabaseBrowserClient
-      .channel('tax_returns')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'tax_returns' }, () => {
-        fetchTaxReturns();
-      })
+      .channel("tax_returns")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "tax_returns" },
+        () => {
+          fetchTaxReturns();
+        },
+      )
       .subscribe();
 
     return () => {
@@ -34,8 +40,8 @@ export function useTaxReturns(initialReturns?: TaxReturn[] | null) {
     setLoading(true);
     try {
       const { data, error } = await supabaseBrowserClient
-        .from('tax_returns')
-        .select('*');
+        .from("tax_returns")
+        .select("*");
       if (error) throw error;
       if (data) setTaxReturns(data);
     } catch (err: any) {
@@ -49,7 +55,7 @@ export function useTaxReturns(initialReturns?: TaxReturn[] | null) {
     try {
       setLoading(true);
       const { error } = await supabaseBrowserClient
-        .from('tax_returns')
+        .from("tax_returns")
         .insert(newReturn);
       if (error) throw error;
       await fetchTaxReturns();
@@ -60,13 +66,16 @@ export function useTaxReturns(initialReturns?: TaxReturn[] | null) {
     }
   }
 
-  async function updateReturn(returnId: string, updatedFields: Partial<TaxReturn>) {
+  async function updateReturn(
+    returnId: string,
+    updatedFields: Partial<TaxReturn>,
+  ) {
     try {
       setLoading(true);
       const { error } = await supabaseBrowserClient
-        .from('tax_returns')
+        .from("tax_returns")
         .update(updatedFields)
-        .eq('id', returnId);
+        .eq("id", returnId);
       if (error) throw error;
       await fetchTaxReturns();
     } catch (err: any) {
@@ -80,9 +89,9 @@ export function useTaxReturns(initialReturns?: TaxReturn[] | null) {
     try {
       setLoading(true);
       const { error } = await supabaseBrowserClient
-        .from('tax_returns')
+        .from("tax_returns")
         .delete()
-        .eq('id', returnId);
+        .eq("id", returnId);
       if (error) throw error;
       await fetchTaxReturns();
     } catch (err: any) {

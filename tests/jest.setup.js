@@ -1,11 +1,11 @@
-import '@testing-library/jest-dom'
-import { TextEncoder, TextDecoder } from 'util'
+import "@testing-library/jest-dom";
+import { TextEncoder, TextDecoder } from "util";
 
-global.TextEncoder = TextEncoder
-global.TextDecoder = TextDecoder
+global.TextEncoder = TextEncoder;
+global.TextDecoder = TextDecoder;
 
 // Mock the Supabase client
-jest.mock('@supabase/ssr', () => ({
+jest.mock("@supabase/ssr", () => ({
   createClient: () => ({
     auth: {
       getSession: jest.fn(),
@@ -19,10 +19,10 @@ jest.mock('@supabase/ssr', () => ({
       delete: jest.fn(),
     })),
   }),
-}))
+}));
 
 // Mock next/navigation
-jest.mock('next/navigation', () => ({
+jest.mock("next/navigation", () => ({
   useRouter: () => ({
     push: jest.fn(),
     replace: jest.fn(),
@@ -31,4 +31,4 @@ jest.mock('next/navigation', () => ({
   useSearchParams: () => ({
     get: jest.fn(),
   }),
-}))
+}));

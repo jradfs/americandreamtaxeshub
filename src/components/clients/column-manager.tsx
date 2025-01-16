@@ -1,25 +1,25 @@
-'use client'
+"use client";
 
-import { Checkbox } from '@/components/ui/checkbox'
-import { Button } from '@/components/ui/button'
+import { Checkbox } from "@/components/ui/checkbox";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import { Settings } from 'lucide-react'
+} from "@/components/ui/dropdown-menu";
+import { Settings } from "lucide-react";
 
 interface ColumnManagerProps {
-  allColumns: string[]
-  visibleColumns: string[]
-  onColumnToggle: (column: string) => void
+  allColumns: string[];
+  visibleColumns: string[];
+  onColumnToggle: (column: string) => void;
 }
 
 export function ColumnManager({
   allColumns,
   visibleColumns,
-  onColumnToggle
+  onColumnToggle,
 }: ColumnManagerProps) {
   return (
     <div className="flex justify-end">
@@ -35,9 +35,9 @@ export function ColumnManager({
             <DropdownMenuItem
               key={column}
               onClick={(e) => {
-                e.preventDefault()
-                e.stopPropagation()
-                onColumnToggle(column)
+                e.preventDefault();
+                e.stopPropagation();
+                onColumnToggle(column);
               }}
               className="cursor-pointer"
             >
@@ -51,5 +51,5 @@ export function ColumnManager({
         </DropdownMenuContent>
       </DropdownMenu>
     </div>
-  )
+  );
 }

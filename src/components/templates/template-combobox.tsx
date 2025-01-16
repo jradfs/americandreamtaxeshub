@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import * as React from "react";
 import { Check, ChevronsUpDown } from "lucide-react";
@@ -60,7 +60,7 @@ export function TemplateCombobox({ value, onChange }: TemplateComboboxProps) {
                 <Check
                   className={cn(
                     "mr-2 h-4 w-4",
-                    value === template.id ? "opacity-100" : "opacity-0"
+                    value === template.id ? "opacity-100" : "opacity-0",
                   )}
                 />
                 <div className="flex flex-col">

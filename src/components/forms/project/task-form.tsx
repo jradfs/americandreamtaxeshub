@@ -1,32 +1,32 @@
-'use client';
+"use client";
 
-import { useForm } from 'react-hook-form';
-import { Button } from '@/components/ui/button';
+import { useForm } from "react-hook-form";
+import { Button } from "@/components/ui/button";
 import {
   Form,
   FormControl,
   FormField,
   FormItem,
   FormLabel,
-} from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { TaskFormData } from '@/types/tasks';
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { TaskFormData } from "@/types/tasks";
 
 interface TaskFormProps {
-  defaultValues?: Partial<TaskFormData>
-  onSubmit: (data: TaskFormData) => Promise<void>
+  defaultValues?: Partial<TaskFormData>;
+  onSubmit: (data: TaskFormData) => Promise<void>;
 }
 
 export function TaskForm({ defaultValues, onSubmit }: TaskFormProps) {
   const form = useForm<TaskFormData>({
     defaultValues: defaultValues || {
-      title: '',
-      description: '',
-      status: 'todo',
-      priority: 'medium'
-    }
-  })
+      title: "",
+      description: "",
+      status: "todo",
+      priority: "medium",
+    },
+  });
 
   return (
     <Form {...form}>
@@ -60,5 +60,5 @@ export function TaskForm({ defaultValues, onSubmit }: TaskFormProps) {
         </div>
       </form>
     </Form>
-  )
+  );
 }

@@ -1,22 +1,22 @@
-'use client';
+"use client";
 
-import { Check, ChevronsUpDown } from 'lucide-react';
-import * as React from 'react';
-import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
+import { Check, ChevronsUpDown } from "lucide-react";
+import * as React from "react";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 import {
   Command,
   CommandEmpty,
   CommandGroup,
   CommandInput,
   CommandItem,
-} from '@/components/ui/command';
+} from "@/components/ui/command";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from '@/components/ui/popover';
-import { DbClient } from '@/types/clients';
+} from "@/components/ui/popover";
+import { DbClient } from "@/types/clients";
 
 interface ClientSelectProps {
   value?: string;
@@ -25,11 +25,16 @@ interface ClientSelectProps {
   disabled?: boolean;
 }
 
-export function ClientSelect({ value, onSelect, clients, disabled }: ClientSelectProps) {
+export function ClientSelect({
+  value,
+  onSelect,
+  clients,
+  disabled,
+}: ClientSelectProps) {
   const [open, setOpen] = React.useState(false);
   const selectedClient = React.useMemo(
     () => clients.find((client) => client.id === value),
-    [clients, value]
+    [clients, value],
   );
 
   return (
@@ -47,7 +52,7 @@ export function ClientSelect({ value, onSelect, clients, disabled }: ClientSelec
               {selectedClient.company_name || selectedClient.full_name}
             </span>
           ) : (
-            'Select client...'
+            "Select client..."
           )}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
@@ -68,8 +73,8 @@ export function ClientSelect({ value, onSelect, clients, disabled }: ClientSelec
               >
                 <Check
                   className={cn(
-                    'mr-2 h-4 w-4',
-                    value === client.id ? 'opacity-100' : 'opacity-0'
+                    "mr-2 h-4 w-4",
+                    value === client.id ? "opacity-100" : "opacity-0",
                   )}
                 />
                 {client.company_name || client.full_name}
@@ -80,4 +85,4 @@ export function ClientSelect({ value, onSelect, clients, disabled }: ClientSelec
       </PopoverContent>
     </Popover>
   );
-} 
+}

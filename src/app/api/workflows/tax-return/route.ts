@@ -1,7 +1,7 @@
-import { createServerClient } from '@supabase/ssr'
-import { cookies } from 'next/headers'
-import { NextResponse } from 'next/server'
-import { Database } from '@/types/database.types'
+import { createServerClient } from "@supabase/ssr";
+import { cookies } from "next/headers";
+import { NextResponse } from "next/server";
+import { Database } from "@/types/database.types";
 
 export async function GET() {
   const supabase = createServerClient<Database>(
@@ -10,37 +10,37 @@ export async function GET() {
     {
       cookies: {
         get(name: string) {
-          return cookies().get(name)?.value
-        }
-      }
-    }
-  )
-  
+          return cookies().get(name)?.value;
+        },
+      },
+    },
+  );
+
   const workflowStages = [
     {
-      stage: 'Client Intake',
-      tasks: ['New client form', 'Engagement letter']
+      stage: "Client Intake",
+      tasks: ["New client form", "Engagement letter"],
     },
     {
-      stage: 'Document Collection',
-      tasks: ['Document checklist', 'Reminders']
+      stage: "Document Collection",
+      tasks: ["Document checklist", "Reminders"],
     },
     {
-      stage: 'Preparation',
-      tasks: ['Data entry', 'Calculations']
+      stage: "Preparation",
+      tasks: ["Data entry", "Calculations"],
     },
     {
-      stage: 'Review',
-      tasks: ['Quality check', 'Client approval']
+      stage: "Review",
+      tasks: ["Quality check", "Client approval"],
     },
     {
-      stage: 'Filing',
-      tasks: ['E-file submission', 'Paper filing']
+      stage: "Filing",
+      tasks: ["E-file submission", "Paper filing"],
     },
     {
-      stage: 'Follow-up',
-      tasks: ['Acknowledgement', 'Amendments']
-    }
+      stage: "Follow-up",
+      tasks: ["Acknowledgement", "Amendments"],
+    },
   ];
 
   return NextResponse.json(workflowStages);

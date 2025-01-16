@@ -1,17 +1,25 @@
-import { createClient } from '@/lib/supabase/server'
-import { redirect } from 'next/navigation'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Separator } from "@/components/ui/separator"
-import { Button } from "@/components/ui/button"
-import { Switch } from "@/components/ui/switch"
-import { Label } from "@/components/ui/label"
+import { createClient } from "@/lib/supabase/server";
+import { redirect } from "next/navigation";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 
 export default async function SettingsPage() {
-  const supabase = createClient()
-  const { data: { session } } = await supabase.auth.getSession()
+  const supabase = createClient();
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
 
   if (!session) {
-    redirect('/auth/login')
+    redirect("/auth/login");
   }
 
   return (
@@ -36,7 +44,9 @@ export default async function SettingsPage() {
               <Label>Email Notifications</Label>
               <div className="flex items-center space-x-2">
                 <Switch id="email-notifications" />
-                <Label htmlFor="email-notifications">Receive email notifications</Label>
+                <Label htmlFor="email-notifications">
+                  Receive email notifications
+                </Label>
               </div>
             </div>
             <Button>Save Changes</Button>
@@ -74,7 +84,9 @@ export default async function SettingsPage() {
               <Label>Push Notifications</Label>
               <div className="flex items-center space-x-2">
                 <Switch id="push-notifications" />
-                <Label htmlFor="push-notifications">Enable push notifications</Label>
+                <Label htmlFor="push-notifications">
+                  Enable push notifications
+                </Label>
               </div>
             </div>
             <Button variant="outline">Update Preferences</Button>
@@ -82,5 +94,5 @@ export default async function SettingsPage() {
         </Card>
       </div>
     </div>
-  )
-} 
+  );
+}

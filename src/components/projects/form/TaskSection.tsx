@@ -1,13 +1,13 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Plus } from 'lucide-react';
-import { TaskDialog } from '@/components/tasks/task-dialog';
-import { TaskList } from '@/components/tasks/task-list';
-import { useTasks } from '@/hooks/useTasks';
-import { toast } from '@/components/ui/use-toast';
-import type { TaskFormData, TaskWithRelations } from '@/types/tasks';
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Plus } from "lucide-react";
+import { TaskDialog } from "@/components/tasks/task-dialog";
+import { TaskList } from "@/components/tasks/task-list";
+import { useTasks } from "@/hooks/useTasks";
+import { toast } from "@/components/ui/use-toast";
+import type { TaskFormData, TaskWithRelations } from "@/types/tasks";
 
 interface TaskSectionProps {
   projectId: string;
@@ -15,22 +15,24 @@ interface TaskSectionProps {
 
 export function TaskSection({ projectId }: TaskSectionProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const { tasks, isLoading, createTask, updateTask, deleteTask } = useTasks({ projectId });
+  const { tasks, isLoading, createTask, updateTask, deleteTask } = useTasks({
+    projectId,
+  });
 
   const handleCreateTask = async (data: TaskFormData) => {
     try {
       await createTask(data);
       setIsDialogOpen(false);
       toast({
-        title: 'Success',
-        description: 'Task created successfully.',
+        title: "Success",
+        description: "Task created successfully.",
       });
     } catch (error) {
-      console.error('Error creating task:', error);
+      console.error("Error creating task:", error);
       toast({
-        title: 'Error',
-        description: 'Failed to create task.',
-        variant: 'destructive',
+        title: "Error",
+        description: "Failed to create task.",
+        variant: "destructive",
       });
     }
   };
@@ -39,15 +41,15 @@ export function TaskSection({ projectId }: TaskSectionProps) {
     try {
       await updateTask(taskId, data);
       toast({
-        title: 'Success',
-        description: 'Task updated successfully.',
+        title: "Success",
+        description: "Task updated successfully.",
       });
     } catch (error) {
-      console.error('Error updating task:', error);
+      console.error("Error updating task:", error);
       toast({
-        title: 'Error',
-        description: 'Failed to update task.',
-        variant: 'destructive',
+        title: "Error",
+        description: "Failed to update task.",
+        variant: "destructive",
       });
     }
   };
@@ -56,15 +58,15 @@ export function TaskSection({ projectId }: TaskSectionProps) {
     try {
       await deleteTask(taskId);
       toast({
-        title: 'Success',
-        description: 'Task deleted successfully.',
+        title: "Success",
+        description: "Task deleted successfully.",
       });
     } catch (error) {
-      console.error('Error deleting task:', error);
+      console.error("Error deleting task:", error);
       toast({
-        title: 'Error',
-        description: 'Failed to delete task.',
-        variant: 'destructive',
+        title: "Error",
+        description: "Failed to delete task.",
+        variant: "destructive",
       });
     }
   };
@@ -93,4 +95,4 @@ export function TaskSection({ projectId }: TaskSectionProps) {
       />
     </div>
   );
-} 
+}

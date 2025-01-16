@@ -1,24 +1,24 @@
-'use client';
+"use client";
 
-import { useAuth } from '@/components/providers/auth-provider'
-import { Button } from '@/components/ui/button'
-import { useRouter } from 'next/navigation'
+import { useAuth } from "@/components/providers/auth-provider";
+import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation";
 
 export default function UnauthorizedPage() {
-  const { signOut } = useAuth()
-  const router = useRouter()
+  const { signOut } = useAuth();
+  const router = useRouter();
 
   const handleSignOut = async () => {
     try {
-      await signOut()
+      await signOut();
     } catch (error) {
-      console.error('Error signing out:', error)
+      console.error("Error signing out:", error);
     }
-  }
+  };
 
   const handleBack = () => {
-    router.back()
-  }
+    router.back();
+  };
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-background">
@@ -26,7 +26,8 @@ export default function UnauthorizedPage() {
         <div className="text-center space-y-6">
           <h1 className="text-4xl font-bold text-foreground">Access Denied</h1>
           <p className="text-lg text-muted-foreground">
-            You do not have permission to access this page. Please contact your administrator if you believe this is an error.
+            You do not have permission to access this page. Please contact your
+            administrator if you believe this is an error.
           </p>
           <div className="flex flex-col space-y-4">
             <Button onClick={handleBack} variant="outline">
@@ -39,5 +40,5 @@ export default function UnauthorizedPage() {
         </div>
       </div>
     </div>
-  )
-} 
+  );
+}

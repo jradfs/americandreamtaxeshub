@@ -1,32 +1,37 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from 'src/components/ui/card';
-import { Button } from 'src/components/ui/button';
-import { Badge } from 'src/components/ui/badge';
-import { Timer, ArrowUpDown, Trash2, Plus } from 'lucide-react'
-import { useTemplateTasks } from 'src/hooks/useTemplateTasks';
-import { ProjectTemplate } from 'src/types/hooks';
-import { CreateTemplateTaskDialog } from './create-template-task-dialog';
+import { useState } from "react";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "src/components/ui/card";
+import { Button } from "src/components/ui/button";
+import { Badge } from "src/components/ui/badge";
+import { Timer, ArrowUpDown, Trash2, Plus } from "lucide-react";
+import { useTemplateTasks } from "src/hooks/useTemplateTasks";
+import { ProjectTemplate } from "src/types/hooks";
+import { CreateTemplateTaskDialog } from "./create-template-task-dialog";
 
 interface TemplateTasksProps {
-  template: ProjectTemplate
+  template: ProjectTemplate;
 }
 
 export function TemplateTasks({ template }: TemplateTasksProps) {
-  const { tasks, reorderTask, deleteTask } = useTemplateTasks(template.id)
-  const [showCreateDialog, setShowCreateDialog] = useState(false)
+  const { tasks, reorderTask, deleteTask } = useTemplateTasks(template.id);
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
 
-  const moveTask = async (taskId: string, direction: 'up' | 'down') => {
-    const currentIndex = tasks.findIndex(t => t.id === taskId)
+  const moveTask = async (taskId: string, direction: "up" | "down") => {
+    const currentIndex = tasks.findIndex((t) => t.id === taskId);
     if (
-      (direction === 'up' && currentIndex > 0) ||
-      (direction === 'down' && currentIndex < tasks.length - 1)
+      (direction === "up" && currentIndex > 0) ||
+      (direction === "down" && currentIndex < tasks.length - 1)
     ) {
-      const newIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1
-      await reorderTask(taskId, tasks[newIndex].order_index)
+      const newIndex = direction === "up" ? currentIndex - 1 : currentIndex + 1;
+      await reorderTask(taskId, tasks[newIndex].order_index);
     }
-  }
+  };
 
   return (
     <Card>
@@ -47,11 +52,11 @@ export function TemplateTasks({ template }: TemplateTasksProps) {
               <div className="flex items-center space-x-2">
                 <Badge
                   variant={
-                    task.priority === 'high'
-                      ? 'destructive'
-                      : task.priority === 'medium'
-                      ? 'default'
-                      : 'secondary'
+                    task.priority === "high"
+                      ? "destructive"
+                      : task.priority === "medium"
+                        ? "default"
+                        : "secondary"
                   }
                 >
                   {task.priority}
@@ -62,7 +67,7 @@ export function TemplateTasks({ template }: TemplateTasksProps) {
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => moveTask(task.id, 'up')}
+                  onClick={() => moveTask(task.id, "up")}
                   disabled={tasks.indexOf(task) === 0}
                 >
                   <ArrowUpDown className="h-4 w-4" />
@@ -87,5 +92,5 @@ export function TemplateTasks({ template }: TemplateTasksProps) {
         existingTasks={tasks}
       />
     </Card>
-  )
+  );
 }

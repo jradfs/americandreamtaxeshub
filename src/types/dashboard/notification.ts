@@ -1,6 +1,6 @@
 export interface Notification {
   id: string;
-  type: 'info' | 'warning' | 'error' | 'success';
+  type: "info" | "warning" | "error" | "success";
   title: string;
   message: string;
   timestamp: Date;
@@ -10,19 +10,19 @@ export interface Notification {
     url: string;
   };
   relatedEntity?: {
-    type: 'task' | 'client' | 'project' | 'document';
+    type: "task" | "client" | "project" | "document";
     id: string;
   };
 }
 
 export interface NotificationFilters {
-  types?: Notification['type'][];
+  types?: Notification["type"][];
   readStatus?: boolean;
   dateRange?: {
     start: Date;
     end: Date;
   };
-  relatedEntityType?: Notification['relatedEntity']['type'];
+  relatedEntityType?: Notification["relatedEntity"]["type"];
 }
 
 export interface NotificationSummary {

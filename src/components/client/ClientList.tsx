@@ -1,12 +1,12 @@
-'use client'
+"use client";
 
-import React from 'react';
-import { useClients } from '@/hooks/useClients';
-import { Database } from '@/types/database.types';
-import { useToast } from '@/components/ui/use-toast';
-import { supabaseBrowserClient } from '@/lib/supabaseBrowserClient';
+import React from "react";
+import { useClients } from "@/hooks/useClients";
+import { Database } from "@/types/database.types";
+import { useToast } from "@/components/ui/use-toast";
+import { supabaseBrowserClient } from "@/lib/supabaseBrowserClient";
 
-type Client = Database['public']['Tables']['clients']['Row'];
+type Client = Database["public"]["Tables"]["clients"]["Row"];
 
 interface ClientListProps {
   initialClients?: Client[] | null;
@@ -19,21 +19,21 @@ export default function ClientList({ initialClients }: ClientListProps) {
   const handleDelete = async (id: string) => {
     try {
       const { error } = await supabaseBrowserClient
-        .from('clients')
+        .from("clients")
         .delete()
-        .eq('id', id);
-      
+        .eq("id", id);
+
       if (error) throw error;
-      
+
       toast({
-        title: 'Success',
-        description: 'Client deleted successfully',
+        title: "Success",
+        description: "Client deleted successfully",
       });
     } catch (error) {
       toast({
-        title: 'Error',
-        description: 'Failed to delete client',
-        variant: 'destructive',
+        title: "Error",
+        description: "Failed to delete client",
+        variant: "destructive",
       });
     }
   };
@@ -49,14 +49,22 @@ export default function ClientList({ initialClients }: ClientListProps) {
   return (
     <div className="space-y-2">
       {clients.map((client) => (
-        <div key={client.id} className="border p-2 rounded shadow-sm flex justify-between">
+        <div
+          key={client.id}
+          className="border p-2 rounded shadow-sm flex justify-between"
+        >
           <div>
-            <p className="font-semibold">{client.full_name || 'Unnamed Client'}</p>
+            <a
+              href={`/dashboard/clients/${client.id}`}
+              className="font-semibold hover:underline"
+            >
+              {client.full_name || "Unnamed Client"}
+            </a>
             <p className="text-sm text-gray-600">{client.contact_email}</p>
           </div>
           <div className="space-x-2">
             <button
-              onClick={() => updateClient(client.id, { status: 'active' })}
+              onClick={() => updateClient(client.id, { status: "active" })}
               className="bg-blue-500 text-white px-3 py-1 rounded"
             >
               Activate

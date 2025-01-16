@@ -1,12 +1,12 @@
-'use client';
+"use client";
 
-import { useContext } from 'react'
-import { AuthContext } from '../providers/auth-provider'
-import { usePathname } from 'next/navigation';
-import { Sidebar } from './sidebar';
-import { MainContentWrapper } from './main-content-wrapper';
-import { isAuthenticated, hasRole, type UserRole } from '@/types/auth';
-import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import { useContext } from "react";
+import { AuthContext } from "../providers/auth-provider";
+import { usePathname } from "next/navigation";
+import { Sidebar } from "./sidebar";
+import { MainContentWrapper } from "./main-content-wrapper";
+import { isAuthenticated, hasRole, type UserRole } from "@/types/auth";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 
 interface AuthLayoutProps {
   children: React.ReactNode;
@@ -15,13 +15,13 @@ interface AuthLayoutProps {
   publicRoutes?: string[];
 }
 
-export function AuthLayout({ 
-  children, 
+export function AuthLayout({
+  children,
   requireAuth = true,
   allowedRoles,
-  publicRoutes = ['/', '/login', '/auth/callback']
+  publicRoutes = ["/", "/login", "/auth/callback"],
 }: AuthLayoutProps) {
-  const { session, loading } = useContext(AuthContext)
+  const { session, loading } = useContext(AuthContext);
   const pathname = usePathname();
   const isPublicRoute = pathname ? publicRoutes.includes(pathname) : false;
 
@@ -54,8 +54,8 @@ export function AuthLayout({
 
     // Check role-based access if roles are specified
     if (allowedRoles && allowedRoles.length > 0) {
-      const hasAllowedRole = allowedRoles.some(role => 
-        session.user && hasRole(session.user, role)
+      const hasAllowedRole = allowedRoles.some(
+        (role) => session.user && hasRole(session.user, role),
       );
 
       if (!hasAllowedRole) {
@@ -74,9 +74,7 @@ export function AuthLayout({
   return (
     <div className="relative flex min-h-screen" suppressHydrationWarning>
       <Sidebar />
-      <MainContentWrapper>
-        {children}
-      </MainContentWrapper>
+      <MainContentWrapper>{children}</MainContentWrapper>
     </div>
   );
-} 
+}

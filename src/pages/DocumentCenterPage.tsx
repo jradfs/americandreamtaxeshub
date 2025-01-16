@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { storageClient as supabase } from '@/lib/storage/index';
-import { handleError } from '@/lib/error-handler';
-import { uploadFileToStorage } from '@/lib/storage/index';
+import React, { useState, useEffect } from "react";
+import { storageClient as supabase } from "@/lib/storage/index";
+import { handleError } from "@/lib/error-handler";
+import { uploadFileToStorage } from "@/lib/storage/index";
 
-type DocumentStatus = 'uploaded' | 'review' | 'approved' | 'rejected';
+type DocumentStatus = "uploaded" | "review" | "approved" | "rejected";
 
 interface DocumentRecord {
   id: number;
@@ -15,7 +15,7 @@ interface DocumentRecord {
 export default function DocumentCenterPage() {
   const [documents, setDocuments] = useState<DocumentRecord[]>([]);
   const [uploading, setUploading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
   useEffect(() => {
     fetchDocuments();
@@ -23,9 +23,7 @@ export default function DocumentCenterPage() {
 
   async function fetchDocuments() {
     try {
-      const { data, error } = await supabase
-        .from('documents')
-        .select('*');
+      const { data, error } = await supabase.from("documents").select("*");
       if (error) throw error;
       if (data) {
         setDocuments(data as DocumentRecord[]);
@@ -43,16 +41,14 @@ export default function DocumentCenterPage() {
       const file = evt.target.files[0];
       // Use our custom storage service
       const storageResult = await uploadFileToStorage(file);
-      if (!storageResult.filePath) throw new Error('Upload failed');
+      if (!storageResult.filePath) throw new Error("Upload failed");
 
       // Insert record in 'documents' table
-      const { error: docErr } = await supabase
-        .from('documents')
-        .insert({
-          file_name: file.name,
-          file_path: storageResult.filePath,
-          document_status: 'uploaded',
-        });
+      const { error: docErr } = await supabase.from("documents").insert({
+        file_name: file.name,
+        file_path: storageResult.filePath,
+        document_status: "uploaded",
+      });
       if (docErr) throw docErr;
 
       await fetchDocuments();
@@ -66,14 +62,10 @@ export default function DocumentCenterPage() {
   return (
     <div>
       <h1>Document Center</h1>
-      {error && <p style={{ color: 'red' }}>{error}</p>}
+      {error && <p style={{ color: "red" }}>{error}</p>}
       <div>
         <label>Upload Document: </label>
-        <input
-          type="file"
-          onChange={handleUpload}
-          disabled={uploading}
-        />
+        <input type="file" onChange={handleUpload} disabled={uploading} />
       </div>
 
       <h2>Documents</h2>
@@ -81,9 +73,9 @@ export default function DocumentCenterPage() {
         <div
           key={doc.id}
           style={{
-            border: '1px solid #ccc',
-            margin: '6px 0',
-            padding: '6px',
+            border: "1px solid #ccc",
+            margin: "6px 0",
+            padding: "6px",
           }}
         >
           <p>File Name: {doc.file_name}</p>

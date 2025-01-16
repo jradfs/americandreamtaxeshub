@@ -1,9 +1,9 @@
-import { Json } from './database.types';
+import { Json } from "./database.types";
 
-export type TaskStatus = 'todo' | 'in_progress' | 'review' | 'completed';
-export type TaskPriority = 'low' | 'medium' | 'high' | 'urgent';
-export type ClientType = 'individual' | 'business';
-export type ClientStatus = 'active' | 'inactive' | 'pending';
+export type TaskStatus = "todo" | "in_progress" | "review" | "completed";
+export type TaskPriority = "low" | "medium" | "high" | "urgent";
+export type ClientType = "individual" | "business";
+export type ClientStatus = "active" | "inactive" | "pending";
 
 export interface Task {
   id: string;
@@ -60,12 +60,12 @@ export interface User {
   id: string;
   fullName: string;
   email: string;
-  role: 'admin' | 'preparer' | 'manager';
+  role: "admin" | "preparer" | "manager";
   created_at: string;
   updated_at: string;
 }
 
-export type WorkflowStatus = 'draft' | 'active' | 'archived';
+export type WorkflowStatus = "draft" | "active" | "archived";
 
 export interface WorkflowStep {
   id: string;
@@ -91,17 +91,17 @@ export interface WorkflowAction {
 }
 
 export interface Workflow {
-  id: string
-  name: string
-  description: string
-  version: string
-  status: string
-  steps: Json
-  triggers: Json
-  conditions: Json
-  actions: Json
-  created_at: string
-  updated_at: string
-  created_by: string
-  updated_by: string
+  id: string;
+  name: string;
+  description: string;
+  version: string;
+  status: string;
+  steps: Json;
+  triggers: Json;
+  conditions: Json;
+  actions: Json;
+  created_at: string;
+  updated_at: string;
+  created_by: string;
+  updated_by: string;
 }

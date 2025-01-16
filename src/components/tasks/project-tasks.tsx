@@ -1,17 +1,17 @@
-import { useState } from 'react'
-import { TaskDialog } from './task-dialog'
-import { TaskCard } from './task-card'
-import { TaskFormData, TaskWithRelations, toDbTaskInsert } from '@/types/tasks'
+import { useState } from "react";
+import { TaskDialog } from "./task-dialog";
+import { TaskCard } from "./task-card";
+import { TaskFormData, TaskWithRelations, toDbTaskInsert } from "@/types/tasks";
 
 interface ProjectTasksProps {
   project: {
-    id: string
-    name: string
-  }
-  tasks: TaskWithRelations[]
-  onTaskCreate: (task: TaskFormData) => Promise<void>
-  onTaskUpdate: (taskId: string, task: TaskFormData) => Promise<void>
-  onTaskDelete: (taskId: string) => Promise<void>
+    id: string;
+    name: string;
+  };
+  tasks: TaskWithRelations[];
+  onTaskCreate: (task: TaskFormData) => Promise<void>;
+  onTaskUpdate: (taskId: string, task: TaskFormData) => Promise<void>;
+  onTaskDelete: (taskId: string) => Promise<void>;
 }
 
 export function ProjectTasks({
@@ -19,22 +19,24 @@ export function ProjectTasks({
   tasks,
   onTaskCreate,
   onTaskUpdate,
-  onTaskDelete
+  onTaskDelete,
 }: ProjectTasksProps) {
-  const [dialogOpen, setDialogOpen] = useState(false)
-  const [editingTask, setEditingTask] = useState<TaskWithRelations | null>(null)
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingTask, setEditingTask] = useState<TaskWithRelations | null>(
+    null,
+  );
 
   const handleCreateTask = async (data: TaskFormData) => {
-    await onTaskCreate(data)
-    setDialogOpen(false)
-  }
+    await onTaskCreate(data);
+    setDialogOpen(false);
+  };
 
   const handleEditTask = async (data: TaskFormData) => {
     if (editingTask) {
-      await onTaskUpdate(editingTask.id, data)
-      setEditingTask(null)
+      await onTaskUpdate(editingTask.id, data);
+      setEditingTask(null);
     }
-  }
+  };
 
   return (
     <div className="space-y-4">
@@ -57,8 +59,8 @@ export function ProjectTasks({
         onSubmit={handleCreateTask}
         initialData={{
           project_id: project.id,
-          status: 'todo',
-          priority: 'medium'
+          status: "todo",
+          priority: "medium",
         }}
       />
 
@@ -71,5 +73,5 @@ export function ProjectTasks({
         />
       )}
     </div>
-  )
-} 
+  );
+}

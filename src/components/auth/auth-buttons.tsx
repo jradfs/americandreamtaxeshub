@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { AuthButton } from './auth-button';
+import { AuthButton } from "./auth-button";
 
 export function AuthButtons() {
   return (
@@ -9,4 +9,4 @@ export function AuthButtons() {
       <AuthButton type="sign-up" />
     </div>
   );
-} 
+}

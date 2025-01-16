@@ -1,28 +1,35 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
+import { useState } from "react";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
+} from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { projectSchema } from '@/lib/validations/project';
-import { useToast } from '@/components/ui/use-toast';
-import { ProjectFormData } from '@/types/projects';
-import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
+} from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { projectSchema } from "@/lib/validations/project";
+import { useToast } from "@/components/ui/use-toast";
+import { ProjectFormData } from "@/types/projects";
+import {
+  Form,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormControl,
+  FormMessage,
+} from "@/components/ui/form";
 
 interface CreateProjectDialogProps {
   open: boolean;
@@ -41,10 +48,10 @@ export function CreateProjectDialog({
   const form = useForm<ProjectFormData>({
     resolver: zodResolver(projectSchema),
     defaultValues: {
-      name: '',
-      description: '',
+      name: "",
+      description: "",
       service_type: null,
-      status: 'not_started',
+      status: "not_started",
       template_tasks: [],
     },
   });
@@ -55,13 +62,13 @@ export function CreateProjectDialog({
       await onSubmit(data);
       form.reset();
       onOpenChange(false);
-      toast({ title: 'Success', description: 'Project created successfully' });
+      toast({ title: "Success", description: "Project created successfully" });
     } catch (error) {
-      console.error('Error creating project:', error);
+      console.error("Error creating project:", error);
       toast({
-        title: 'Error',
-        description: 'Failed to create project',
-        variant: 'destructive',
+        title: "Error",
+        description: "Failed to create project",
+        variant: "destructive",
       });
     } finally {
       setIsLoading(false);
@@ -73,7 +80,9 @@ export function CreateProjectDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Create New Project</DialogTitle>
-          <DialogDescription>Enter the details for your new project.</DialogDescription>
+          <DialogDescription>
+            Enter the details for your new project.
+          </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
@@ -130,8 +139,16 @@ export function CreateProjectDialog({
           />
 
           <div className="flex justify-end space-x-2">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-            <Button type="submit" disabled={isLoading}>{isLoading ? 'Creating...' : 'Create Project'}</Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+            >
+              Cancel
+            </Button>
+            <Button type="submit" disabled={isLoading}>
+              {isLoading ? "Creating..." : "Create Project"}
+            </Button>
           </div>
         </form>
       </DialogContent>

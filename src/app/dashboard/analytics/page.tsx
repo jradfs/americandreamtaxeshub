@@ -1,14 +1,34 @@
-import { createClient } from '@/lib/supabase/server'
-import { redirect } from 'next/navigation'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { createClient } from "@/lib/supabase/server";
+import { redirect } from "next/navigation";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  PieChart,
+  Pie,
+  Cell,
+  ResponsiveContainer,
+} from "recharts";
 
 export default async function AnalyticsPage() {
-  const supabase = createClient()
-  const { data: { session } } = await supabase.auth.getSession()
+  const supabase = createClient();
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
 
   if (!session) {
-    redirect('/auth/login')
+    redirect("/auth/login");
   }
 
   return (
@@ -32,7 +52,9 @@ export default async function AnalyticsPage() {
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Clients</CardTitle>
+                <CardTitle className="text-sm font-medium">
+                  Total Clients
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">0</div>
@@ -43,7 +65,9 @@ export default async function AnalyticsPage() {
             </Card>
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Active Returns</CardTitle>
+                <CardTitle className="text-sm font-medium">
+                  Active Returns
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">0</div>
@@ -65,7 +89,9 @@ export default async function AnalyticsPage() {
             </Card>
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Efficiency</CardTitle>
+                <CardTitle className="text-sm font-medium">
+                  Efficiency
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">0%</div>
@@ -86,10 +112,35 @@ export default async function AnalyticsPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {/* Client analytics charts will be implemented here */}
-              <div className="text-sm text-muted-foreground">
-                No client data available yet.
-              </div>
+              <ResponsiveContainer width="100%" height={300}>
+                <PieChart>
+                  <Pie
+                    data={[
+                      { name: "Completed", value: 15 },
+                      { name: "In Progress", value: 7 },
+                      { name: "Pending", value: 3 },
+                    ]}
+                    dataKey="value"
+                    nameKey="name"
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={100}
+                    fill="#82ca9d"
+                    label
+                  >
+                    {[
+                      "#0088FE",
+                      "#00C49F",
+                      "#FFBB28",
+                      "#FF8042",
+                      "#AF19FF",
+                      "#FF1919",
+                    ].map((color, index) => (
+                      <Cell key={`cell-${index}`} fill={color} />
+                    ))}
+                  </Pie>
+                </PieChart>
+              </ResponsiveContainer>
             </CardContent>
           </Card>
         </TabsContent>
@@ -129,5 +180,5 @@ export default async function AnalyticsPage() {
         </TabsContent>
       </Tabs>
     </div>
-  )
-} 
+  );
+}

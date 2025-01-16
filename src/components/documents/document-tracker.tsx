@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState } from "react";
 
 interface DocumentTrackerProps {
   projectId: string;
@@ -9,7 +9,9 @@ export default function DocumentTracker({ projectId }: DocumentTrackerProps) {
 
   useEffect(() => {
     const fetchDocuments = async () => {
-      const response = await fetch(`/api/documents/status?project_id=${projectId}`);
+      const response = await fetch(
+        `/api/documents/status?project_id=${projectId}`,
+      );
       if (response.ok) {
         const data = await response.json();
         setDocuments(data);
@@ -20,24 +22,26 @@ export default function DocumentTracker({ projectId }: DocumentTrackerProps) {
   }, [projectId]);
 
   const sendReminder = async (documentId: string) => {
-    const response = await fetch('/api/documents/reminders', {
-      method: 'POST',
+    const response = await fetch("/api/documents/reminders", {
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({ documentId }),
     });
 
     if (response.ok) {
-      setDocuments(prev => prev.map(doc => 
-        doc.id === documentId ? { ...doc, reminder_sent: true } : doc
-      ));
+      setDocuments((prev) =>
+        prev.map((doc) =>
+          doc.id === documentId ? { ...doc, reminder_sent: true } : doc,
+        ),
+      );
     }
   };
 
   return (
     <div className="space-y-4">
-      {documents.map(document => (
+      {documents.map((document) => (
         <div key={document.id} className="p-4 border rounded">
           <div className="flex justify-between items-center">
             <div>

@@ -1,54 +1,42 @@
-import { createServerClient, type CookieOptions } from '@supabase/ssr'
-import { cookies } from 'next/headers'
-import { ApplicationProvider } from '@/providers/ApplicationProvider'
-import { QueryProvider } from '@/providers/query-provider'
-import { AuthProvider } from '@/components/providers/auth-provider'
-import { Toaster } from '@/components/ui/toaster'
-import './globals.css'
+"use client";
+
+import Script from "next/script";
+import { AuthProvider } from "@/providers/auth-provider";
+import { QueryProvider } from "@/providers/query-provider";
+import { Toaster } from "@/components/ui/toaster";
+import "./globals.css";
+import { ThemeProvider } from "@/providers/theme-provider";
 
 export default function RootLayout({
   children,
 }: {
-  children: React.ReactNode
+  children: React.ReactNode;
 }) {
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        get(name: string) {
-          return cookies().get(name)?.value
-        },
-        set(name: string, value: string, options: CookieOptions) {
-          try {
-            cookies().set({ name, value, ...options })
-          } catch (error) {
-            // Handle error
-          }
-        },
-        remove(name: string, options: CookieOptions) {
-          try {
-            cookies().set({ name, value: '', ...options })
-          } catch (error) {
-            // Handle error
-          }
-        },
-      },
-    }
-  )
-
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
+      <head />
       <body>
-        <QueryProvider>
-          <AuthProvider>
-            <ApplicationProvider>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <QueryProvider>
+            <AuthProvider>
               {children}
               <Toaster />
-            </ApplicationProvider>
-          </AuthProvider>
-        </QueryProvider>
+            </AuthProvider>
+          </QueryProvider>
+        </ThemeProvider>
+        <Script
+          id="remove-ext-attributes"
+          strategy="afterInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `document.body.removeAttribute('data-new-gr-c-s-check-loaded'); document.body.removeAttribute('data-gr-ext-installed');`,
+          }}
+        />
       </body>
     </html>
-  )
+  );
 }
